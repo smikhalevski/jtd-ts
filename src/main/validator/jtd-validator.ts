@@ -5,11 +5,14 @@ import {compileAccessor, compileJsonPointer, createVarProvider, IPropertyRef} fr
 import {pascalCase} from '../rename-utils';
 import {RuntimeMethod, runtimeMethod} from './RuntimeMethod';
 
-const VAR_CACHE = '__validatorCache';
+export const TYPE_VALIDATOR = '$Validator';
+export const VAR_CACHE = '$validatorCache';
 
 const ARG_VALUE = 'value';
 const ARG_ERRORS = 'errors';
 const ARG_POINTER = 'pointer';
+
+const excludedVars = [ARG_VALUE, ARG_ERRORS, ARG_POINTER].concat(runtimeMethod);
 
 /**
  * Returns source that maps fields exported from validation lib to internal names used by compiled validators. Lib
@@ -18,7 +21,8 @@ const ARG_POINTER = 'pointer';
  * @param libVar The name of the variable that holds validator library exports.
  */
 export function compileValidatorModuleProlog(libVar: string): string {
-  return `const {${runtimeMethod.join(',')}=${libVar};`
+  return `type ${TYPE_VALIDATOR}=${libVar}.Validator;`
+  + `const {${runtimeMethod.join(',')}}=${libVar};`
       + `const ${VAR_CACHE}:Record<string,any>={};`;
 }
 
@@ -78,7 +82,7 @@ export function compileValidators<Metadata>(definitions: Map<string, JtdNode<Met
   let source = '';
 
   definitions.forEach((node, ref) => {
-    source += `export const ${renameValidator(ref, node)}:__Validator=`
+    source += `export const ${renameValidator(ref, node)}:${TYPE_VALIDATOR}=`
         + `(${ARG_VALUE},${ARG_ERRORS}=[],${ARG_POINTER}="")=>{`
         + compileValidatorBody(ref, node, allOptions)
         + `return ${ARG_ERRORS};};`;
@@ -106,7 +110,7 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
 
   let source = '';
 
-  const nextVar = createVarProvider([ARG_VALUE, ARG_ERRORS, ARG_POINTER].concat(runtimeMethod));
+  const nextVar = createVarProvider(excludedVars);
   const pointer: Array<IPropertyRef> = [];
 
   visitJtdNode(node, {

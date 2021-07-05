@@ -13,7 +13,7 @@ import {
 
 export {Validator} from './validator-types';
 
-export default {
+const runtime: Record<RuntimeMethod, Function> = {
   [RuntimeMethod.CHECK_ENUM]: checkEnum,
   [RuntimeMethod.CHECK_ARRAY]: checkArray,
   [RuntimeMethod.CHECK_OBJECT]: checkObject,
@@ -24,3 +24,5 @@ export default {
   [RuntimeMethod.RAISE_INVALID]: raiseInvalid,
   [RuntimeMethod.ESCAPE_JSON_POINTER]: escapeJsonPointer,
 };
+
+export default runtime;

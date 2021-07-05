@@ -3,9 +3,9 @@ import JsonPointer from 'json-pointer';
 /**
  * Creates a callback that returns the next variable name when called.
  *
- * @param excludedNames The list of the excluded names.
+ * @param excludedVars The list of the excluded names.
  */
-export function createVarProvider(excludedNames?: Array<string>): () => string {
+export function createVarProvider(excludedVars?: Array<string>): () => string {
 
   const fromCharCode = String.fromCharCode;
   const charCodes: Array<number> = [96 /*a - 1*/];
@@ -40,8 +40,8 @@ export function createVarProvider(excludedNames?: Array<string>): () => string {
 
   return () => {
     let name = nextName();
-    if (excludedNames?.length) {
-      while (excludedNames.includes(name)) {
+    if (excludedVars?.length) {
+      while (excludedVars.includes(name)) {
         name = nextName();
       }
     }

@@ -1,4 +1,4 @@
-import {compileValidatorModuleProlog, compileValidators, parseJtdRoot} from '../../main';
+import {compileValidatorModuleProlog, compileValidators, parseJtdRoot, TYPE_VALIDATOR, VAR_CACHE} from '../../main';
 import {ModuleKind, transpileModule} from 'typescript';
 import {RuntimeMethod} from '../../main/validator/RuntimeMethod';
 
@@ -15,7 +15,7 @@ describe('compileValidators', () => {
 
   test('compiles type validator', () => {
     expect(compileValidators(parseJtdRoot('foo', {type: 'string'}))).toBe(
-        'export const validateFoo:__Validator=(value,errors=[],pointer="")=>{'
+        `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + RuntimeMethod.CHECK_STRING + '(value,errors,pointer);'
         + 'return errors;'
         + '};',
@@ -24,7 +24,7 @@ describe('compileValidators', () => {
 
   test('compiles type checker', () => {
     expect(compileValidators(parseJtdRoot('foo', {type: 'string'}), {emitsCheckers: true})).toBe(
-        'export const validateFoo:__Validator=(value,errors=[],pointer="")=>{' +
+        `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{` +
         RuntimeMethod.CHECK_STRING + '(value,errors,pointer);' +
         'return errors;' +
         '};' +
@@ -35,7 +35,7 @@ describe('compileValidators', () => {
 
   test('compiles nullable type validator', () => {
     expect(compileValidators(parseJtdRoot('foo', {type: 'string', nullable: true}))).toBe(
-        'export const validateFoo:__Validator=(value,errors=[],pointer="")=>{'
+        `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + 'if(value!==null){'
         + RuntimeMethod.CHECK_STRING + '(value,errors,pointer);'
         + '}'
@@ -46,7 +46,7 @@ describe('compileValidators', () => {
 
   test('compiles validator reference', () => {
     expect(compileValidators(parseJtdRoot('foo', {ref: 'bar'}))).toBe(
-        'export const validateFoo:__Validator=(value,errors=[],pointer="")=>{'
+        `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + 'validateBar(value,errors,pointer);'
         + 'return errors;'
         + '};',
@@ -55,8 +55,8 @@ describe('compileValidators', () => {
 
   test('compiles enum validator', () => {
     expect(compileValidators(parseJtdRoot('foo', {enum: ['AAA', 'BBB']}))).toBe(
-        'export const validateFoo:__Validator=(value,errors=[],pointer="")=>{'
-        + RuntimeMethod.CHECK_ENUM + '(value,__validatorCache["foo.c"]||=new Set(["AAA","BBB"]),errors,pointer);'
+        `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
+        + `${RuntimeMethod.CHECK_ENUM}(value,${VAR_CACHE}["foo.c"]||=new Set(["AAA","BBB"]),errors,pointer);`
         + 'return errors;'
         + '};',
     );
@@ -64,10 +64,10 @@ describe('compileValidators', () => {
 
   test('compiles elements validator', () => {
     expect(compileValidators(parseJtdRoot('foo', {elements: {type: 'string'}}))).toBe(
-        'export const validateFoo:__Validator=(value,errors=[],pointer="")=>{'
+        `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + `if(${RuntimeMethod.CHECK_ARRAY}(value,errors,pointer)){`
         + 'for(let c=0;c<value.length;c++){'
-        + RuntimeMethod.CHECK_STRING + `(value[c],errors,pointer+"/"+${RuntimeMethod.ESCAPE_JSON_POINTER}(c));`
+        + `${RuntimeMethod.CHECK_STRING}(value[c],errors,pointer+"/"+${RuntimeMethod.ESCAPE_JSON_POINTER}(c));`
         + '}'
         + '}'
         + 'return errors;'
@@ -77,8 +77,8 @@ describe('compileValidators', () => {
 
   test('compiles any elements validator', () => {
     expect(compileValidators(parseJtdRoot('foo', {elements: {}}))).toBe(
-        'export const validateFoo:__Validator=(value,errors=[],pointer="")=>{'
-        + RuntimeMethod.CHECK_ARRAY + '(value,errors,pointer);'
+        `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
+        + `${RuntimeMethod.CHECK_ARRAY}(value,errors,pointer);`
         + 'return errors;'
         + '};',
     );
@@ -86,10 +86,10 @@ describe('compileValidators', () => {
 
   test('compiles values validator', () => {
     expect(compileValidators(parseJtdRoot('foo', {values: {type: 'string'}}))).toBe(
-        'export const validateFoo:__Validator=(value,errors=[],pointer="")=>{'
+        `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + `if(${RuntimeMethod.CHECK_OBJECT}(value,errors,pointer)){`
         + 'for(const c in value){'
-        + RuntimeMethod.CHECK_STRING + `(value[c],errors,pointer+"/"+${RuntimeMethod.ESCAPE_JSON_POINTER}(c));`
+        + `${RuntimeMethod.CHECK_STRING}(value[c],errors,pointer+"/"+${RuntimeMethod.ESCAPE_JSON_POINTER}(c));`
         + '}'
         + '}'
         + 'return errors;'
@@ -99,8 +99,8 @@ describe('compileValidators', () => {
 
   test('compiles any values validator', () => {
     expect(compileValidators(parseJtdRoot('foo', {values: {}}))).toBe(
-        'export const validateFoo:__Validator=(value,errors=[],pointer="")=>{'
-        + RuntimeMethod.CHECK_OBJECT + '(value,errors,pointer);'
+        `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
+        + `${RuntimeMethod.CHECK_OBJECT}(value,errors,pointer);`
         + 'return errors;'
         + '};',
     );
@@ -111,11 +111,11 @@ describe('compileValidators', () => {
       properties: {foo: {type: 'string'}},
       optionalProperties: {bar: {type: 'float32'}},
     }))).toBe(
-        'export const validateFoo:__Validator=(value,errors=[],pointer="")=>{'
+        `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + `if(${RuntimeMethod.CHECK_OBJECT}(value,errors,pointer)){`
         + RuntimeMethod.CHECK_STRING + '(value.foo,errors,pointer+"/foo");'
         + 'if(value.bar!==undefined){'
-        + RuntimeMethod.CHECK_NUMBER + '(value.bar,errors,pointer+"/bar");'
+        + `${RuntimeMethod.CHECK_NUMBER}(value.bar,errors,pointer+"/bar");`
         + '}'
         + '}'
         + 'return errors;'
@@ -135,17 +135,17 @@ describe('compileValidators', () => {
         },
       },
     }))).toBe(
-        'export const validateFoo:__Validator=(value,errors=[],pointer="")=>{'
+        `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + `if(${RuntimeMethod.CHECK_OBJECT}(value,errors,pointer)){`
         + 'switch(value.type){'
         + 'case "AAA":'
-        + RuntimeMethod.CHECK_STRING + '(value.foo,errors,pointer+"/foo");'
+        + `${RuntimeMethod.CHECK_STRING}(value.foo,errors,pointer+"/foo");`
         + 'break;'
         + 'case "BBB":'
-        + RuntimeMethod.CHECK_INTEGER + '(value.bar,errors,pointer+"/bar");'
+        + `${RuntimeMethod.CHECK_INTEGER}(value.bar,errors,pointer+"/bar");`
         + 'break;'
         + 'default:'
-        + RuntimeMethod.RAISE_INVALID + '(errors,pointer+"/type");'
+        + `${RuntimeMethod.RAISE_INVALID}(errors,pointer+"/type");`
         + '}'
         + '}'
         + 'return errors;'
@@ -160,11 +160,11 @@ describe('compileValidators', () => {
       },
       ref: 'bar',
     }))).toBe(
-        'export const validateBar:__Validator=(value,errors=[],pointer="")=>{'
+        `export const validateBar:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + RuntimeMethod.CHECK_STRING + '(value,errors,pointer);'
         + 'return errors;'
         + '};'
-        + 'export const validateFoo:__Validator=(value,errors=[],pointer="")=>{'
+        + `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + 'validateBar(value,errors,pointer);'
         + 'return errors;'
         + '};',
@@ -173,7 +173,7 @@ describe('compileValidators', () => {
 
   test('compiles valid syntax', () => {
 
-    const moduleSource = 'import * as lib from "../main/validator-lib";'
+    const moduleSource = 'import lib from "../../main/validator/runtime";'
         + compileValidatorModuleProlog('lib')
         + compileValidators(parseJtdRoot('foo', {
           nullable: true,
