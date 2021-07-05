@@ -1,6 +1,6 @@
-import {compileValidatorModuleProlog, compileValidators, parseJtdRoot, TYPE_VALIDATOR, VAR_CACHE} from '../../main';
+import {compileValidatorModuleProlog, compileValidators, parseJtdRoot} from '../../main';
 import {ModuleKind, transpileModule} from 'typescript';
-import {RuntimeMethod} from '../../main/validator/RuntimeMethod';
+import {RuntimeMethod, TYPE_VALIDATOR, VAR_CACHE} from '../../main/validator/runtime-naming';
 
 function evalModule(source: string): Record<string, any> {
   return eval(`
@@ -56,7 +56,7 @@ describe('compileValidators', () => {
   test('compiles enum validator', () => {
     expect(compileValidators(parseJtdRoot('foo', {enum: ['AAA', 'BBB']}))).toBe(
         `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
-        + `${RuntimeMethod.CHECK_ENUM}(value,${VAR_CACHE}["foo.c"]||=new Set(["AAA","BBB"]),errors,pointer);`
+        + `${RuntimeMethod.CHECK_ENUM}(value,${VAR_CACHE}["foo.a"]||=new Set(["AAA","BBB"]),errors,pointer);`
         + 'return errors;'
         + '};',
     );
@@ -66,8 +66,8 @@ describe('compileValidators', () => {
     expect(compileValidators(parseJtdRoot('foo', {elements: {type: 'string'}}))).toBe(
         `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + `if(${RuntimeMethod.CHECK_ARRAY}(value,errors,pointer)){`
-        + 'for(let c=0;c<value.length;c++){'
-        + `${RuntimeMethod.CHECK_STRING}(value[c],errors,pointer+"/"+${RuntimeMethod.ESCAPE_JSON_POINTER}(c));`
+        + 'for(let a=0;a<value.length;a++){'
+        + `${RuntimeMethod.CHECK_STRING}(value[a],errors,pointer+"/"+${RuntimeMethod.ESCAPE_JSON_POINTER}(a));`
         + '}'
         + '}'
         + 'return errors;'
@@ -88,8 +88,8 @@ describe('compileValidators', () => {
     expect(compileValidators(parseJtdRoot('foo', {values: {type: 'string'}}))).toBe(
         `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + `if(${RuntimeMethod.CHECK_OBJECT}(value,errors,pointer)){`
-        + 'for(const c in value){'
-        + `${RuntimeMethod.CHECK_STRING}(value[c],errors,pointer+"/"+${RuntimeMethod.ESCAPE_JSON_POINTER}(c));`
+        + 'for(const a in value){'
+        + `${RuntimeMethod.CHECK_STRING}(value[a],errors,pointer+"/"+${RuntimeMethod.ESCAPE_JSON_POINTER}(a));`
         + '}'
         + '}'
         + 'return errors;'

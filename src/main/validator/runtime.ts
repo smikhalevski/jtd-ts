@@ -1,4 +1,4 @@
-import {RuntimeMethod} from './RuntimeMethod';
+import {RuntimeMethod} from './runtime-naming';
 import {
   checkArray,
   checkBoolean,
@@ -9,11 +9,11 @@ import {
   checkString,
   escapeJsonPointer,
   raiseInvalid,
-} from './validator-lib';
+} from './runtime-lib';
 
-export {Validator} from './validator-types';
+export * from './validator-types';
 
-const runtime: Record<RuntimeMethod, Function> = {
+const runtime = {
   [RuntimeMethod.CHECK_ENUM]: checkEnum,
   [RuntimeMethod.CHECK_ARRAY]: checkArray,
   [RuntimeMethod.CHECK_OBJECT]: checkObject,
@@ -25,4 +25,7 @@ const runtime: Record<RuntimeMethod, Function> = {
   [RuntimeMethod.ESCAPE_JSON_POINTER]: escapeJsonPointer,
 };
 
+/**
+ * The runtime used by compiled validators.
+ */
 export default runtime;

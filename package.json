@@ -11,8 +11,8 @@
   ],
   "scripts": {
     "build": "set -e; tsc; npm run rollup; npm run terser",
-    "rollup": "rollup --exports default --input ./lib/index.js --file ./lib/index-cjs.js --format cjs",
-    "terser": "terser --compress --mangle toplevel --mangle-props keep_quoted --output ./lib/index-cjs.js -- ./lib/index-cjs.js",
+    "rollup": "for p in ./lib/index.js ./lib/validator/runtime.js; do rollup --external json-pointer --exports auto --input $p --file ${p%.js}-cjs.js --format cjs --plugin @rollup/plugin-node-resolve --plugin @rollup/plugin-commonjs; done",
+    "terser": "for p in ./lib/index-cjs.js ./lib/validator/runtime-cjs.js; do terser --compress --mangle toplevel --output $p -- $p; done",
     "clean": "rm -rf ./lib",
     "test": "jest --detectOpenHandles"
   },
@@ -30,6 +30,8 @@
     "preset": "ts-jest"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^19.0.0",
+    "@rollup/plugin-node-resolve": "^13.0.0",
     "@types/jest": "^26.0.23",
     "@types/json-pointer": "^1.0.31",
     "jest": "^27.0.2",

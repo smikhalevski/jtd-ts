@@ -1,12 +1,6 @@
-export const enum ValidationErrorCode {
-  REQUIRED = 'required',
-  ILLEGAL_TYPE = 'illegal_type',
-  INVALID = 'invalid',
-}
-
 export interface IValidationError {
   pointer: string;
-  code: ValidationErrorCode | string;
+  code: string;
 }
 
 export type Validator = (value: unknown, errors?: Array<IValidationError>, pointer?: string) => Array<IValidationError>;

@@ -40,7 +40,7 @@ export function parseJtd<Metadata>(jtd: IJtd<Metadata>): JtdNode<Metadata> {
   if (jtd.nullable) {
     return {
       nodeType: JtdNodeType.NULLABLE,
-      valueNode: parseJtd({...jtd, nullable: undefined}),
+      valueNode: parseJtd(Object.assign({}, jtd, {nullable: undefined})),
       jtd,
     };
   }

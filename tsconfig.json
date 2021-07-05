@@ -3,6 +3,7 @@
     "declaration": true,
     "esModuleInterop": true,
     "moduleResolution": "Node",
+    "preserveConstEnums": true,
     "strict": true,
     "target": "ES5",
     "module": "ES6",

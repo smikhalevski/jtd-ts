@@ -9,7 +9,7 @@ import {
 } from './jtd-ast-types';
 import {visitJtdNode} from './jtd-visitor';
 import {JtdType} from './jtd-types';
-import {compileDocComment, compilePropertyName} from './ts-compile-utils';
+import {compileDocComment, compilePropertyName} from './compile-utils';
 import {pascalCase, upperSnakeCase} from './rename-utils';
 
 /**
@@ -66,14 +66,14 @@ export type JtdRefResolver<Metadata> = (ref: string, node: IJtdRefNode<Metadata>
  * Compiles provided JTD definitions as a TS source that represents a set of types, interfaces and enums.
  */
 export function compileTsFromJtdDefinitions<Metadata extends ITsJtdMetadata>(definitions: Map<string, JtdNode<Metadata>>, options?: Partial<IJtdTsOptions<Metadata>>): string {
-  const allOptions = {...jtdTsOptions, ...options};
+  const opt = Object.assign({}, jtdTsOptions, options);
 
   const {
     resolveRef,
     renameInterface,
     renameType,
     renameEnum,
-  } = allOptions;
+  } = opt;
 
   const refResolver: JtdRefResolver<Metadata> = (ref, refNode) => {
     const node = definitions.get(ref);
@@ -98,7 +98,7 @@ export function compileTsFromJtdDefinitions<Metadata extends ITsJtdMetadata>(def
     }
   };
 
-  return Array.from(definitions).reduce((source, [ref, node]) => source + compileStatement(ref, node, refResolver, allOptions), '');
+  return Array.from(definitions).reduce((source, [ref, node]) => source + compileStatement(ref, node, refResolver, opt), '');
 }
 
 function compileStatement<Metadata extends ITsJtdMetadata>(ref: string, node: JtdNode<Metadata>, resolveRef: JtdRefResolver<Metadata>, options: IJtdTsOptions<Metadata>): string {

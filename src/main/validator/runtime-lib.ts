@@ -1,5 +1,11 @@
 import JsonPointer from 'json-pointer';
-import {Checker, IValidationError, ValidationErrorCode} from './validator-types';
+import {Checker, IValidationError} from './validator-types';
+
+export const enum ValidationErrorCode {
+  REQUIRED = 'required',
+  ILLEGAL_TYPE = 'illegal_type',
+  INVALID = 'invalid',
+}
 
 export function escapeJsonPointer(key: string | number): string {
   return JsonPointer.escape(key.toString());

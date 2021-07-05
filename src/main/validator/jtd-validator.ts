@@ -1,28 +1,25 @@
 import {IJtdEnumNode, IJtdNode, IJtdTypeNode, IJtdUnionNode, JtdNode, JtdNodeType} from '../jtd-ast-types';
 import {visitJtdNode} from '../jtd-visitor';
 import {JtdType} from '../jtd-types';
-import {compileAccessor, compileJsonPointer, createVarProvider, IPropertyRef} from '../ts-compile-utils';
+import {compileAccessor, compileJsonPointer, createVarProvider, IPropertyRef} from '../compile-utils';
 import {pascalCase} from '../rename-utils';
-import {RuntimeMethod, runtimeMethod} from './RuntimeMethod';
-
-export const TYPE_VALIDATOR = '$Validator';
-export const VAR_CACHE = '$validatorCache';
+import {RuntimeMethod, runtimeMethod, TYPE_VALIDATOR, VAR_CACHE} from './runtime-naming';
 
 const ARG_VALUE = 'value';
 const ARG_ERRORS = 'errors';
 const ARG_POINTER = 'pointer';
 
-const excludedVars = [ARG_VALUE, ARG_ERRORS, ARG_POINTER].concat(runtimeMethod);
+const excludedVars = [ARG_VALUE, ARG_ERRORS, ARG_POINTER];
 
 /**
- * Returns source that maps fields exported from validation lib to internal names used by compiled validators. Lib
- * isn't used directly to allow code minification tools to effectively rename vars.
+ * Returns source that maps fields exported from validation runtime to internal names used by compiled validators.
+ * Runtime isn't used directly to allow code minification tools to effectively rename vars.
  *
- * @param libVar The name of the variable that holds validator library exports.
+ * @param runtimeVar The name of the variable that holds validator library exports.
  */
-export function compileValidatorModuleProlog(libVar: string): string {
-  return `type ${TYPE_VALIDATOR}=${libVar}.Validator;`
-  + `const {${runtimeMethod.join(',')}}=${libVar};`
+export function compileValidatorModuleProlog(runtimeVar: string): string {
+  return `type ${TYPE_VALIDATOR}=${runtimeVar}.Validator;`
+      + `const {${runtimeMethod.join(',')}}=${runtimeVar};`
       + `const ${VAR_CACHE}:Record<string,any>={};`;
 }
 
@@ -70,21 +67,21 @@ export interface IValidatorOptions<Metadata> {
  * Returns source code of functions that validate JTD definitions.
  */
 export function compileValidators<Metadata>(definitions: Map<string, JtdNode<Metadata>>, options?: Partial<IValidatorOptions<Metadata>>): string {
-  const allOptions = {...jtdValidatorOptions, ...options};
+  const opt = Object.assign({}, jtdValidatorOptions, options);
 
   const {
     renameType,
     renameValidator,
     renameChecker,
     emitsCheckers,
-  } = allOptions;
+  } = opt;
 
   let source = '';
 
   definitions.forEach((node, ref) => {
     source += `export const ${renameValidator(ref, node)}:${TYPE_VALIDATOR}=`
         + `(${ARG_VALUE},${ARG_ERRORS}=[],${ARG_POINTER}="")=>{`
-        + compileValidatorBody(ref, node, allOptions)
+        + compileValidatorBody(ref, node, opt)
         + `return ${ARG_ERRORS};};`;
 
     if (emitsCheckers) {
@@ -188,7 +185,7 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
     },
 
     union(node, next) {
-      const discriminatorPointer = [...pointer, {key: node.discriminator}];
+      const discriminatorPointer = pointer.concat({key: node.discriminator});
       source += `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, pointer)}){`
           + `switch(${ARG_VALUE + compileAccessor(discriminatorPointer)}){`;
       next();
