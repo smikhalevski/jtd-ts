@@ -1,19 +1,5 @@
 import JsonPointer from 'json-pointer';
-
-export const enum ValidationErrorCode {
-  REQUIRED = 'required',
-  ILLEGAL_TYPE = 'illegal_type',
-  INVALID = 'invalid',
-}
-
-export interface IValidationError {
-  pointer: string;
-  code: ValidationErrorCode | string;
-}
-
-export type Validator = (value: unknown, errors?: Array<IValidationError>, pointer?: string) => Array<IValidationError>;
-
-export type Checker<Output extends Input, Input = unknown> = (value: Input, errors?: Array<IValidationError>, pointer?: string) => value is Output;
+import {Checker, IValidationError, ValidationErrorCode} from './validator-types';
 
 export function escapeJsonPointer(key: string | number): string {
   return JsonPointer.escape(key.toString());

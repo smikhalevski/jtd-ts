@@ -3,9 +3,6 @@
     "declaration": true,
     "esModuleInterop": true,
     "moduleResolution": "Node",
-    "lib": [
-
-    ],
     "strict": true,
     "target": "ES5",
     "module": "ES6",

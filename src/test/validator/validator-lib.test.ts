@@ -1,11 +1,10 @@
 import {
-  IValidationError,
   raiseIllegalType,
   raiseInvalid,
   raiseValidationError,
   checkRequired,
-  ValidationErrorCode,
-} from '../main/validator-lib';
+} from '../../main/validator/validator-lib';
+import {IValidationError, ValidationErrorCode} from '../../main/validator/validator-types';
 
 describe('raiseValidationError', () => {
 

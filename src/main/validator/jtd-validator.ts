@@ -1,21 +1,9 @@
-import {IJtdEnumNode, IJtdNode, IJtdTypeNode, IJtdUnionNode, JtdNode, JtdNodeType} from './jtd-ast-types';
-import {visitJtdNode} from './jtd-visitor';
-import {JtdType} from './jtd-types';
-import {compileAccessor, compileJsonPointer, IPropertyRef} from './ts-compile-utils';
-import {pascalCase} from './rename-utils';
-
-const LIB_TYPE_VALIDATOR = '__Validator';
-
-const LIB_CHECK_ENUM = '__checkEnum';
-const LIB_CHECK_ARRAY = '__checkArray';
-const LIB_CHECK_OBJECT = '__checkObject';
-const LIB_CHECK_STRING = '__checkString';
-const LIB_CHECK_NUMBER = '__checkNumber';
-const LIB_CHECK_INTEGER = '__checkInteger';
-const LIB_CHECK_BOOLEAN = '__checkBoolean';
-
-const LIB_RAISE_INVALID = '__raiseInvalid';
-const LIB_ESCAPE_JSON_POINTER = '__escapeJsonPointer';
+import {IJtdEnumNode, IJtdNode, IJtdTypeNode, IJtdUnionNode, JtdNode, JtdNodeType} from '../jtd-ast-types';
+import {visitJtdNode} from '../jtd-visitor';
+import {JtdType} from '../jtd-types';
+import {compileAccessor, compileJsonPointer, createVarProvider, IPropertyRef} from '../ts-compile-utils';
+import {pascalCase} from '../rename-utils';
+import {RuntimeMethod, runtimeMethod} from './RuntimeMethod';
 
 const VAR_CACHE = '__validatorCache';
 
@@ -30,19 +18,8 @@ const ARG_POINTER = 'pointer';
  * @param libVar The name of the variable that holds validator library exports.
  */
 export function compileValidatorModuleProlog(libVar: string): string {
-  return `type ${LIB_TYPE_VALIDATOR}=${libVar}.Validator;`
-      + 'const {'
-      + `checkEnum:${LIB_CHECK_ENUM},`
-      + `checkArray:${LIB_CHECK_ARRAY},`
-      + `checkObject:${LIB_CHECK_OBJECT},`
-      + `checkString:${LIB_CHECK_STRING},`
-      + `checkNumber:${LIB_CHECK_NUMBER},`
-      + `checkInteger:${LIB_CHECK_INTEGER},`
-      + `checkBoolean:${LIB_CHECK_BOOLEAN},`
-      + `raiseInvalid:${LIB_RAISE_INVALID},`
-      + `escapeJsonPointer:${LIB_ESCAPE_JSON_POINTER},`
-      + `}=${libVar};`
-      + `const ${VAR_CACHE}:Record<string,any> ={};`;
+  return `const {${runtimeMethod.join(',')}=${libVar};`
+      + `const ${VAR_CACHE}:Record<string,any>={};`;
 }
 
 export interface IValidatorOptions<Metadata> {
@@ -101,7 +78,7 @@ export function compileValidators<Metadata>(definitions: Map<string, JtdNode<Met
   let source = '';
 
   definitions.forEach((node, ref) => {
-    source += `export const ${renameValidator(ref, node)}:${LIB_TYPE_VALIDATOR} = `
+    source += `export const ${renameValidator(ref, node)}:__Validator=`
         + `(${ARG_VALUE},${ARG_ERRORS}=[],${ARG_POINTER}="")=>{`
         + compileValidatorBody(ref, node, allOptions)
         + `return ${ARG_ERRORS};};`;
@@ -109,7 +86,7 @@ export function compileValidators<Metadata>(definitions: Map<string, JtdNode<Met
     if (emitsCheckers) {
       source += `export const ${renameChecker(ref, node)}=`
           + `(${ARG_VALUE}:unknown):${ARG_VALUE} is ${renameType(ref, node)}=>`
-          + renameValidator(ref, node) + '(' + ARG_VALUE + ').length===0;'
+          + renameValidator(ref, node) + '(' + ARG_VALUE + ').length===0;';
     }
   });
 
@@ -128,9 +105,8 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
   } = options;
 
   let source = '';
-  let varCharCode = 97;
 
-  const nextVar = () => String.fromCharCode(varCharCode++);
+  const nextVar = createVarProvider([ARG_VALUE, ARG_ERRORS, ARG_POINTER].concat(runtimeMethod));
   const pointer: Array<IPropertyRef> = [];
 
   visitJtdNode(node, {
@@ -154,17 +130,17 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
       const valuesSource = 'new Set(['
           + Array.from(node.values).map((value) => JSON.stringify(rewriteEnumValue(value, node))).join(',')
           + '])';
-      source += compileCheckerCall(LIB_CHECK_ENUM, pointer, compileCachedValue(ref, nextVar, valuesSource)) + ';';
+      source += compileCheckerCall(RuntimeMethod.CHECK_ENUM, pointer, compileCachedValue(ref, nextVar, valuesSource)) + ';';
     },
 
     elements(node, next) {
       if (node.elementNode.nodeType === JtdNodeType.ANY) {
-        source += compileCheckerCall(LIB_CHECK_ARRAY, pointer) + ';';
+        source += compileCheckerCall(RuntimeMethod.CHECK_ARRAY, pointer) + ';';
         return;
       }
 
       const indexVar = nextVar();
-      source += `if(${compileCheckerCall(LIB_CHECK_ARRAY, pointer)}){`
+      source += `if(${compileCheckerCall(RuntimeMethod.CHECK_ARRAY, pointer)}){`
           + `for(let ${indexVar}=0;${indexVar}<${ARG_VALUE + compileAccessor(pointer)}.length;${indexVar}++){`;
       pointer.push({var: indexVar});
       next();
@@ -174,12 +150,12 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
 
     values(node, next) {
       if (node.valueNode.nodeType === JtdNodeType.ANY) {
-        source += compileCheckerCall(LIB_CHECK_OBJECT, pointer) + ';';
+        source += compileCheckerCall(RuntimeMethod.CHECK_OBJECT, pointer) + ';';
         return;
       }
 
       const keyVar = nextVar();
-      source += `if(${compileCheckerCall(LIB_CHECK_OBJECT, pointer)}){`
+      source += `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, pointer)}){`
           + `for(const ${keyVar} in ${ARG_VALUE + compileAccessor(pointer)}){`;
       pointer.push({var: keyVar});
       next();
@@ -188,7 +164,7 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
     },
 
     object(node, next) {
-      source += `if(${compileCheckerCall(LIB_CHECK_OBJECT, pointer)}){`;
+      source += `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, pointer)}){`;
       next();
       source += '}';
     },
@@ -209,13 +185,13 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
 
     union(node, next) {
       const discriminatorPointer = [...pointer, {key: node.discriminator}];
-      source += `if(${compileCheckerCall(LIB_CHECK_OBJECT, pointer)}){`
+      source += `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, pointer)}){`
           + `switch(${ARG_VALUE + compileAccessor(discriminatorPointer)}){`;
       next();
       source += 'default:'
-          + LIB_RAISE_INVALID + '('
+          + RuntimeMethod.RAISE_INVALID + '('
           + ARG_ERRORS + ','
-          + ARG_POINTER + '+' + compileJsonPointer(discriminatorPointer, LIB_ESCAPE_JSON_POINTER)
+          + ARG_POINTER + '+' + compileJsonPointer(discriminatorPointer, RuntimeMethod.ESCAPE_JSON_POINTER)
           + ');'
           + '}}';
     },
@@ -242,7 +218,7 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
  *     // → 'checkEnum(value.bar[i],new Set(["AAA", "BBB"]),errors,"/bar"+__escapeJsonPointer(i))'
  */
 function compileCheckerCall(checkerName: string, pointer: Array<IPropertyRef>, ...args: Array<string>): string {
-  const pointerSource = compileJsonPointer(pointer, LIB_ESCAPE_JSON_POINTER);
+  const pointerSource = compileJsonPointer(pointer, RuntimeMethod.ESCAPE_JSON_POINTER);
   return checkerName + '('
       // value
       + ARG_VALUE + compileAccessor(pointer) + ','
@@ -271,15 +247,15 @@ export const jtdValidatorOptions: IValidatorOptions<unknown> = {
 };
 
 export const jtdTypeCheckerMap: Record<JtdType, string> = {
-  [JtdType.BOOLEAN]: LIB_CHECK_BOOLEAN,
-  [JtdType.STRING]: LIB_CHECK_STRING,
-  [JtdType.TIMESTAMP]: LIB_CHECK_INTEGER,
-  [JtdType.FLOAT32]: LIB_CHECK_NUMBER,
-  [JtdType.FLOAT64]: LIB_CHECK_NUMBER,
-  [JtdType.INT8]: LIB_CHECK_INTEGER,
-  [JtdType.UINT8]: LIB_CHECK_INTEGER,
-  [JtdType.INT16]: LIB_CHECK_INTEGER,
-  [JtdType.UINT16]: LIB_CHECK_INTEGER,
-  [JtdType.INT32]: LIB_CHECK_INTEGER,
-  [JtdType.UINT32]: LIB_CHECK_INTEGER,
+  [JtdType.BOOLEAN]: RuntimeMethod.CHECK_BOOLEAN,
+  [JtdType.STRING]: RuntimeMethod.CHECK_STRING,
+  [JtdType.TIMESTAMP]: RuntimeMethod.CHECK_INTEGER,
+  [JtdType.FLOAT32]: RuntimeMethod.CHECK_NUMBER,
+  [JtdType.FLOAT64]: RuntimeMethod.CHECK_NUMBER,
+  [JtdType.INT8]: RuntimeMethod.CHECK_INTEGER,
+  [JtdType.UINT8]: RuntimeMethod.CHECK_INTEGER,
+  [JtdType.INT16]: RuntimeMethod.CHECK_INTEGER,
+  [JtdType.UINT16]: RuntimeMethod.CHECK_INTEGER,
+  [JtdType.INT32]: RuntimeMethod.CHECK_INTEGER,
+  [JtdType.UINT32]: RuntimeMethod.CHECK_INTEGER,
 };

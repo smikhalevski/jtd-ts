@@ -1,4 +1,4 @@
-import {compileAccessor, compileDocComment, compileJsonPointer, compilePropertyName} from '../main';
+import {compileAccessor, compileDocComment, compileJsonPointer, compilePropertyName, createVarProvider} from '../main';
 
 describe('compileDocComment', () => {
 
@@ -88,5 +88,57 @@ describe('compileAccessor', () => {
 
   test('compiles string keys', () => {
     expect(compileAccessor(['a', '0', 'b'])).toBe('.a[0].b');
+  });
+});
+
+describe('createVarProvider', () => {
+
+  test('returns next var name', () => {
+    const next = createVarProvider();
+
+    expect(next()).toBe('a');
+    expect(next()).toBe('b');
+
+    for (let i = 3; i <= 25; i++) {
+      next();
+    }
+
+    expect(next()).toBe('z');
+    expect(next()).toBe('A');
+    expect(next()).toBe('B');
+
+    for (let i = 3; i <= 25; i++) {
+      next();
+    }
+
+    expect(next()).toBe('Z');
+    expect(next()).toBe('aa');
+
+    for (let i = 1; i <= 24; i++) {
+      next();
+    }
+
+    expect(next()).toBe('az');
+    expect(next()).toBe('aA');
+
+    for (let i = 1; i <= 24; i++) {
+      next();
+    }
+
+    expect(next()).toBe('aZ');
+    expect(next()).toBe('ba');
+
+    for (let i = 1; i <= 1000; i++) {
+      next();
+    }
+
+    expect(next()).toBe('un');
+  });
+
+  test('excludes names', () => {
+    const next = createVarProvider(['b', 'c']);
+
+    expect(next()).toBe('a');
+    expect(next()).toBe('d');
   });
 });

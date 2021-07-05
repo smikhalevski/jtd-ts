@@ -1,6 +1,55 @@
 import JsonPointer from 'json-pointer';
 
 /**
+ * Creates a callback that returns the next variable name when called.
+ *
+ * @param excludedNames The list of the excluded names.
+ */
+export function createVarProvider(excludedNames?: Array<string>): () => string {
+
+  const fromCharCode = String.fromCharCode;
+  const charCodes: Array<number> = [96 /*a - 1*/];
+
+  const nextCharCode = (charCode: number): number => {
+    return charCode === 122 /*z*/ ? 65 /*A*/ : charCode === 90 /*Z*/ ? -1 : charCode + 1;
+  };
+
+  const nextName = () => {
+    let charCode = nextCharCode(charCodes[charCodes.length - 1]);
+
+    if (charCode !== -1) {
+      charCodes[charCodes.length - 1] = charCode;
+      return fromCharCode(...charCodes);
+    }
+
+    for (let i = charCodes.length - 2; i > -1; i--) {
+      const charCode = nextCharCode(charCodes[i]);
+
+      if (charCode !== -1) {
+        charCodes[i] = charCode;
+        charCodes.fill(97 /*a*/, i + 1);
+        return fromCharCode(...charCodes);
+      }
+    }
+
+    charCodes.push(97 /*a*/);
+    charCodes.fill(97 /*a*/);
+
+    return fromCharCode(...charCodes);
+  };
+
+  return () => {
+    let name = nextName();
+    if (excludedNames?.length) {
+      while (excludedNames.includes(name)) {
+        name = nextName();
+      }
+    }
+    return name;
+  };
+}
+
+/**
  * Returns a source code of a doc comment.
  */
 export function compileDocComment(comment: string | undefined | null): string {
