@@ -28,83 +28,107 @@ export interface IJtdTsModulesOptions<Metadata> extends Partial<Omit<IJtdTsOptio
 }
 
 export function compileJtdTsModules<Metadata extends ITsJtdMetadata>(modules: Record<string, IJtdMap<Metadata>>, options?: IJtdTsModulesOptions<Metadata>): Record<string, string> {
-  const moduleMap: Record<string, string> = Object.create(null);
+  const tsModules: Record<string, string> = Object.create(null);
 
-  const parsedModules: Array<{ uri: string, definitions: IJtdNodeMap<Metadata>, exports: Record<string, string> }> = [];
+  const parsedModules: Array<{ uri: string, definitions: IJtdNodeMap<Metadata>, tsExports: Record<string, ITsExport<Metadata>> }> = [];
 
   const opts = Object.assign({}, jtdValidatorOptions, jtdTsOptions, options);
 
+  // Parse AST and extract exports
   for (const uri of Object.keys(modules)) {
     const definitions = parseJtdDefinitions(modules[uri]);
 
     parsedModules.push({
       uri,
       definitions,
-      exports: getExports(definitions, opts),
+      tsExports: getTsExports(definitions, opts),
     });
   }
 
-  for (const {uri, definitions, exports} of parsedModules) {
+  for (const {uri, definitions, tsExports} of parsedModules) {
 
-    const imports: Record<string, Map<string, { node: JtdNode<Metadata>, name: string }>> = Object.create(null);
+    const tsImports: Record<string, Record<string, ITsExport<Metadata>>> = Object.create(null);
 
     // Cross-module ref resolver
-    opts.resolveRef = (ref, node) => {
-      for (const {uri, exports} of parsedModules) {
-        if (ref in exports) {
+    opts.resolveRef = (ref) => {
+      for (const {uri, tsExports} of parsedModules) {
+        if (ref in tsExports) {
 
-          const name = exports[ref];
-          const names = imports[uri] ||= new Map();
+          const tsExport = tsExports[ref];
+          const tsImport = tsImports[uri] ||= {};
 
-          names.set(ref, {node, name});
+          tsImport[ref] = tsExport;
 
-          return name;
+          return tsExport.name;
         }
       }
       throw new Error('Unresolved reference: ' + ref);
     };
 
-    const typeSource = compileTsFromJtdDefinitions(definitions, opts);
-
     let source = opts.prependedSource || '';
 
-    for (const [uri, names] of Object.entries(imports)) {
-      source += 'import {' +
-          Array.from(names.values()).map((v) => v.name).join(',');
-
-      if (opts.emitsValidators) {
-        source += ',' + Array.from(names.entries()).map(([ref, v]) => opts.renameValidator(ref, v.node)).join(',');
-      }
-
-      source += `} from ${JSON.stringify(uri)};`;
-    }
-
+    // jtdc import of validator runtime
     if (opts.emitsValidators) {
       source += `import ${VAR_RUNTIME}, {Validator as ${TYPE_VALIDATOR}} from "../validator/runtime";`
           + compileValidatorModuleProlog(VAR_RUNTIME);
     }
 
+    // Module types
+    const typeSource = compileTsFromJtdDefinitions(definitions, opts);
+
+    // Cross-module type an validator imports
+    for (const [uri, tsImport] of Object.entries(tsImports)) {
+
+      // Import types
+      source += 'import {' +
+          Object.values(tsImport).map((tsExport) => tsExport.name).join(',');
+
+      // Import validators
+      if (opts.emitsValidators) {
+        source += ',' + Object.entries(tsImport).map(([ref, tsExport]) => opts.renameValidator(ref, tsExport.node)).join(',');
+      }
+      source += `} from ${JSON.stringify(uri)};`;
+    }
+
+    // Type source
     source += typeSource;
 
+    // Validator and checker source
     if (opts.emitsValidators) {
-      opts.resolveRef = (ref) => exports[ref];
+      opts.resolveRef = (ref) => tsExports[ref].name;
       source += compileValidators(definitions, opts);
     }
 
-    moduleMap[uri] = source;
+    tsModules[uri] = source;
   }
 
-  return moduleMap;
+  return tsModules;
+}
+
+interface ITsExport<Metadata> {
+
+  /**
+   * The TS type name.
+   */
+  name: string;
+
+  /**
+   * The node that describes the type.
+   */
+  node: JtdNode<Metadata>;
 }
 
 /**
  * Returns map from ref to a TS type name.
  */
-function getExports<Metadata>(definitions: IJtdNodeMap<Metadata>, options: IJtdTsRenameOptions<Metadata>): Record<string, string> {
-  const exports: Record<string, string> = Object.create(null);
+function getTsExports<Metadata>(definitions: IJtdNodeMap<Metadata>, options: IJtdTsRenameOptions<Metadata>): Record<string, ITsExport<Metadata>> {
+  const exports: Record<string, ITsExport<Metadata>> = Object.create(null);
 
   for (const [ref, node] of Object.entries(definitions)) {
-    exports[ref] = renameRef(ref, node, options);
+    exports[ref] = {
+      name: renameRef(ref, node, options),
+      node,
+    };
   }
   return exports;
 }
