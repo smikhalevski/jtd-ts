@@ -14,7 +14,7 @@ function evalModule(source: string): Record<string, any> {
 describe('compileValidators', () => {
 
   test('compiles type validator', () => {
-    expect(compileValidators(parseJtdRoot('foo', {type: 'string'}))).toBe(
+    expect(compileValidators(parseJtdRoot('foo', {type: 'string'})).source).toBe(
         `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + RuntimeMethod.CHECK_STRING + '(value,errors,pointer);'
         + 'return errors;'
@@ -23,18 +23,29 @@ describe('compileValidators', () => {
   });
 
   test('compiles type checker', () => {
-    expect(compileValidators(parseJtdRoot('foo', {type: 'string'}), {emitsCheckers: true})).toBe(
+    expect(compileValidators(parseJtdRoot('foo', {type: 'string'}), {emitsCheckers: true}).source).toBe(
         `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{` +
         RuntimeMethod.CHECK_STRING + '(value,errors,pointer);' +
         'return errors;' +
         '};' +
-        'export const isFoo=(value:unknown):value is Foo=>' +
+        'export const isFoo=(value:unknown):value is any=>' +
+        'validateFoo(value).length===0;',
+    );
+  });
+
+  test('compiles type checker with resolver', () => {
+    expect(compileValidators(parseJtdRoot('foo', {type: 'string'}), {emitsCheckers: true, resolveRef: () => 'Wow'}).source).toBe(
+        `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{` +
+        RuntimeMethod.CHECK_STRING + '(value,errors,pointer);' +
+        'return errors;' +
+        '};' +
+        'export const isFoo=(value:unknown):value is Wow=>' +
         'validateFoo(value).length===0;',
     );
   });
 
   test('compiles nullable type validator', () => {
-    expect(compileValidators(parseJtdRoot('foo', {type: 'string', nullable: true}))).toBe(
+    expect(compileValidators(parseJtdRoot('foo', {type: 'string', nullable: true})).source).toBe(
         `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + 'if(value!==null){'
         + RuntimeMethod.CHECK_STRING + '(value,errors,pointer);'
@@ -45,7 +56,7 @@ describe('compileValidators', () => {
   });
 
   test('compiles validator reference', () => {
-    expect(compileValidators(parseJtdRoot('foo', {ref: 'bar'}))).toBe(
+    expect(compileValidators(parseJtdRoot('foo', {ref: 'bar'})).source).toBe(
         `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + 'validateBar(value,errors,pointer);'
         + 'return errors;'
@@ -54,7 +65,7 @@ describe('compileValidators', () => {
   });
 
   test('compiles enum validator', () => {
-    expect(compileValidators(parseJtdRoot('foo', {enum: ['AAA', 'BBB']}))).toBe(
+    expect(compileValidators(parseJtdRoot('foo', {enum: ['AAA', 'BBB']})).source).toBe(
         `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + `${RuntimeMethod.CHECK_ENUM}(value,${VAR_CACHE}["foo.a"]||=new Set(["AAA","BBB"]),errors,pointer);`
         + 'return errors;'
@@ -63,7 +74,7 @@ describe('compileValidators', () => {
   });
 
   test('compiles elements validator', () => {
-    expect(compileValidators(parseJtdRoot('foo', {elements: {type: 'string'}}))).toBe(
+    expect(compileValidators(parseJtdRoot('foo', {elements: {type: 'string'}})).source).toBe(
         `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + `if(${RuntimeMethod.CHECK_ARRAY}(value,errors,pointer)){`
         + 'for(let a=0;a<value.length;a++){'
@@ -76,7 +87,7 @@ describe('compileValidators', () => {
   });
 
   test('compiles any elements validator', () => {
-    expect(compileValidators(parseJtdRoot('foo', {elements: {}}))).toBe(
+    expect(compileValidators(parseJtdRoot('foo', {elements: {}})).source).toBe(
         `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + `${RuntimeMethod.CHECK_ARRAY}(value,errors,pointer);`
         + 'return errors;'
@@ -85,7 +96,7 @@ describe('compileValidators', () => {
   });
 
   test('compiles values validator', () => {
-    expect(compileValidators(parseJtdRoot('foo', {values: {type: 'string'}}))).toBe(
+    expect(compileValidators(parseJtdRoot('foo', {values: {type: 'string'}})).source).toBe(
         `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + `if(${RuntimeMethod.CHECK_OBJECT}(value,errors,pointer)){`
         + 'for(const a in value){'
@@ -98,7 +109,7 @@ describe('compileValidators', () => {
   });
 
   test('compiles any values validator', () => {
-    expect(compileValidators(parseJtdRoot('foo', {values: {}}))).toBe(
+    expect(compileValidators(parseJtdRoot('foo', {values: {}})).source).toBe(
         `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + `${RuntimeMethod.CHECK_OBJECT}(value,errors,pointer);`
         + 'return errors;'
@@ -110,7 +121,7 @@ describe('compileValidators', () => {
     expect(compileValidators(parseJtdRoot('foo', {
       properties: {foo: {type: 'string'}},
       optionalProperties: {bar: {type: 'float32'}},
-    }))).toBe(
+    })).source).toBe(
         `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + `if(${RuntimeMethod.CHECK_OBJECT}(value,errors,pointer)){`
         + RuntimeMethod.CHECK_STRING + '(value.foo,errors,pointer+"/foo");'
@@ -134,7 +145,7 @@ describe('compileValidators', () => {
           properties: {bar: {type: 'int16'}},
         },
       },
-    }))).toBe(
+    })).source).toBe(
         `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + `if(${RuntimeMethod.CHECK_OBJECT}(value,errors,pointer)){`
         + 'switch(value.type){'
@@ -159,7 +170,7 @@ describe('compileValidators', () => {
         bar: {type: 'string'},
       },
       ref: 'bar',
-    }))).toBe(
+    })).source).toBe(
         `export const validateBar:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{`
         + RuntimeMethod.CHECK_STRING + '(value,errors,pointer);'
         + 'return errors;'
@@ -182,7 +193,7 @@ describe('compileValidators', () => {
               enum: ['AAA', 'BBB'],
             },
           },
-        }), {emitsCheckers: true});
+        }), {emitsCheckers: true}).source;
 
     const module = evalModule(moduleSource);
 

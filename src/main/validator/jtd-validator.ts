@@ -57,26 +57,41 @@ export interface IValidatorOptions<Metadata> {
   renameChecker: (ref: string, node: IJtdNode<Metadata>) => string;
 
   /**
-   * Returns the name of the interface, type or enum represented by the node. This is used if {@link emitsCheckers} is
-   * enabled.
+   * If {@link emitsCheckers} is enabled then this callback is used to resolve a type name that corresponds to the ref.
+   * If omitted then type checkers would be emitted with `as any`.
    */
-  renameType: (ref: string, node: IJtdNode<Metadata>) => string;
+  resolveRef: (ref: string, node: IJtdNode<Metadata>) => string;
+}
+
+export interface IValidatorCompilationResult {
+
+  /**
+   * The source code of the module.
+   */
+  source: string;
+
+  /**
+   * Map from JTD ref to a TS type name of imported types.
+   */
+  importMap: Map<string, string>;
 }
 
 /**
  * Returns source code of functions that validate JTD definitions.
  */
-export function compileValidators<Metadata>(definitions: Map<string, JtdNode<Metadata>>, options?: Partial<IValidatorOptions<Metadata>>): string {
+export function compileValidators<Metadata>(definitions: Map<string, JtdNode<Metadata>>, options?: Partial<IValidatorOptions<Metadata>>): IValidatorCompilationResult {
   const opt = Object.assign({}, jtdValidatorOptions, options);
 
   const {
-    renameType,
     renameValidator,
     renameChecker,
     emitsCheckers,
+    resolveRef,
   } = opt;
 
   let source = '';
+
+  const importMap = new Map<string, string>();
 
   definitions.forEach((node, ref) => {
     source += `export const ${renameValidator(ref, node)}:${TYPE_VALIDATOR}=`
@@ -85,13 +100,16 @@ export function compileValidators<Metadata>(definitions: Map<string, JtdNode<Met
         + `return ${ARG_ERRORS};};`;
 
     if (emitsCheckers) {
+      const name = resolveRef(ref, node);
+      importMap.set(ref, name);
+
       source += `export const ${renameChecker(ref, node)}=`
-          + `(${ARG_VALUE}:unknown):${ARG_VALUE} is ${renameType(ref, node)}=>`
+          + `(${ARG_VALUE}:unknown):${ARG_VALUE} is ${name}=>`
           + renameValidator(ref, node) + '(' + ARG_VALUE + ').length===0;';
     }
   });
 
-  return source;
+  return {source, importMap};
 }
 
 /**
@@ -237,6 +255,7 @@ function compileCachedValue(ref: string, nextVar: () => string, valueSource: str
 }
 
 export const jtdValidatorOptions: IValidatorOptions<unknown> = {
+  resolveRef: (ref) => 'any',
   renameValidator: (ref) => 'validate' + pascalCase(ref),
   renameTypeChecker: (type, node) => jtdTypeCheckerMap[node.type as JtdType] || 'check' + pascalCase(type),
   rewriteEnumValue: (value) => value,
@@ -244,7 +263,6 @@ export const jtdValidatorOptions: IValidatorOptions<unknown> = {
 
   emitsCheckers: false,
   renameChecker: (ref) => 'is' + pascalCase(ref),
-  renameType: pascalCase,
 };
 
 export const jtdTypeCheckerMap: Record<JtdType, string> = {
