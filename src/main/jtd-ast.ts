@@ -1,5 +1,5 @@
 import {IJtd, IJtdMap, IJtdRoot} from './jtd-types';
-import {IJtdObjectNode, IJtdUnionNode, JtdNode, JtdNodeType} from './jtd-ast-types';
+import {IJtdNodeMap, IJtdObjectNode, IJtdUnionNode, JtdNode, JtdNodeType} from './jtd-ast-types';
 
 /**
  * Converts JTD and its dependencies to a map of nodes where key is `ref` and value is a parsed node.
@@ -7,9 +7,9 @@ import {IJtdObjectNode, IJtdUnionNode, JtdNode, JtdNodeType} from './jtd-ast-typ
  * @param ref The ref of the root JTD.
  * @param jtdRoot The JTD to parse.
  */
-export function parseJtdRoot<Metadata>(ref: string, jtdRoot: IJtdRoot<Metadata>): Map<string, JtdNode<Metadata>> {
-  const nodes = jtdRoot.definitions ? parseJtdDefinitions(jtdRoot.definitions) : new Map();
-  nodes.set(ref, parseJtd(jtdRoot));
+export function parseJtdRoot<Metadata>(ref: string, jtdRoot: IJtdRoot<Metadata>): IJtdNodeMap<Metadata> {
+  const nodes = jtdRoot.definitions ? parseJtdDefinitions(jtdRoot.definitions) : Object.create(null);
+  nodes[ref] = parseJtd(jtdRoot);
   return nodes;
 }
 
@@ -18,11 +18,11 @@ export function parseJtdRoot<Metadata>(ref: string, jtdRoot: IJtdRoot<Metadata>)
  *
  * @param definitions The dictionary of ref-JTD pairs.
  */
-export function parseJtdDefinitions<Metadata>(definitions: IJtdMap<Metadata>): Map<string, JtdNode<Metadata>> {
-  const nodes = new Map<string, JtdNode<Metadata>>();
+export function parseJtdDefinitions<Metadata>(definitions: IJtdMap<Metadata>): IJtdNodeMap<Metadata> {
+  const nodes: IJtdNodeMap<Metadata> = Object.create(null);
 
   for (const [ref, jtd] of Object.entries(definitions)) {
-    nodes.set(ref, parseJtd(jtd));
+    nodes[ref] = parseJtd(jtd);
   }
   return nodes;
 }
@@ -64,7 +64,7 @@ export function parseJtd<Metadata>(jtd: IJtd<Metadata>): JtdNode<Metadata> {
   if (jtd.enum) {
     return {
       nodeType: JtdNodeType.ENUM,
-      values: new Set(jtd.enum),
+      values: jtd.enum,
       jtd,
     };
   }
@@ -89,22 +89,22 @@ export function parseJtd<Metadata>(jtd: IJtd<Metadata>): JtdNode<Metadata> {
 
     const objectNode: IJtdObjectNode<Metadata> = {
       nodeType: JtdNodeType.OBJECT,
-      properties: new Map(),
-      optionalProperties: new Map(),
+      properties: Object.create(null),
+      optionalProperties: Object.create(null),
       jtd,
     };
 
     if (jtd.properties) {
       for (const [propKey, propJtd] of Object.entries(jtd.properties)) {
-        objectNode.properties.set(propKey, parseJtd(propJtd));
+        objectNode.properties[propKey] = parseJtd(propJtd);
       }
     }
     if (jtd.optionalProperties) {
       for (const [propKey, propJtd] of Object.entries(jtd.optionalProperties)) {
-        if (objectNode.properties.has(propKey)) {
+        if (propKey in objectNode.properties) {
           throw new Error('Duplicated property: ' + propKey);
         }
-        objectNode.optionalProperties.set(propKey, parseJtd(propJtd));
+        objectNode.optionalProperties[propKey] = parseJtd(propJtd);
       }
     }
     return objectNode;
@@ -115,7 +115,7 @@ export function parseJtd<Metadata>(jtd: IJtd<Metadata>): JtdNode<Metadata> {
     const unionNode: IJtdUnionNode<Metadata> = {
       nodeType: JtdNodeType.UNION,
       discriminator: jtd.discriminator,
-      mapping: new Map(),
+      mapping: Object.create(null),
       jtd,
     };
 
@@ -125,7 +125,7 @@ export function parseJtd<Metadata>(jtd: IJtd<Metadata>): JtdNode<Metadata> {
       if (objectNode.nodeType !== JtdNodeType.OBJECT) {
         throw new TypeError('Mappings must be object definitions: ' + mappingKey);
       }
-      unionNode.mapping.set(mappingKey, objectNode);
+      unionNode.mapping[mappingKey] = objectNode;
     }
     return unionNode;
   }

@@ -1,4 +1,4 @@
-import {IJtdEnumNode, IJtdNode, IJtdTypeNode, IJtdUnionNode, JtdNode, JtdNodeType} from '../jtd-ast-types';
+import {IJtdEnumNode, IJtdNode, IJtdNodeMap, IJtdTypeNode, IJtdUnionNode, JtdNode, JtdNodeType} from '../jtd-ast-types';
 import {visitJtdNode} from '../jtd-visitor';
 import {JtdType} from '../jtd-types';
 import {compileAccessor, compileJsonPointer, createVarProvider, IPropertyRef} from '../compile-utils';
@@ -79,7 +79,7 @@ export interface IValidatorCompilationResult {
 /**
  * Returns source code of functions that validate JTD definitions.
  */
-export function compileValidators<Metadata>(definitions: Map<string, JtdNode<Metadata>>, options?: Partial<IValidatorOptions<Metadata>>): IValidatorCompilationResult {
+export function compileValidators<Metadata>(definitions: IJtdNodeMap<Metadata>, options?: Partial<IValidatorOptions<Metadata>>): IValidatorCompilationResult {
   const opt = Object.assign({}, jtdValidatorOptions, options);
 
   const {
@@ -130,29 +130,29 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
 
   visitJtdNode(node, {
 
-    ref(node) {
+    visitRef(node) {
       source += compileCheckerCall(renameValidator(node.ref, node), pointer) + ';';
     },
 
-    nullable(node, next) {
+    visitNullable(node, next) {
       source += `if(${ARG_VALUE + compileAccessor(pointer)}!==null){`;
       next();
       source += '}';
     },
 
-    type(node) {
+    visitType(node) {
       const validatorName = renameTypeChecker(node.type, node);
       source += compileCheckerCall(validatorName, pointer) + ';';
     },
 
-    enum(node) {
+    visitEnum(node) {
       const valuesSource = 'new Set(['
           + Array.from(node.values).map((value) => JSON.stringify(rewriteEnumValue(value, node))).join(',')
           + '])';
       source += compileCheckerCall(RuntimeMethod.CHECK_ENUM, pointer, compileCachedValue(ref, nextVar, valuesSource)) + ';';
     },
 
-    elements(node, next) {
+    visitElements(node, next) {
       if (node.elementNode.nodeType === JtdNodeType.ANY) {
         source += compileCheckerCall(RuntimeMethod.CHECK_ARRAY, pointer) + ';';
         return;
@@ -167,7 +167,7 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
       source += '}}';
     },
 
-    values(node, next) {
+    visitValues(node, next) {
       if (node.valueNode.nodeType === JtdNodeType.ANY) {
         source += compileCheckerCall(RuntimeMethod.CHECK_OBJECT, pointer) + ';';
         return;
@@ -182,19 +182,19 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
       source += '}}';
     },
 
-    object(node, next) {
+    visitObject(node, next) {
       source += `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, pointer)}){`;
       next();
       source += '}';
     },
 
-    property(propKey, propNode, objectNode, next) {
+    visitProperty(propKey, propNode, objectNode, next) {
       pointer.push({key: propKey});
       next();
       pointer.pop();
     },
 
-    optionalProperty(propKey, propNode, objectNode, next) {
+    visitOptionalProperty(propKey, propNode, objectNode, next) {
       pointer.push({key: propKey});
       source += `if(${ARG_VALUE + compileAccessor(pointer)}!==undefined){`;
       next();
@@ -202,7 +202,7 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
       pointer.pop();
     },
 
-    union(node, next) {
+    visitUnion(node, next) {
       const discriminatorPointer = pointer.concat({key: node.discriminator});
       source += `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, pointer)}){`
           + `switch(${ARG_VALUE + compileAccessor(discriminatorPointer)}){`;
@@ -215,7 +215,7 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
           + '}}';
     },
 
-    unionMapping(mappingKey, mappingNode, unionNode, next) {
+    visitUnionMapping(mappingKey, mappingNode, unionNode, next) {
       source += `case ${JSON.stringify(rewriteMappingKey(mappingKey, ref, unionNode))}:`;
       next();
       source += 'break;';

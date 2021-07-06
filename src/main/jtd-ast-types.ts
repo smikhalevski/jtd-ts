@@ -49,7 +49,7 @@ export interface IJtdTypeNode<Metadata> extends IJtdNode<Metadata> {
 
 export interface IJtdEnumNode<Metadata> extends IJtdNode<Metadata> {
   nodeType: JtdNodeType.ENUM;
-  values: Set<string>;
+  values: Array<string>;
 }
 
 export interface IJtdElementsNode<Metadata> extends IJtdNode<Metadata> {
@@ -64,8 +64,8 @@ export interface IJtdValuesNode<Metadata> extends IJtdNode<Metadata> {
 
 export interface IJtdObjectNode<Metadata> extends IJtdNode<Metadata> {
   nodeType: JtdNodeType.OBJECT;
-  properties: Map<string, JtdNode<Metadata>>;
-  optionalProperties: Map<string, JtdNode<Metadata>>;
+  properties: IJtdNodeMap<Metadata>;
+  optionalProperties: IJtdNodeMap<Metadata>;
 }
 
 /**
@@ -78,5 +78,11 @@ export interface IJtdUnionNode<Metadata> extends IJtdNode<Metadata> {
    * The name of the property in discriminated objects that holds the mapping key.
    */
   discriminator: string;
-  mapping: Map<string, IJtdObjectNode<Metadata>>;
+  mapping: Record<string, IJtdObjectNode<Metadata>>;
+}
+
+/**
+ * Mapping from ref to the type definition.
+ */
+export interface IJtdNodeMap<Metadata> extends Record<string, JtdNode<Metadata>> {
 }

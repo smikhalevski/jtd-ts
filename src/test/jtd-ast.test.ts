@@ -1,4 +1,5 @@
-import {JtdNodeType, parseJtd, parseJtdDefinitions, parseJtdRoot} from '../main';
+import {JtdNodeType} from '../main/jtd-ast-types';
+import {parseJtd, parseJtdDefinitions, parseJtdRoot} from '../main/jtd-ast';
 
 describe('parseJtdRoot', () => {
 
@@ -8,13 +9,13 @@ describe('parseJtdRoot', () => {
         foo: {type: 'string'},
       },
       ref: 'foo',
-    })).toEqual(new Map([
-      ['foo', {
+    })).toEqual({
+      foo: {
         jtd: {type: 'string'},
         nodeType: JtdNodeType.TYPE,
         type: 'string',
-      }],
-      ['bar', {
+      },
+      bar: {
         jtd: {
           definitions: {
             foo: {type: 'string'},
@@ -23,8 +24,8 @@ describe('parseJtdRoot', () => {
         },
         nodeType: JtdNodeType.REF,
         ref: 'foo',
-      }],
-    ]));
+      },
+    });
   });
 });
 
@@ -34,18 +35,18 @@ describe('parseJtdDefinitions', () => {
     expect(parseJtdDefinitions({
       foo: {type: 'string'},
       bar: {ref: 'foo'},
-    })).toEqual(new Map([
-      ['foo', {
+    })).toEqual({
+      foo: {
         jtd: {type: 'string'},
         nodeType: JtdNodeType.TYPE,
         type: 'string',
-      }],
-      ['bar', {
+      },
+      bar: {
         jtd: {ref: 'foo'},
         nodeType: JtdNodeType.REF,
         ref: 'foo',
-      }],
-    ]));
+      },
+    });
   });
 });
 
@@ -77,7 +78,7 @@ describe('parseJtd', () => {
         enum: ['FOO', 'BAR'],
       },
       nodeType: JtdNodeType.ENUM,
-      values: new Set(['FOO', 'BAR']),
+      values: ['FOO', 'BAR'],
     });
   });
 
@@ -121,16 +122,16 @@ describe('parseJtd', () => {
         properties: {foo: {type: 'string'}},
       },
       nodeType: JtdNodeType.OBJECT,
-      properties: new Map([
-        ['foo', {
+      properties: {
+        foo: {
           jtd: {
             type: 'string',
           },
           nodeType: JtdNodeType.TYPE,
           type: 'string',
-        }],
-      ]),
-      optionalProperties: new Map(),
+        },
+      },
+      optionalProperties: {},
     });
   });
 
@@ -142,16 +143,16 @@ describe('parseJtd', () => {
         optionalProperties: {foo: {type: 'string'}},
       },
       nodeType: JtdNodeType.OBJECT,
-      properties: new Map(),
-      optionalProperties: new Map([
-        ['foo', {
+      properties: {},
+      optionalProperties: {
+        foo: {
           jtd: {
             type: 'string',
           },
           nodeType: JtdNodeType.TYPE,
           type: 'string',
-        }],
-      ]),
+        },
+      },
     });
   });
 
@@ -165,24 +166,24 @@ describe('parseJtd', () => {
         optionalProperties: {bar: {type: 'string'}},
       },
       nodeType: JtdNodeType.OBJECT,
-      properties: new Map([
-        ['foo', {
+      properties: {
+        foo: {
           jtd: {
             type: 'string',
           },
           nodeType: JtdNodeType.TYPE,
           type: 'string',
-        }],
-      ]),
-      optionalProperties: new Map([
-        ['bar', {
+        },
+      },
+      optionalProperties: {
+        bar: {
           jtd: {
             type: 'string',
           },
           nodeType: JtdNodeType.TYPE,
           type: 'string',
-        }],
-      ]),
+        },
+      },
     });
   });
 
@@ -226,44 +227,44 @@ describe('parseJtd', () => {
       },
       nodeType: JtdNodeType.UNION,
       discriminator: 'type',
-      mapping: new Map([
-        ['AAA', {
+      mapping: {
+        AAA: {
           jtd: {
             properties: {
               foo: {type: 'string'},
             },
           },
           nodeType: JtdNodeType.OBJECT,
-          properties: new Map([
-            ['foo', {
+          properties: {
+            foo: {
               jtd: {
                 type: 'string',
               },
               nodeType: JtdNodeType.TYPE,
               type: 'string',
-            }],
-          ]),
-          optionalProperties: new Map(),
-        }],
-        ['BBB', {
+            },
+          },
+          optionalProperties: {},
+        },
+        BBB: {
           jtd: {
             properties: {
               foo: {type: 'number'},
             },
           },
           nodeType: JtdNodeType.OBJECT,
-          properties: new Map([
-            ['foo', {
+          properties: {
+            foo: {
               jtd: {
                 type: 'number',
               },
               nodeType: JtdNodeType.TYPE,
               type: 'number',
-            }],
-          ]),
-          optionalProperties: new Map(),
-        }],
-      ]),
+            },
+          },
+          optionalProperties: {},
+        },
+      },
     });
   });
 

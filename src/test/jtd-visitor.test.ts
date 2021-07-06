@@ -1,89 +1,92 @@
-import {JtdNodeType, parseJtd, visitJtdNode} from '../main';
+import {JtdNodeType} from '../main/jtd-ast-types';
+import {parseJtd} from '../main/jtd-ast';
+import {visitJtdNode} from '../main/jtd-visitor';
+import {JtdType} from '../main';
 
 describe('visitJtdNode', () => {
 
   test('visits any', () => {
-    const anyFn = jest.fn();
-    visitJtdNode(parseJtd({}), {any: anyFn});
+    const visitAnyMock = jest.fn();
+    visitJtdNode(parseJtd({}), {visitAny: visitAnyMock});
 
-    expect(anyFn).toHaveBeenCalledTimes(1);
-    expect(anyFn).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.ANY}));
+    expect(visitAnyMock).toHaveBeenCalledTimes(1);
+    expect(visitAnyMock).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.ANY}));
   });
 
   test('visits ref', () => {
-    const refFn = jest.fn();
-    visitJtdNode(parseJtd({ref: 'foo'}), {ref: refFn});
+    const visitRefMock = jest.fn();
+    visitJtdNode(parseJtd({ref: 'foo'}), {visitRef: visitRefMock});
 
-    expect(refFn).toHaveBeenCalledTimes(1);
-    expect(refFn).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.REF}));
+    expect(visitRefMock).toHaveBeenCalledTimes(1);
+    expect(visitRefMock).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.REF}));
   });
 
   test('visits type', () => {
-    const typeFn = jest.fn();
-    visitJtdNode(parseJtd({type: 'string'}), {type: typeFn});
+    const visitTypeMock = jest.fn();
+    visitJtdNode(parseJtd({type: 'string'}), {visitType: visitTypeMock});
 
-    expect(typeFn).toHaveBeenCalledTimes(1);
-    expect(typeFn).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.TYPE}));
+    expect(visitTypeMock).toHaveBeenCalledTimes(1);
+    expect(visitTypeMock).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.TYPE}));
   });
 
   test('visits enum', () => {
-    const enumFn = jest.fn();
-    visitJtdNode(parseJtd({enum: ['FOO', 'BAR']}), {enum: enumFn});
+    const visitEnumMock = jest.fn();
+    visitJtdNode(parseJtd({enum: ['FOO', 'BAR']}), {visitEnum: visitEnumMock});
 
-    expect(enumFn).toHaveBeenCalledTimes(1);
-    expect(enumFn).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.ENUM}), expect.any(Function));
+    expect(visitEnumMock).toHaveBeenCalledTimes(1);
+    expect(visitEnumMock).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.ENUM}), expect.any(Function));
   });
 
   test('visits enum values', () => {
-    const enumValueFn = jest.fn();
-    visitJtdNode(parseJtd({enum: ['FOO', 'BAR']}), {enum: (node, next) => next(), enumValue: enumValueFn});
+    const visitEnumValueMock = jest.fn();
+    visitJtdNode(parseJtd({enum: ['FOO', 'BAR']}), {visitEnum: (node, next) => next(), visitEnumValue: visitEnumValueMock});
 
-    expect(enumValueFn).toHaveBeenCalledTimes(2);
-    expect(enumValueFn).toHaveBeenNthCalledWith(1, 'FOO', expect.objectContaining({nodeType: JtdNodeType.ENUM}));
-    expect(enumValueFn).toHaveBeenNthCalledWith(2, 'BAR', expect.objectContaining({nodeType: JtdNodeType.ENUM}));
+    expect(visitEnumValueMock).toHaveBeenCalledTimes(2);
+    expect(visitEnumValueMock).toHaveBeenNthCalledWith(1, 'FOO', expect.objectContaining({nodeType: JtdNodeType.ENUM}));
+    expect(visitEnumValueMock).toHaveBeenNthCalledWith(2, 'BAR', expect.objectContaining({nodeType: JtdNodeType.ENUM}));
   });
 
   test('visits elements', () => {
-    const elementsFn = jest.fn();
-    visitJtdNode(parseJtd({elements: {type: 'string'}}), {elements: elementsFn});
+    const visitElementsMock = jest.fn();
+    visitJtdNode(parseJtd({elements: {type: 'string'}}), {visitElements: visitElementsMock});
 
-    expect(elementsFn).toHaveBeenCalledTimes(1);
-    expect(elementsFn).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.ELEMENTS}), expect.any(Function));
+    expect(visitElementsMock).toHaveBeenCalledTimes(1);
+    expect(visitElementsMock).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.ELEMENTS}), expect.any(Function));
   });
 
   test('visits values', () => {
-    const valuesFn = jest.fn();
-    visitJtdNode(parseJtd({values: {type: 'string'}}), {values: valuesFn});
+    const visitValuesMock = jest.fn();
+    visitJtdNode(parseJtd({values: {type: 'string'}}), {visitValues: visitValuesMock});
 
-    expect(valuesFn).toHaveBeenCalledTimes(1);
-    expect(valuesFn).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.VALUES}), expect.any(Function));
+    expect(visitValuesMock).toHaveBeenCalledTimes(1);
+    expect(visitValuesMock).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.VALUES}), expect.any(Function));
   });
 
   test('visits object', () => {
-    const objectFn = jest.fn();
-    visitJtdNode(parseJtd({properties: {foo: {type: 'string'}}}), {object: objectFn});
+    const visitObjectMock = jest.fn();
+    visitJtdNode(parseJtd({properties: {foo: {type: 'string'}}}), {visitObject: visitObjectMock});
 
-    expect(objectFn).toHaveBeenCalledTimes(1);
-    expect(objectFn).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.OBJECT}), expect.any(Function));
+    expect(visitObjectMock).toHaveBeenCalledTimes(1);
+    expect(visitObjectMock).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.OBJECT}), expect.any(Function));
   });
 
   test('visits object properties', () => {
-    const propertyFn = jest.fn();
+    const visitPropertyMock = jest.fn();
     visitJtdNode(parseJtd({
       properties: {
         foo: {type: 'string'},
         bar: {enum: ['AAA']},
       },
-    }), {object: (node, next) => next(), property: propertyFn});
+    }), {visitObject: (node, next) => next(), visitProperty: visitPropertyMock});
 
-    expect(propertyFn).toHaveBeenCalledTimes(2);
-    expect(propertyFn).toHaveBeenNthCalledWith(1,
+    expect(visitPropertyMock).toHaveBeenCalledTimes(2);
+    expect(visitPropertyMock).toHaveBeenNthCalledWith(1,
         'foo',
         expect.objectContaining({nodeType: JtdNodeType.TYPE}),
         expect.objectContaining({nodeType: JtdNodeType.OBJECT}),
         expect.any(Function),
     );
-    expect(propertyFn).toHaveBeenNthCalledWith(2,
+    expect(visitPropertyMock).toHaveBeenNthCalledWith(2,
         'bar',
         expect.objectContaining({nodeType: JtdNodeType.ENUM}),
         expect.objectContaining({nodeType: JtdNodeType.OBJECT}),
@@ -92,22 +95,22 @@ describe('visitJtdNode', () => {
   });
 
   test('visits object optional properties', () => {
-    const optionalPropertyFn = jest.fn();
+    const visitOptionalPropertyMock = jest.fn();
     visitJtdNode(parseJtd({
       optionalProperties: {
         foo: {type: 'string'},
         bar: {enum: ['AAA']},
       },
-    }), {object: (node, next) => next(), optionalProperty: optionalPropertyFn});
+    }), {visitObject: (node, next) => next(), visitOptionalProperty: visitOptionalPropertyMock});
 
-    expect(optionalPropertyFn).toHaveBeenCalledTimes(2);
-    expect(optionalPropertyFn).toHaveBeenNthCalledWith(1,
+    expect(visitOptionalPropertyMock).toHaveBeenCalledTimes(2);
+    expect(visitOptionalPropertyMock).toHaveBeenNthCalledWith(1,
         'foo',
         expect.objectContaining({nodeType: JtdNodeType.TYPE}),
         expect.objectContaining({nodeType: JtdNodeType.OBJECT}),
         expect.any(Function),
     );
-    expect(optionalPropertyFn).toHaveBeenNthCalledWith(2,
+    expect(visitOptionalPropertyMock).toHaveBeenNthCalledWith(2,
         'bar',
         expect.objectContaining({nodeType: JtdNodeType.ENUM}),
         expect.objectContaining({nodeType: JtdNodeType.OBJECT}),
@@ -116,7 +119,7 @@ describe('visitJtdNode', () => {
   });
 
   test('visits discriminated union', () => {
-    const unionFn = jest.fn();
+    const visitUnionMock = jest.fn();
     visitJtdNode(parseJtd({
       discriminator: 'type',
       mapping: {
@@ -131,14 +134,14 @@ describe('visitJtdNode', () => {
           },
         },
       },
-    }), {union: unionFn});
+    }), {visitUnion: visitUnionMock});
 
-    expect(unionFn).toHaveBeenCalledTimes(1);
-    expect(unionFn).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.UNION}), expect.any(Function));
+    expect(visitUnionMock).toHaveBeenCalledTimes(1);
+    expect(visitUnionMock).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.UNION}), expect.any(Function));
   });
 
   test('visits discriminated union mapping', () => {
-    const unionMappingFn = jest.fn();
+    const visitUnionMappingMock = jest.fn();
     visitJtdNode(parseJtd({
       discriminator: 'type',
       mapping: {
@@ -153,21 +156,44 @@ describe('visitJtdNode', () => {
           },
         },
       },
-    }), {union: (node, next) => next(), unionMapping: unionMappingFn});
+    }), {visitUnion: (node, next) => next(), visitUnionMapping: visitUnionMappingMock});
 
-    expect(unionMappingFn).toHaveBeenCalledTimes(2);
-    expect(unionMappingFn).toHaveBeenNthCalledWith(1,
+    expect(visitUnionMappingMock).toHaveBeenCalledTimes(2);
+    expect(visitUnionMappingMock).toHaveBeenNthCalledWith(1,
         'AAA',
         expect.objectContaining({nodeType: JtdNodeType.OBJECT}),
         expect.objectContaining({nodeType: JtdNodeType.UNION}),
         expect.any(Function),
     );
-    expect(unionMappingFn).toHaveBeenNthCalledWith(2,
+    expect(visitUnionMappingMock).toHaveBeenNthCalledWith(2,
         'BBB',
         expect.objectContaining({nodeType: JtdNodeType.OBJECT}),
         expect.objectContaining({nodeType: JtdNodeType.UNION}),
         expect.any(Function),
     );
+  });
+
+  test('visits transient', () => {
+    const visitTypeMock = jest.fn();
+    visitJtdNode(parseJtd({
+      discriminator: 'foo',
+      mapping: {
+        qqq: {
+          properties: {
+            aaa: {
+              values: {
+                elements: {
+                  nullable: true,
+                  type: JtdType.BOOLEAN,
+                },
+              },
+            },
+          },
+        },
+      },
+    }), {transient: true, visitType: visitTypeMock});
+
+    expect(visitTypeMock).toHaveBeenCalledTimes(1);
   });
 
 });
