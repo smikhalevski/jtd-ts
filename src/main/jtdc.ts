@@ -51,5 +51,5 @@ for (const [uri, source] of Object.entries(moduleMap)) {
   const filePath = path.join(out, uri + '.ts');
 
   fs.mkdirSync(path.dirname(filePath), {recursive: true});
-  fs.writeFileSync(filePath, source, {encoding: 'utf8'});
+  fs.writeFileSync(filePath, source + '\n', {encoding: 'utf8'});
 }

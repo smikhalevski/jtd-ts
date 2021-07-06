@@ -84,6 +84,11 @@ export interface IJtdTsOptions<Metadata> extends IJtdTsRenameOptions<Metadata> {
   rewriteType: (node: IJtdTypeNode<Metadata>) => string;
 
   /**
+   * Returns the name of an object property.
+   */
+  renameProperty: (propKey: string, node: JtdNode<Metadata>, objectNode: IJtdObjectNode<Metadata>) => string;
+
+  /**
    * Returns the name of the enum value.
    */
   renameEnumValue: (value: string, node: IJtdEnumNode<Metadata>) => string;
@@ -132,6 +137,7 @@ export function compileTsFromJtdDefinitions<Metadata extends ITsJtdMetadata>(def
 
 function compileStatement<Metadata extends ITsJtdMetadata>(ref: string, node: JtdNode<Metadata>, resolveRef: JtdRefResolver<Metadata>, options: IJtdTsOptions<Metadata>): string {
   const {
+    renameProperty,
     renameInterface,
     renameType,
     renameEnum,
@@ -175,14 +181,20 @@ function compileStatement<Metadata extends ITsJtdMetadata>(ref: string, node: Jt
       source += '}';
     },
 
-    visitProperty(propKey, propNode) {
+    visitProperty(propKey, propNode, objectNode) {
       source += compileJtdComment(propNode)
-          + compilePropertyName(propKey) + ':' + compileExpression(propNode, resolveRef, options) + ';';
+          + compilePropertyName(renameProperty(propKey, propNode, objectNode))
+          + ':'
+          + compileExpression(propNode, resolveRef, options)
+          + ';';
     },
 
-    visitOptionalProperty(propKey, propNode) {
+    visitOptionalProperty(propKey, propNode, objectNode) {
       source += compileJtdComment(propNode)
-          + compilePropertyName(propKey) + '?:' + compileExpression(propNode, resolveRef, options) + ';';
+          + compilePropertyName(renameProperty(propKey, propNode, objectNode))
+          + '?:'
+          + compileExpression(propNode, resolveRef, options)
+          + ';';
     },
 
     visitUnion(node, next) {
@@ -294,6 +306,7 @@ export const jtdTsOptions: IJtdTsOptions<any> = {
   resolveRef: () => 'never',
   renameInterface: (ref) => 'I' + pascalCase(ref),
   renameType: pascalCase,
+  renameProperty: (propKey) => propKey,
   rewriteType: (node) => jtdTsTypeMap[node.type as JtdType] || 'never',
   renameEnum: pascalCase,
   renameEnumValue: upperSnakeCase,

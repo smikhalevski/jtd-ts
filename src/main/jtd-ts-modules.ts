@@ -80,8 +80,8 @@ export function compileJtdTsModules<Metadata extends ITsJtdMetadata>(modules: Re
     for (const [uri, tsImport] of Object.entries(tsImports)) {
 
       // Import types
-      source += 'import {' +
-          Object.values(tsImport).map((tsExport) => tsExport.name).join(',');
+      source += 'import {'
+          + Object.values(tsImport).map((tsExport) => tsExport.name).join(',');
 
       // Import validators
       if (opts.emitsValidators) {

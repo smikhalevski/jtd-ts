@@ -1,4 +1,12 @@
-import {IJtdEnumNode, IJtdNodeMap, IJtdTypeNode, IJtdUnionNode, JtdNode, JtdNodeType} from '../jtd-ast-types';
+import {
+  IJtdEnumNode,
+  IJtdNodeMap,
+  IJtdObjectNode,
+  IJtdTypeNode,
+  IJtdUnionNode,
+  JtdNode,
+  JtdNodeType,
+} from '../jtd-ast-types';
 import {visitJtdNode} from '../jtd-visitor';
 import {JtdType} from '../jtd-types';
 import {compileAccessor, compileJsonPointer, createVarProvider, IPropertyRef} from '../compiler-utils';
@@ -24,6 +32,11 @@ export function compileValidatorModuleProlog(runtimeVar: string): string {
 }
 
 export interface IValidatorOptions<Metadata> {
+
+  /**
+   * Returns the name of an object property.
+   */
+  renameProperty: (propKey: string, node: JtdNode<Metadata>, objectNode: IJtdObjectNode<Metadata>) => string;
 
   /**
    * Returns the name of the emitted validator function.
@@ -99,6 +112,7 @@ export function compileValidators<Metadata>(definitions: IJtdNodeMap<Metadata>, 
  */
 function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, options: IValidatorOptions<Metadata>): string {
   const {
+    renameProperty,
     renameValidator,
     renameTypeChecker,
     rewriteEnumValue,
@@ -171,13 +185,13 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
     },
 
     visitProperty(propKey, propNode, objectNode, next) {
-      pointer.push({key: propKey});
+      pointer.push({key: renameProperty(propKey, propNode, objectNode)});
       next();
       pointer.pop();
     },
 
     visitOptionalProperty(propKey, propNode, objectNode, next) {
-      pointer.push({key: propKey});
+      pointer.push({key: renameProperty(propKey, propNode, objectNode)});
       source += `if(${ARG_VALUE + compileAccessor(pointer)}!==undefined){`;
       next();
       source += '}';
@@ -237,6 +251,7 @@ function compileCachedValue(ref: string, nextVar: () => string, valueSource: str
 }
 
 export const jtdValidatorOptions: IValidatorOptions<any> = {
+  renameProperty: (propKey) => propKey,
   renameValidator: (ref) => 'validate' + pascalCase(ref),
   renameTypeChecker: (type, node) => jtdTypeCheckerMap[node.type as JtdType] || 'check' + pascalCase(type),
   rewriteEnumValue: (value) => value,
