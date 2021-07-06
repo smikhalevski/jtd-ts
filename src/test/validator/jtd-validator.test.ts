@@ -29,7 +29,7 @@ describe('compileValidators', () => {
         RuntimeMethod.CHECK_STRING + '(value,errors,pointer);' +
         'return errors;' +
         '};' +
-        'export const isFoo=(value:unknown):value is any=>' +
+        'export const isFoo=(value:unknown):value is unknown=>' +
         'validateFoo(value).length===0;',
     );
   });
