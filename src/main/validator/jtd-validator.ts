@@ -9,7 +9,7 @@ import {
 } from '../jtd-ast-types';
 import {visitJtdNode} from '../jtd-visitor';
 import {JtdType} from '../jtd-types';
-import {compileAccessor, compileJsonPointer, createVarProvider, IPropertyRef} from '../compiler-utils';
+import {compileAccessor, compileJsonPointer, createVarProvider, IPropertyRef, isEqualRef} from '../compiler-utils';
 import {pascalCase} from '../rename-utils';
 import {RuntimeMethod, runtimeMethod, TYPE_VALIDATOR, VAR_CACHE, VAR_RUNTIME} from './runtime-naming';
 import {JtdRefResolver} from '../jtd-ts';
@@ -17,6 +17,7 @@ import {JtdRefResolver} from '../jtd-ts';
 const ARG_VALUE = 'value';
 const ARG_ERRORS = 'errors';
 const ARG_POINTER = 'pointer';
+const ARG_EXCLUDED = 'excluded';
 
 const excludedVars = [ARG_VALUE, ARG_ERRORS, ARG_POINTER, TYPE_VALIDATOR, VAR_CACHE, VAR_RUNTIME].concat(runtimeMethod);
 
@@ -93,7 +94,7 @@ export function compileValidators<Metadata>(definitions: IJtdNodeMap<Metadata>, 
 
   for (const [ref, node] of Object.entries(definitions)) {
     source += `export const ${renameValidator(ref, node)}:${TYPE_VALIDATOR}=`
-        + `(${ARG_VALUE},${ARG_ERRORS}=[],${ARG_POINTER}="")=>{`
+        + `(${ARG_VALUE},${ARG_ERRORS}=[],${ARG_POINTER}="",${ARG_EXCLUDED}=[])=>{`
         + compileValidatorBody(ref, node, opts)
         + `return ${ARG_ERRORS};};`;
 
@@ -121,43 +122,105 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
 
   let source = '';
 
+  // Returns the next variable name
   const nextVar = createVarProvider(excludedVars);
+
+  // Current pointer in ARV_VALUE variable
   const pointer: Array<IPropertyRef> = [];
+
+  interface IEntry {
+    pointer: Array<IPropertyRef>,
+    valueVar: string,
+    pointerVar: string
+  }
+
+  let pointerVar = ARG_POINTER;
+  let valueVar = ARG_VALUE;
+
+  const pointerVars: Array<IEntry> = [];
+
+  const compileValueVar = () => {
+
+    if (pointer.length === 0) {
+      pointerVar = ARG_POINTER;
+      valueVar = ARG_VALUE;
+      return '';
+    }
+
+    let e: IEntry | undefined;
+    let o = -1;
+
+    for (const entry of pointerVars) {
+      if (entry.pointer.length <= pointer.length) {
+        for (let i = 0; i < entry.pointer.length; i++) {
+          if (isEqualRef(entry.pointer[i], pointer[i]) && i > o) {
+            e = entry;
+            o = i;
+          }
+        }
+      }
+    }
+
+    let p;
+
+    if (e) {
+      if (pointer.length === o + 1) {
+        pointerVar = e.pointerVar;
+        valueVar = e.valueVar;
+        return '';
+      }
+
+      p = pointer.slice(o + 1);
+    } else {
+      p = pointer;
+    }
+
+    pointerVar = nextVar();
+    valueVar = nextVar();
+
+    pointerVars.push({pointer: pointer.slice(0), pointerVar: pointerVar, valueVar});
+
+    return `const ${valueVar}=${e ? e.valueVar : ARG_VALUE}${compileAccessor(p)};`
+        + `const ${pointerVar}=${e ? e.pointerVar : ARG_POINTER}+${compileJsonPointer(p, RuntimeMethod.ESCAPE_JSON_POINTER)};`;
+  };
 
   visitJtdNode(node, {
 
     visitRef(node) {
-      source += compileCheckerCall(renameValidator(node.ref, node), pointer) + ';';
+      source += compileValidatorCall(renameValidator(node.ref, node), valueVar, pointerVar) + ';';
     },
 
     visitNullable(node, next) {
-      source += `if(${ARG_VALUE + compileAccessor(pointer)}!==null){`;
+      source += compileValueVar()
+          + `if(${valueVar}!==null){`;
       next();
       source += '}';
     },
 
     visitType(node) {
       const validatorName = renameTypeChecker(node.type, node);
-      source += compileCheckerCall(validatorName, pointer) + ';';
+      source += compileCheckerCall(validatorName, valueVar, pointerVar) + ';';
     },
 
     visitEnum(node) {
       const valuesSource = 'new Set(['
           + Array.from(node.values).map((value) => JSON.stringify(rewriteEnumValue(value, node))).join(',')
           + '])';
-      source += compileCheckerCall(RuntimeMethod.CHECK_ENUM, pointer, compileCachedValue(ref, nextVar, valuesSource)) + ';';
+      source += compileCheckerCall(RuntimeMethod.CHECK_ENUM, valueVar, pointerVar, compileCachedValue(ref, nextVar, valuesSource)) + ';';
     },
 
     visitElements(node, next) {
       if (node.elementNode.nodeType === JtdNodeType.ANY) {
-        source += compileCheckerCall(RuntimeMethod.CHECK_ARRAY, pointer) + ';';
+        source += compileCheckerCall(RuntimeMethod.CHECK_ARRAY, valueVar, pointerVar) + ';';
         return;
       }
 
       const indexVar = nextVar();
-      source += `if(${compileCheckerCall(RuntimeMethod.CHECK_ARRAY, pointer)}){`
-          + `for(let ${indexVar}=0;${indexVar}<${ARG_VALUE + compileAccessor(pointer)}.length;${indexVar}++){`;
+      source += compileValueVar()
+          + `if(${compileCheckerCall(RuntimeMethod.CHECK_ARRAY, valueVar, pointerVar)} && ${RuntimeMethod.EXCLUDE}(${ARG_EXCLUDED},${valueVar})){`
+          + `for(let ${indexVar}=0;${indexVar}<${valueVar}.length;${indexVar}++){`;
       pointer.push({var: indexVar});
+      source += compileValueVar();
       next();
       pointer.pop();
       source += '}}';
@@ -165,48 +228,53 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
 
     visitValues(node, next) {
       if (node.valueNode.nodeType === JtdNodeType.ANY) {
-        source += compileCheckerCall(RuntimeMethod.CHECK_OBJECT, pointer) + ';';
+        source += compileCheckerCall(RuntimeMethod.CHECK_OBJECT, valueVar, pointerVar) + ';';
         return;
       }
 
       const keyVar = nextVar();
-      source += `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, pointer)}){`
-          + `for(const ${keyVar} in ${ARG_VALUE + compileAccessor(pointer)}){`;
+      source += compileValueVar()
+          + `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, valueVar, pointerVar)} && ${RuntimeMethod.EXCLUDE}(${ARG_EXCLUDED},${valueVar})){`
+          + `for(const ${keyVar} in ${valueVar}){`;
       pointer.push({var: keyVar});
+      source += compileValueVar();
       next();
       pointer.pop();
       source += '}}';
     },
 
     visitObject(node, next) {
-      source += `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, pointer)}){`;
+      source += compileValueVar()
+          + `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, valueVar, pointerVar)} && ${RuntimeMethod.EXCLUDE}(${ARG_EXCLUDED},${valueVar})){`;
       next();
       source += '}';
     },
 
     visitProperty(propKey, propNode, objectNode, next) {
       pointer.push({key: renameProperty(propKey, propNode, objectNode)});
+      source += compileValueVar();
       next();
       pointer.pop();
     },
 
     visitOptionalProperty(propKey, propNode, objectNode, next) {
       pointer.push({key: renameProperty(propKey, propNode, objectNode)});
-      source += `if(${ARG_VALUE + compileAccessor(pointer)}!==undefined){`;
+      source += compileValueVar()
+          + `if(${valueVar}!==undefined){`;
       next();
       source += '}';
       pointer.pop();
     },
 
     visitUnion(node, next) {
-      const discriminatorPointer = pointer.concat({key: node.discriminator});
-      source += `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, pointer)}){`
-          + `switch(${ARG_VALUE + compileAccessor(discriminatorPointer)}){`;
+      source += compileValueVar()
+          + `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, valueVar, pointerVar)} && ${RuntimeMethod.EXCLUDE}(${ARG_EXCLUDED},${valueVar})){`
+          + `switch(${valueVar + compileAccessor([{key: node.discriminator}])}){`;
       next();
       source += 'default:'
           + RuntimeMethod.RAISE_INVALID + '('
           + ARG_ERRORS + ','
-          + ARG_POINTER + '+' + compileJsonPointer(discriminatorPointer, RuntimeMethod.ESCAPE_JSON_POINTER)
+          + ARG_POINTER + '+' + compileJsonPointer(pointer.concat({key: node.discriminator}), RuntimeMethod.ESCAPE_JSON_POINTER)
           + ');'
           + '}}';
     },
@@ -223,26 +291,33 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
 
 /**
  * Returns a validator function call site source code.
- *
- * @param checkerName The name of the checker function to call.
- * @param pointer The pointer to the validated property.
- * @param args Checker-specific required arguments.
- *
- * @example
- * compileCheckerCall('checkEnum', [{key: 'bar'}, {var: 'i'}], 'new Set(["AAA", "BBB"])')
- *     // → 'checkEnum(value.bar[i],new Set(["AAA", "BBB"]),errors,"/bar"+__escapeJsonPointer(i))'
  */
-function compileCheckerCall(checkerName: string, pointer: Array<IPropertyRef>, ...args: Array<string>): string {
-  const pointerSource = compileJsonPointer(pointer, RuntimeMethod.ESCAPE_JSON_POINTER);
+function compileValidatorCall(validatorName: string, valueVar: string, pointerVar: string): string {
+  return validatorName + '('
+      // value
+      + valueVar + ','
+      // errors
+      + ARG_ERRORS + ','
+      // pointer
+      + pointerVar + ','
+      // excluded
+      + ARG_EXCLUDED
+      + ')';
+}
+
+/**
+ * Returns a checker function call site source code.
+ */
+function compileCheckerCall(checkerName: string, valueVar: string, pointerVar: string, ...args: Array<string>): string {
   return checkerName + '('
       // value
-      + ARG_VALUE + compileAccessor(pointer) + ','
+      + valueVar + ','
       // args
       + (args.length ? args.join(',') + ',' : '')
       // errors
       + ARG_ERRORS + ','
       // pointer
-      + (pointerSource ? ARG_POINTER + '+' + pointerSource : ARG_POINTER)
+      + pointerVar
       + ')';
 }
 

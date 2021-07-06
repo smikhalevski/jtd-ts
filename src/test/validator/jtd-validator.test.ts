@@ -2,6 +2,7 @@ import {ModuleKind, transpileModule} from 'typescript';
 import {RuntimeMethod, TYPE_VALIDATOR, VAR_CACHE} from '../../main/validator/runtime-naming';
 import {compileValidatorModuleProlog, compileValidators} from '../../main/validator';
 import {parseJtdRoot} from '../../main/jtd-ast';
+import {JtdType} from '../../main';
 
 function evalModule(source: string): Record<string, any> {
   return eval(`
@@ -184,6 +185,20 @@ describe('compileValidators', () => {
         + 'return errors;'
         + '};',
     );
+  });
+
+  test('compiles nested', () => {
+    expect(compileValidators(parseJtdRoot('foo', {
+      properties: {
+        aaa: {
+          properties: {
+            bbb: {
+              type: JtdType.STRING,
+            },
+          },
+        },
+      },
+    }))).toBe('');
   });
 
   test('compiles valid syntax', () => {

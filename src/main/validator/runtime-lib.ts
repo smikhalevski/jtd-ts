@@ -11,6 +11,14 @@ export function escapeJsonPointer(key: string | number): string {
   return JsonPointer.escape(key.toString());
 }
 
+export function exclude(excluded: Array<object>, value: object): boolean {
+  if (excluded.includes(value)) {
+    return false;
+  }
+  excluded.push(value);
+  return true;
+}
+
 export function raiseValidationError(code: string, errors: Array<IValidationError> | undefined, pointer = ''): false {
   errors?.push({pointer, code});
   return false;

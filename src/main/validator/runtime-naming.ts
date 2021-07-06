@@ -11,6 +11,7 @@ export const enum RuntimeMethod {
   CHECK_BOOLEAN = '__boolean',
   RAISE_INVALID = '__invalid',
   ESCAPE_JSON_POINTER = '__pointer',
+  EXCLUDE = '__exclude',
 }
 
 export const runtimeMethod = [
@@ -23,6 +24,7 @@ export const runtimeMethod = [
   RuntimeMethod.CHECK_BOOLEAN,
   RuntimeMethod.RAISE_INVALID,
   RuntimeMethod.ESCAPE_JSON_POINTER,
+  RuntimeMethod.EXCLUDE,
 ];
 
 export const TYPE_VALIDATOR = '__Validator';

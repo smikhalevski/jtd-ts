@@ -8,6 +8,7 @@ import {
   checkObject,
   checkString,
   escapeJsonPointer,
+  exclude,
   raiseInvalid,
 } from './runtime-lib';
 
@@ -23,6 +24,7 @@ const runtime = {
   [RuntimeMethod.CHECK_BOOLEAN]: checkBoolean,
   [RuntimeMethod.RAISE_INVALID]: raiseInvalid,
   [RuntimeMethod.ESCAPE_JSON_POINTER]: escapeJsonPointer,
+  [RuntimeMethod.EXCLUDE]: exclude,
 };
 
 /**
