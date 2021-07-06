@@ -66,7 +66,7 @@ describe('compileTsFromJtdDefinitions', () => {
       properties: {bar: {type: 'string'}},
       optionalProperties: {qux: {type: 'int16'}},
     })))
-        .toBe('export interface IFoo{bar:string;qux:?number;}');
+        .toBe('export interface IFoo{bar:string;qux?:number;}');
   });
 
   test('compiles discriminated union definition', () => {

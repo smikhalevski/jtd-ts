@@ -182,7 +182,7 @@ function compileStatement<Metadata extends ITsJtdMetadata>(ref: string, node: Jt
 
     visitOptionalProperty(propKey, propNode) {
       source += compileJtdComment(propNode)
-          + compilePropertyName(propKey) + ':?' + compileExpression(propNode, resolveRef, options) + ';';
+          + compilePropertyName(propKey) + '?:' + compileExpression(propNode, resolveRef, options) + ';';
     },
 
     visitUnion(node, next) {
