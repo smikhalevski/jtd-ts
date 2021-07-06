@@ -166,7 +166,7 @@ function compileStatement<Metadata extends ITsJtdMetadata>(ref: string, node: Jt
     },
 
     visitEnumValue(value, node) {
-      source += renameEnumValue(value, node) + '=' + JSON.stringify(rewriteEnumValue(value, node)) + ';';
+      source += renameEnumValue(value, node) + '=' + JSON.stringify(rewriteEnumValue(value, node)) + ',';
     },
 
     visitObject(node, next) {
@@ -290,7 +290,7 @@ function compileJtdComment(node: JtdNode<ITsJtdMetadata>): string {
 /**
  * Global default options used by {@link compileTsFromJtdDefinitions}.
  */
-export const jtdTsOptions: IJtdTsOptions<ITsJtdMetadata> = {
+export const jtdTsOptions: IJtdTsOptions<any> = {
   resolveRef: () => 'never',
   renameInterface: (ref) => 'I' + pascalCase(ref),
   renameType: pascalCase,

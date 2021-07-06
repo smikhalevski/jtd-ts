@@ -19,8 +19,7 @@ const excludedVars = [ARG_VALUE, ARG_ERRORS, ARG_POINTER, TYPE_VALIDATOR, VAR_CA
  * @param runtimeVar The name of the variable that holds validator library exports.
  */
 export function compileValidatorModuleProlog(runtimeVar: string): string {
-  return `type ${TYPE_VALIDATOR}=${runtimeVar}.Validator;`
-      + `const {${runtimeMethod.join(',')}}=${runtimeVar};`
+  return `const {${runtimeMethod.join(',')}}=${runtimeVar};`
       + `const ${VAR_CACHE}:Record<string,any>={};`;
 }
 
@@ -237,7 +236,7 @@ function compileCachedValue(ref: string, nextVar: () => string, valueSource: str
   return VAR_CACHE + '[' + JSON.stringify(ref + '.' + nextVar()) + ']||=' + valueSource;
 }
 
-export const jtdValidatorOptions: IValidatorOptions<unknown> = {
+export const jtdValidatorOptions: IValidatorOptions<any> = {
   renameValidator: (ref) => 'validate' + pascalCase(ref),
   renameTypeChecker: (type, node) => jtdTypeCheckerMap[node.type as JtdType] || 'check' + pascalCase(type),
   rewriteEnumValue: (value) => value,

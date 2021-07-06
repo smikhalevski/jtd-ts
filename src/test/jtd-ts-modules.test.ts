@@ -26,14 +26,12 @@ describe('compileJtdTsModules', () => {
 
     expect(modules).toEqual({
       './bar.ts':
-          'import __validatorRuntime from "jtd-ts/lib/validator/runtime";' +
-
-          'type __Validator=__validatorRuntime.Validator;' +
+          'import __validatorRuntime, {Validator as __Validator} from "jtd-ts/lib/validator/runtime";' +
 
           'const {__enum,__array,__object,__string,__number,__integer,__boolean,__invalid,__pointer}=__validatorRuntime;' +
           'const __validatorCache:Record<string,any>={};' +
 
-          'export enum Bar{AAA="AAA";BBB="BBB";}' +
+          'export enum Bar{AAA="AAA",BBB="BBB",}' +
 
           'export const validateBar:__Validator=(value,errors=[],pointer="")=>{' +
           '__enum(value,__validatorCache["bar.a"]||=new Set(["AAA","BBB"]),errors,pointer);' +
@@ -43,10 +41,8 @@ describe('compileJtdTsModules', () => {
           'export const isBar=(value:unknown):value is Bar=>validateBar(value).length===0;',
 
       './foo.ts':
-          'import {Bar} from "./bar.ts";' +
-          'import __validatorRuntime from "jtd-ts/lib/validator/runtime";' +
-
-          'type __Validator=__validatorRuntime.Validator;' +
+          'import {Bar,validateBar} from "./bar.ts";' +
+          'import __validatorRuntime, {Validator as __Validator} from "jtd-ts/lib/validator/runtime";' +
 
           'const {__enum,__array,__object,__string,__number,__integer,__boolean,__invalid,__pointer}=__validatorRuntime;' +
           'const __validatorCache:Record<string,any>={};' +

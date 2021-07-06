@@ -1,7 +1,7 @@
 {
   "name": "jtd-ts",
   "version": "1.0.0",
-  "description": "The converter from JTD to TypeScript interfaces and validators.",
+  "description": "JSON Type Definition to TypeScript compiler.",
   "main": "./lib/index-cjs.js",
   "module": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -10,11 +10,14 @@
     "README.md"
   ],
   "scripts": {
-    "build": "set -e; tsc; npm run rollup; npm run terser",
+    "build": "set -e; tsc  --module commonjs; ",
     "rollup": "for p in ./lib/index.js ./lib/validator/runtime.js; do rollup --external json-pointer --exports auto --input $p --file ${p%.js}-cjs.js --format cjs --plugin @rollup/plugin-node-resolve --plugin @rollup/plugin-commonjs; done",
     "terser": "for p in ./lib/index-cjs.js ./lib/validator/runtime-cjs.js; do terser --compress --mangle toplevel --output $p -- $p; done",
-    "clean": "rm -rf ./lib",
-    "test": "jest --detectOpenHandles"
+    "clean": "rm -rf ./lib ./docs",
+    "test": "jest --detectOpenHandles",
+    "docs": "typedoc ./src/main/index.ts",
+    "publish-docs": "set -ex; [ -d ./docs ]; [[ ! $(git status --porcelain) ]]; branch=$(git rev-parse --abbrev-ref HEAD); sha=$(git rev-parse --short HEAD); t=$(mktemp -d); cp -R ./docs/ $t; git checkout ghpages; ls -A | grep -wv .git | xargs rm -rf; cp -R $t/ .; git add .; git commit -m \"Updated docs ($sha)\"; git push; git checkout $branch",
+    "release-docs": "set -e; npm run clean; npm run docs; npm run publish-docs"
   },
   "repository": {
     "type": "git",
@@ -38,9 +41,11 @@
     "rollup": "^2.50.5",
     "terser": "^5.7.0",
     "ts-jest": "^27.0.2",
+    "typedoc": "^0.21.2",
     "typescript": "^4.3.2"
   },
   "dependencies": {
+    "commander": "^8.0.0",
     "json-pointer": "^0.6.1"
   }
 }

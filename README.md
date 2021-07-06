@@ -1,3 +1,3 @@
 # jtd-ts
 
-The converter from JTD to TypeScript interfaces and validators.
+JSON Type Definition to TypeScript compiler.

@@ -8,9 +8,9 @@ import {
   renameRef,
 } from './jtd-ts';
 import {parseJtdDefinitions} from './jtd-ast';
-import {IJtdNodeMap} from './jtd-ast-types';
-import {compileValidatorModuleProlog, compileValidators, IValidatorOptions} from './validator';
-import {VAR_RUNTIME} from './validator/runtime-naming';
+import {IJtdNodeMap, JtdNode} from './jtd-ast-types';
+import {compileValidatorModuleProlog, compileValidators, IValidatorOptions, jtdValidatorOptions} from './validator';
+import {TYPE_VALIDATOR, VAR_RUNTIME} from './validator/runtime-naming';
 
 export interface IJtdTsModulesOptions<Metadata> extends Partial<Omit<IJtdTsOptions<Metadata> & IValidatorOptions<Metadata>, 'resolveRef'>> {
 
@@ -28,11 +28,11 @@ export interface IJtdTsModulesOptions<Metadata> extends Partial<Omit<IJtdTsOptio
 }
 
 export function compileJtdTsModules<Metadata extends ITsJtdMetadata>(modules: Record<string, IJtdMap<Metadata>>, options?: IJtdTsModulesOptions<Metadata>): Record<string, string> {
-  const sourceMap: Record<string, string> = Object.create(null);
+  const moduleMap: Record<string, string> = Object.create(null);
 
   const parsedModules: Array<{ uri: string, definitions: IJtdNodeMap<Metadata>, exports: Record<string, string> }> = [];
 
-  const opts = Object.assign({}, jtdTsOptions, options);
+  const opts = Object.assign({}, jtdValidatorOptions, jtdTsOptions, options);
 
   for (const uri of Object.keys(modules)) {
     const definitions = parseJtdDefinitions(modules[uri]);
@@ -46,15 +46,18 @@ export function compileJtdTsModules<Metadata extends ITsJtdMetadata>(modules: Re
 
   for (const {uri, definitions, exports} of parsedModules) {
 
-    const imports: Record<string, Set<string>> = Object.create(null);
+    const imports: Record<string, Map<string, { node: JtdNode<Metadata>, name: string }>> = Object.create(null);
 
     // Cross-module ref resolver
-    opts.resolveRef = (ref) => {
+    opts.resolveRef = (ref, node) => {
       for (const {uri, exports} of parsedModules) {
         if (ref in exports) {
+
           const name = exports[ref];
-          const names = imports[uri] ||= new Set();
-          names.add(name);
+          const names = imports[uri] ||= new Map();
+
+          names.set(ref, {node, name});
+
           return name;
         }
       }
@@ -66,11 +69,18 @@ export function compileJtdTsModules<Metadata extends ITsJtdMetadata>(modules: Re
     let source = opts.prependedSource || '';
 
     for (const [uri, names] of Object.entries(imports)) {
-      source += `import {${Array.from(names).join(',')}} from ${JSON.stringify(uri)};`;
+      source += 'import {' +
+          Array.from(names.values()).map((v) => v.name).join(',');
+
+      if (opts.emitsValidators) {
+        source += ',' + Array.from(names.entries()).map(([ref, v]) => opts.renameValidator(ref, v.node)).join(',');
+      }
+
+      source += `} from ${JSON.stringify(uri)};`;
     }
 
     if (opts.emitsValidators) {
-      source += `import ${VAR_RUNTIME} from "jtd-ts/lib/validator/runtime";`
+      source += `import ${VAR_RUNTIME}, {Validator as ${TYPE_VALIDATOR}} from "../validator/runtime";`
           + compileValidatorModuleProlog(VAR_RUNTIME);
     }
 
@@ -81,10 +91,10 @@ export function compileJtdTsModules<Metadata extends ITsJtdMetadata>(modules: Re
       source += compileValidators(definitions, opts);
     }
 
-    sourceMap[uri] = source;
+    moduleMap[uri] = source;
   }
 
-  return sourceMap;
+  return moduleMap;
 }
 
 /**

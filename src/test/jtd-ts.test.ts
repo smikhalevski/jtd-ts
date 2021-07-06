@@ -26,7 +26,7 @@ describe('compileTsFromJtdDefinitions', () => {
 
   test('compiles enum definition', () => {
     expect(compileTsFromJtdDefinitions(parseJtdRoot<ITsJtdMetadata>('foo', {enum: ['foo', 'bar']})))
-        .toBe('export enum Foo{FOO="foo";BAR="bar";}');
+        .toBe('export enum Foo{FOO="foo",BAR="bar",}');
   });
 
   test('compiles array type', () => {
