@@ -1,5 +1,6 @@
 import {
-  IJtdEnumNode, IJtdNodeMap,
+  IJtdEnumNode,
+  IJtdNodeMap,
   IJtdObjectNode,
   IJtdRefNode,
   IJtdTypeNode,
@@ -12,27 +13,7 @@ import {JtdType} from './jtd-types';
 import {compileDocComment, compilePropertyName} from './compile-utils';
 import {pascalCase, upperSnakeCase} from './rename-utils';
 
-/**
- * The TS-specific content of the JTD `metadata` object.
- */
-export interface ITsJtdMetadata {
-
-  /**
-   * The TS doc comment.
-   */
-  comment?: string;
-}
-
-export interface IJtdTsOptions<Metadata extends ITsJtdMetadata> {
-
-  /**
-   * Resolves type name for a ref. Invoked only when ref isn't found among known definitions. If omitted then
-   * unresolved types are emitted as `never`.
-   *
-   * @example
-   * (ref) => 'Foo.' + upperFirst(camelCase(ref))
-   */
-  resolveRef: JtdRefResolver<Metadata>;
+export interface IJtdTsRenameOptions<Metadata> {
 
   /**
    * Returns the name of the interface.
@@ -48,6 +29,51 @@ export interface IJtdTsOptions<Metadata extends ITsJtdMetadata> {
    * Returns the name of the enum.
    */
   renameEnum: (ref: string, node: IJtdEnumNode<Metadata>) => string;
+}
+
+/**
+ * Returns the TS type name of the `ref` depending on `node` type.
+ */
+export function renameRef<Metadata>(ref: string, node: JtdNode<Metadata>, options: IJtdTsRenameOptions<Metadata>): string {
+  switch (node.nodeType) {
+    case JtdNodeType.ANY:
+    case JtdNodeType.REF:
+    case JtdNodeType.NULLABLE:
+    case JtdNodeType.TYPE:
+    case JtdNodeType.ELEMENTS:
+    case JtdNodeType.VALUES:
+    case JtdNodeType.UNION:
+      return options.renameType(ref, node);
+
+    case JtdNodeType.ENUM:
+      return options.renameEnum(ref, node);
+
+    case JtdNodeType.OBJECT:
+      return options.renameInterface(ref, node);
+  }
+}
+
+/**
+ * The TS-specific content of the JTD `metadata` object.
+ */
+export interface ITsJtdMetadata {
+
+  /**
+   * The TS doc comment.
+   */
+  comment?: string;
+}
+
+export interface IJtdTsOptions<Metadata> extends IJtdTsRenameOptions<Metadata> {
+
+  /**
+   * Resolves type name for a ref. Invoked only when ref isn't found among known definitions. If omitted then
+   * unresolved types are emitted as `never`.
+   *
+   * @example
+   * (ref) => 'Foo.' + upperFirst(camelCase(ref))
+   */
+  resolveRef: JtdRefResolver<Metadata>;
 
   /**
    * Returns a TS name of the type that represents a custom type used in JTD. Standard JTD types are converted
@@ -97,39 +123,12 @@ export type JtdRefResolver<Metadata> = (ref: string, node: IJtdRefNode<Metadata>
 export function compileTsFromJtdDefinitions<Metadata extends ITsJtdMetadata>(definitions: IJtdNodeMap<Metadata>, options?: Partial<IJtdTsOptions<Metadata>>): string {
   const opt = Object.assign({}, jtdTsOptions, options);
 
-  const {
-    resolveRef,
-    renameInterface,
-    renameType,
-    renameEnum,
-  } = opt;
-
-  const refResolver: JtdRefResolver<Metadata> = (ref, refNode) => {
+  const resolveRef: JtdRefResolver<Metadata> = (ref, refNode) => {
     const node = definitions[ref];
-
-    if (!node) {
-      return resolveRef(ref, refNode);
-    }
-
-    switch (node.nodeType) {
-      case JtdNodeType.ANY:
-      case JtdNodeType.REF:
-      case JtdNodeType.NULLABLE:
-      case JtdNodeType.TYPE:
-      case JtdNodeType.ELEMENTS:
-      case JtdNodeType.VALUES:
-      case JtdNodeType.UNION:
-        return renameType(ref, node);
-
-      case JtdNodeType.ENUM:
-        return renameEnum(ref, node);
-
-      case JtdNodeType.OBJECT:
-        return renameInterface(ref, node);
-    }
+    return node ? renameRef(ref, node, opt) : opt.resolveRef(ref, refNode);
   };
 
-  return Object.entries(definitions).reduce((source, [ref, node]) => source + compileStatement(ref, node, refResolver, opt), '');
+  return Object.entries(definitions).reduce((source, [ref, node]) => source + compileStatement(ref, node, resolveRef, opt), '');
 }
 
 function compileStatement<Metadata extends ITsJtdMetadata>(ref: string, node: JtdNode<Metadata>, resolveRef: JtdRefResolver<Metadata>, options: IJtdTsOptions<Metadata>): string {
