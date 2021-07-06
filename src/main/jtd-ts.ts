@@ -166,9 +166,11 @@ function compileStatement<Metadata extends ITsJtdMetadata>(ref: string, node: Jt
     visitValues: compileTypeStatement,
 
     visitEnum(node, next) {
-      source += compileJtdComment(node) + `export enum ${renameEnum(ref, node)}{`;
+      const name = renameEnum(ref, node);
+      source += compileJtdComment(node) + `enum ${name}{`;
       next();
-      source += '}';
+      source += '}'
+          + `export{${name}};`;
     },
 
     visitEnumValue(value, node) {
@@ -205,9 +207,11 @@ function compileStatement<Metadata extends ITsJtdMetadata>(ref: string, node: Jt
       if (mappingKeys.length === 0) {
         source += `export type ${name}=never`;
       } else {
-        source += `export enum ${renameUnionEnum(ref, node)}{`
+        const enumName = renameUnionEnum(ref, node);
+        source += `enum ${enumName}{`
             + mappingKeys.reduce((source, mappingKey) => renameUnionEnumValue(mappingKey, ref, node) + '=' + JSON.stringify(rewriteMappingKey(mappingKey, ref, node)) + ',', '')
             + '}'
+            + `export{${enumName}};`
             + compileJtdComment(node)
             + `export type ${name}=`
             + mappingKeys.reduce((source, mappingKey) => source + '|' + renameMappingInterface(mappingKey, ref, node), '')
