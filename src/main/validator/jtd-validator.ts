@@ -1,15 +1,16 @@
-import {IJtdEnumNode, IJtdNode, IJtdNodeMap, IJtdTypeNode, IJtdUnionNode, JtdNode, JtdNodeType} from '../jtd-ast-types';
+import {IJtdEnumNode, IJtdNodeMap, IJtdTypeNode, IJtdUnionNode, JtdNode, JtdNodeType} from '../jtd-ast-types';
 import {visitJtdNode} from '../jtd-visitor';
 import {JtdType} from '../jtd-types';
-import {compileAccessor, compileJsonPointer, createVarProvider, IPropertyRef} from '../compile-utils';
+import {compileAccessor, compileJsonPointer, createVarProvider, IPropertyRef} from '../compiler-utils';
 import {pascalCase} from '../rename-utils';
-import {RuntimeMethod, runtimeMethod, TYPE_VALIDATOR, VAR_CACHE} from './runtime-naming';
+import {RuntimeMethod, runtimeMethod, TYPE_VALIDATOR, VAR_CACHE, VAR_RUNTIME} from './runtime-naming';
+import {JtdRefResolver} from '../jtd-ts';
 
 const ARG_VALUE = 'value';
 const ARG_ERRORS = 'errors';
 const ARG_POINTER = 'pointer';
 
-const excludedVars = [ARG_VALUE, ARG_ERRORS, ARG_POINTER];
+const excludedVars = [ARG_VALUE, ARG_ERRORS, ARG_POINTER, TYPE_VALIDATOR, VAR_CACHE, VAR_RUNTIME].concat(runtimeMethod);
 
 /**
  * Returns source that maps fields exported from validation runtime to internal names used by compiled validators.
@@ -28,7 +29,7 @@ export interface IValidatorOptions<Metadata> {
   /**
    * Returns the name of the emitted validator function.
    */
-  renameValidator: (ref: string, node: IJtdNode<Metadata>) => string;
+  renameValidator: (ref: string, node: JtdNode<Metadata>) => string;
 
   /**
    * Returns the name of the checker function that should be used to check values of `type`.
@@ -54,62 +55,44 @@ export interface IValidatorOptions<Metadata> {
   /**
    * Returns the name of the emitted checker function. This is used if {@link emitsCheckers} is enabled.
    */
-  renameChecker: (ref: string, node: IJtdNode<Metadata>) => string;
+  renameChecker: (ref: string, node: JtdNode<Metadata>) => string;
 
   /**
    * If {@link emitsCheckers} is enabled then this callback is used to resolve a type name that corresponds to the ref.
-   * If omitted then type checkers would be emitted with `as any`.
+   * If omitted then type checkers would be emitted with `as unknown`.
    */
-  resolveRef: (ref: string, node: IJtdNode<Metadata>) => string;
-}
-
-export interface IValidatorCompilationResult {
-
-  /**
-   * The source code of the module.
-   */
-  source: string;
-
-  /**
-   * Map from JTD ref to a TS type name of imported types.
-   */
-  importMap: Map<string, string>;
+  resolveRef: JtdRefResolver<Metadata>;
 }
 
 /**
  * Returns source code of functions that validate JTD definitions.
  */
-export function compileValidators<Metadata>(definitions: IJtdNodeMap<Metadata>, options?: Partial<IValidatorOptions<Metadata>>): IValidatorCompilationResult {
-  const opt = Object.assign({}, jtdValidatorOptions, options);
+export function compileValidators<Metadata>(definitions: IJtdNodeMap<Metadata>, options?: Partial<IValidatorOptions<Metadata>>): string {
+  const opts = Object.assign({}, jtdValidatorOptions, options);
 
   const {
     renameValidator,
     renameChecker,
     emitsCheckers,
     resolveRef,
-  } = opt;
+  } = opts;
 
   let source = '';
 
-  const importMap = new Map<string, string>();
-
-  definitions.forEach((node, ref) => {
+  for (const [ref, node] of Object.entries(definitions)) {
     source += `export const ${renameValidator(ref, node)}:${TYPE_VALIDATOR}=`
         + `(${ARG_VALUE},${ARG_ERRORS}=[],${ARG_POINTER}="")=>{`
-        + compileValidatorBody(ref, node, opt)
+        + compileValidatorBody(ref, node, opts)
         + `return ${ARG_ERRORS};};`;
 
     if (emitsCheckers) {
-      const name = resolveRef(ref, node);
-      importMap.set(ref, name);
-
       source += `export const ${renameChecker(ref, node)}=`
-          + `(${ARG_VALUE}:unknown):${ARG_VALUE} is ${name}=>`
+          + `(${ARG_VALUE}:unknown):${ARG_VALUE} is ${resolveRef(ref, node)}=>`
           + renameValidator(ref, node) + '(' + ARG_VALUE + ').length===0;';
     }
-  });
+  }
 
-  return {source, importMap};
+  return source;
 }
 
 /**
@@ -255,7 +238,6 @@ function compileCachedValue(ref: string, nextVar: () => string, valueSource: str
 }
 
 export const jtdValidatorOptions: IValidatorOptions<unknown> = {
-  resolveRef: (ref) => 'any',
   renameValidator: (ref) => 'validate' + pascalCase(ref),
   renameTypeChecker: (type, node) => jtdTypeCheckerMap[node.type as JtdType] || 'check' + pascalCase(type),
   rewriteEnumValue: (value) => value,
@@ -263,6 +245,7 @@ export const jtdValidatorOptions: IValidatorOptions<unknown> = {
 
   emitsCheckers: false,
   renameChecker: (ref) => 'is' + pascalCase(ref),
+  resolveRef: (ref) => 'unknown',
 };
 
 export const jtdTypeCheckerMap: Record<JtdType, string> = {

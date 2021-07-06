@@ -1,7 +1,7 @@
 import {JtdNodeType} from '../main/jtd-ast-types';
 import {parseJtd} from '../main/jtd-ast';
 import {visitJtdNode} from '../main/jtd-visitor';
-import {JtdType} from '../main';
+import {JtdType} from '../main/jtd-types';
 
 describe('visitJtdNode', () => {
 
@@ -39,7 +39,10 @@ describe('visitJtdNode', () => {
 
   test('visits enum values', () => {
     const visitEnumValueMock = jest.fn();
-    visitJtdNode(parseJtd({enum: ['FOO', 'BAR']}), {visitEnum: (node, next) => next(), visitEnumValue: visitEnumValueMock});
+    visitJtdNode(parseJtd({enum: ['FOO', 'BAR']}), {
+      visitEnum: (node, next) => next(),
+      visitEnumValue: visitEnumValueMock,
+    });
 
     expect(visitEnumValueMock).toHaveBeenCalledTimes(2);
     expect(visitEnumValueMock).toHaveBeenNthCalledWith(1, 'FOO', expect.objectContaining({nodeType: JtdNodeType.ENUM}));

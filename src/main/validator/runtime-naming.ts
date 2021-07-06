@@ -2,15 +2,15 @@
  * Names exported by runtime
  */
 export const enum RuntimeMethod {
-  CHECK_ENUM = '$enum',
-  CHECK_ARRAY = '$array',
-  CHECK_OBJECT = '$object',
-  CHECK_STRING = '$string',
-  CHECK_NUMBER = '$number',
-  CHECK_INTEGER = '$integer',
-  CHECK_BOOLEAN = '$boolean',
-  RAISE_INVALID = '$raise',
-  ESCAPE_JSON_POINTER = '$pointer',
+  CHECK_ENUM = '__enum',
+  CHECK_ARRAY = '__array',
+  CHECK_OBJECT = '__object',
+  CHECK_STRING = '__string',
+  CHECK_NUMBER = '__number',
+  CHECK_INTEGER = '__integer',
+  CHECK_BOOLEAN = '__boolean',
+  RAISE_INVALID = '__invalid',
+  ESCAPE_JSON_POINTER = '__pointer',
 }
 
 export const runtimeMethod = [
@@ -25,6 +25,8 @@ export const runtimeMethod = [
   RuntimeMethod.ESCAPE_JSON_POINTER,
 ];
 
-export const TYPE_VALIDATOR = '$Validator';
+export const TYPE_VALIDATOR = '__Validator';
 
-export const VAR_CACHE = '$validatorCache';
+export const VAR_CACHE = '__validatorCache';
+
+export const VAR_RUNTIME = '__validatorRuntime';

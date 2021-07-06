@@ -2,7 +2,6 @@ import {
   IJtdEnumNode,
   IJtdNodeMap,
   IJtdObjectNode,
-  IJtdRefNode,
   IJtdTypeNode,
   IJtdUnionNode,
   JtdNode,
@@ -10,7 +9,7 @@ import {
 } from './jtd-ast-types';
 import {visitJtdNode} from './jtd-visitor';
 import {JtdType} from './jtd-types';
-import {compileDocComment, compilePropertyName} from './compile-utils';
+import {compileDocComment, compilePropertyName} from './compiler-utils';
 import {pascalCase, upperSnakeCase} from './rename-utils';
 
 export interface IJtdTsRenameOptions<Metadata> {
@@ -115,20 +114,20 @@ export interface IJtdTsOptions<Metadata> extends IJtdTsRenameOptions<Metadata> {
   renameMappingInterface: (mappingKey: string, unionRef: string, unionNode: IJtdUnionNode<Metadata>) => string;
 }
 
-export type JtdRefResolver<Metadata> = (ref: string, node: IJtdRefNode<Metadata>) => string;
+export type JtdRefResolver<Metadata> = (ref: string, node: JtdNode<Metadata>) => string;
 
 /**
  * Compiles provided JTD definitions as a TS source that represents a set of types, interfaces and enums.
  */
 export function compileTsFromJtdDefinitions<Metadata extends ITsJtdMetadata>(definitions: IJtdNodeMap<Metadata>, options?: Partial<IJtdTsOptions<Metadata>>): string {
-  const opt = Object.assign({}, jtdTsOptions, options);
+  const opts = Object.assign({}, jtdTsOptions, options);
 
   const resolveRef: JtdRefResolver<Metadata> = (ref, refNode) => {
     const node = definitions[ref];
-    return node ? renameRef(ref, node, opt) : opt.resolveRef(ref, refNode);
+    return node ? renameRef(ref, node, opts) : opts.resolveRef(ref, refNode);
   };
 
-  return Object.entries(definitions).reduce((source, [ref, node]) => source + compileStatement(ref, node, resolveRef, opt), '');
+  return Object.entries(definitions).reduce((source, [ref, node]) => source + compileStatement(ref, node, resolveRef, opts), '');
 }
 
 function compileStatement<Metadata extends ITsJtdMetadata>(ref: string, node: JtdNode<Metadata>, resolveRef: JtdRefResolver<Metadata>, options: IJtdTsOptions<Metadata>): string {

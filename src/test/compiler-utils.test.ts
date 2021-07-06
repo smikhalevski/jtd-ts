@@ -1,4 +1,10 @@
-import {compileAccessor, compileDocComment, compileJsonPointer, compilePropertyName, createVarProvider} from '../main/compile-utils';
+import {
+  compileAccessor,
+  compileDocComment,
+  compileJsonPointer,
+  compilePropertyName,
+  createVarProvider,
+} from '../main/compiler-utils';
 
 describe('compileDocComment', () => {
 
