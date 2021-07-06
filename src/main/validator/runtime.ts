@@ -14,7 +14,7 @@ import {
 
 export * from './validator-types';
 
-const runtime = {
+export const runtime = {
   [RuntimeMethod.CHECK_ENUM]: checkEnum,
   [RuntimeMethod.CHECK_ARRAY]: checkArray,
   [RuntimeMethod.CHECK_OBJECT]: checkObject,
@@ -26,8 +26,3 @@ const runtime = {
   [RuntimeMethod.ESCAPE_JSON_POINTER]: escapeJsonPointer,
   [RuntimeMethod.EXCLUDE]: exclude,
 };
-
-/**
- * The runtime used by compiled validators.
- */
-export default runtime;

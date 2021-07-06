@@ -69,7 +69,7 @@ export function compileJtdTsModules<Metadata extends ITsJtdMetadata>(modules: Re
 
     // jtdc import of validator runtime
     if (opts.emitsValidators) {
-      source += `import ${VAR_RUNTIME}, {Validator as ${TYPE_VALIDATOR}} from "../validator/runtime";`
+      source += `import {runtime as ${VAR_RUNTIME}, Validator as ${TYPE_VALIDATOR}} from "../validator/runtime";`
           + compileValidatorModuleProlog(VAR_RUNTIME);
     }
 

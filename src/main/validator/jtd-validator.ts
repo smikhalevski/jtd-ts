@@ -92,18 +92,28 @@ export function compileValidators<Metadata>(definitions: IJtdNodeMap<Metadata>, 
 
   let source = '';
 
+  let aaa: Array<string> = []
+
   for (const [ref, node] of Object.entries(definitions)) {
-    source += `export const ${renameValidator(ref, node)}:${TYPE_VALIDATOR}=`
+    const name = renameValidator(ref, node);
+    aaa.push(name);
+
+    source += `const ${name}:${TYPE_VALIDATOR}=`
         + `(${ARG_VALUE},${ARG_ERRORS}=[],${ARG_POINTER}="",${ARG_EXCLUDED}=[])=>{`
         + compileValidatorBody(ref, node, opts)
         + `return ${ARG_ERRORS};};`;
 
     if (emitsCheckers) {
-      source += `export const ${renameChecker(ref, node)}=`
+      const name = renameChecker(ref, node);
+      aaa.push(name);
+
+      source += `const ${name}=`
           + `(${ARG_VALUE}:unknown):${ARG_VALUE} is ${resolveRef(ref, node)}=>`
           + renameValidator(ref, node) + '(' + ARG_VALUE + ').length===0;';
     }
   }
+
+  source += `export {${aaa.join(',')}};`
 
   return source;
 }
@@ -139,11 +149,16 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
 
   const pointerVars: Array<IEntry> = [];
 
+  let pointerSrc = '';
+  let pointerVarInitSrc = '';
+
   const compileValueVar = () => {
 
     if (pointer.length === 0) {
       pointerVar = ARG_POINTER;
       valueVar = ARG_VALUE;
+      pointerSrc = '';
+      pointerVarInitSrc = '';
       return '';
     }
 
@@ -167,6 +182,8 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
       if (pointer.length === o + 1) {
         pointerVar = e.pointerVar;
         valueVar = e.valueVar;
+        pointerSrc = '';
+        pointerVarInitSrc = '';
         return '';
       }
 
@@ -180,8 +197,10 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
 
     pointerVars.push({pointer: pointer.slice(0), pointerVar: pointerVar, valueVar});
 
-    return `const ${valueVar}=${e ? e.valueVar : ARG_VALUE}${compileAccessor(p)};`
-        + `const ${pointerVar}=${e ? e.pointerVar : ARG_POINTER}+${compileJsonPointer(p, RuntimeMethod.ESCAPE_JSON_POINTER)};`;
+    pointerSrc = `${e ? e.pointerVar : ARG_POINTER}+${compileJsonPointer(p, RuntimeMethod.ESCAPE_JSON_POINTER)}`;
+    pointerVarInitSrc = `const ${pointerVar}=${e ? e.pointerVar : ARG_POINTER}+${compileJsonPointer(p, RuntimeMethod.ESCAPE_JSON_POINTER)};`;
+
+    return `const ${valueVar}=${e ? e.valueVar : ARG_VALUE}${compileAccessor(p)};`;
   };
 
   visitJtdNode(node, {
@@ -192,7 +211,8 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
 
     visitNullable(node, next) {
       source += compileValueVar()
-          + `if(${valueVar}!==null){`;
+          + `if(${valueVar}!==null){`
+          + pointerVarInitSrc;
       next();
       source += '}';
     },
@@ -218,9 +238,11 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
       const indexVar = nextVar();
       source += compileValueVar()
           + `if(${compileCheckerCall(RuntimeMethod.CHECK_ARRAY, valueVar, pointerVar)} && ${RuntimeMethod.EXCLUDE}(${ARG_EXCLUDED},${valueVar})){`
+          + pointerVarInitSrc
           + `for(let ${indexVar}=0;${indexVar}<${valueVar}.length;${indexVar}++){`;
       pointer.push({var: indexVar});
-      source += compileValueVar();
+      source += compileValueVar()
+          + pointerVarInitSrc;
       next();
       pointer.pop();
       source += '}}';
@@ -235,9 +257,11 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
       const keyVar = nextVar();
       source += compileValueVar()
           + `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, valueVar, pointerVar)} && ${RuntimeMethod.EXCLUDE}(${ARG_EXCLUDED},${valueVar})){`
+          + pointerVarInitSrc
           + `for(const ${keyVar} in ${valueVar}){`;
       pointer.push({var: keyVar});
-      source += compileValueVar();
+      source += compileValueVar()
+          + pointerVarInitSrc;
       next();
       pointer.pop();
       source += '}}';
@@ -245,14 +269,16 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
 
     visitObject(node, next) {
       source += compileValueVar()
-          + `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, valueVar, pointerVar)} && ${RuntimeMethod.EXCLUDE}(${ARG_EXCLUDED},${valueVar})){`;
+          + `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, valueVar, pointerVar)} && ${RuntimeMethod.EXCLUDE}(${ARG_EXCLUDED},${valueVar})){`
+          + pointerVarInitSrc;
       next();
       source += '}';
     },
 
     visitProperty(propKey, propNode, objectNode, next) {
       pointer.push({key: renameProperty(propKey, propNode, objectNode)});
-      source += compileValueVar();
+      source += compileValueVar()
+          + pointerVarInitSrc;
       next();
       pointer.pop();
     },
@@ -260,7 +286,8 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
     visitOptionalProperty(propKey, propNode, objectNode, next) {
       pointer.push({key: renameProperty(propKey, propNode, objectNode)});
       source += compileValueVar()
-          + `if(${valueVar}!==undefined){`;
+          + `if(${valueVar}!==undefined){`
+          + pointerVarInitSrc;
       next();
       source += '}';
       pointer.pop();
@@ -269,6 +296,7 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
     visitUnion(node, next) {
       source += compileValueVar()
           + `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, valueVar, pointerVar)} && ${RuntimeMethod.EXCLUDE}(${ARG_EXCLUDED},${valueVar})){`
+          + pointerVarInitSrc
           + `switch(${valueVar + compileAccessor([{key: node.discriminator}])}){`;
       next();
       source += 'default:'
