@@ -12,17 +12,6 @@ import {JtdType} from './jtd-types';
 import {compileDocComment, compilePropertyName} from './compiler-utils';
 import {pascalCase, upperSnakeCase} from './rename-utils';
 
-/**
- * The TS-specific content of the JTD `metadata` object.
- */
-export interface ITsJtdMetadata {
-
-  /**
-   * The TS doc comment.
-   */
-  comment?: string;
-}
-
 export interface IJtdTsRefRenameOptions<M> {
 
   /**
@@ -95,6 +84,13 @@ export interface IJtdTsOptions<M> extends IJtdTsRefRenameOptions<M> {
    * Returns the name of the interface that is part of the discriminated union mapping.
    */
   renameMappingInterface?: (mappingKey: string, unionRef: string, unionNode: IJtdUnionNode<M>) => string;
+
+  /**
+   * Returns the doc comment string associated with the node.
+   *
+   * @default node.metadata?.comment
+   */
+  getDocComment?: (node: JtdNode<M>) => string | null | undefined;
 }
 
 /**
@@ -106,7 +102,7 @@ export type JtdRefResolver<M> = (ref: string, node: JtdNode<M>) => string;
 /**
  * Compiles provided JTD definitions as a TS source that represents a set of types, interfaces and enums.
  */
-export function compileTsFromJtdDefinitions<M extends ITsJtdMetadata>(definitions: IJtdNodeMap<M>, options?: IJtdTsOptions<M>): string {
+export function compileTsFromJtdDefinitions<M>(definitions: IJtdNodeMap<M>, options?: IJtdTsOptions<M>): string {
   const opts = Object.assign({}, jtdTsOptions, options);
 
   const resolveRef: JtdRefResolver<M> = (ref, refNode) => {
@@ -117,7 +113,7 @@ export function compileTsFromJtdDefinitions<M extends ITsJtdMetadata>(definition
   return Object.entries(definitions).reduce((source, [ref, node]) => source + compileStatement(ref, node, resolveRef, opts), '');
 }
 
-function compileStatement<M extends ITsJtdMetadata>(ref: string, node: JtdNode<M>, resolveRef: JtdRefResolver<M>, options: Required<IJtdTsOptions<M>>): string {
+function compileStatement<M>(ref: string, node: JtdNode<M>, resolveRef: JtdRefResolver<M>, options: Required<IJtdTsOptions<M>>): string {
   const {
     renameProperty,
     renameInterface,
@@ -129,12 +125,13 @@ function compileStatement<M extends ITsJtdMetadata>(ref: string, node: JtdNode<M
     renameUnionEnumValue,
     rewriteMappingKey,
     renameMappingInterface,
+    getDocComment,
   } = options;
 
   let source = '';
 
   const compileTypeStatement = (node: JtdNode<M>): void => {
-    source += compileJtdComment(node)
+    source += compileDocComment(getDocComment(node))
         + `export type ${renameType(ref, node)}=${compileExpression(node, resolveRef, options)};`;
   };
 
@@ -150,7 +147,7 @@ function compileStatement<M extends ITsJtdMetadata>(ref: string, node: JtdNode<M
     visitEnum(node, next) {
       const name = renameEnum(ref, node);
 
-      source += compileJtdComment(node)
+      source += compileDocComment(getDocComment(node))
           + `enum ${name}{`;
       next();
       source += '}'
@@ -163,14 +160,14 @@ function compileStatement<M extends ITsJtdMetadata>(ref: string, node: JtdNode<M
     },
 
     visitObject(node, next) {
-      source += compileJtdComment(node)
+      source += compileDocComment(getDocComment(node))
           + `export interface ${renameInterface(ref, node)}{`;
       next();
       source += '}';
     },
 
     visitProperty(propKey, propNode, objectNode) {
-      source += compileJtdComment(propNode)
+      source += compileDocComment(getDocComment(propNode))
           + compilePropertyName(renameProperty(propKey, propNode, objectNode))
           + ':'
           + compileExpression(propNode, resolveRef, options)
@@ -178,7 +175,7 @@ function compileStatement<M extends ITsJtdMetadata>(ref: string, node: JtdNode<M
     },
 
     visitOptionalProperty(propKey, propNode, objectNode) {
-      source += compileJtdComment(propNode)
+      source += compileDocComment(getDocComment(propNode))
           + compilePropertyName(renameProperty(propKey, propNode, objectNode))
           + '?:'
           + compileExpression(propNode, resolveRef, options)
@@ -201,7 +198,7 @@ function compileStatement<M extends ITsJtdMetadata>(ref: string, node: JtdNode<M
           + '}'
           // Support of enum name mangling
           + `export{${enumName}};`
-          + compileJtdComment(node)
+          + compileDocComment(getDocComment(node))
           + `export type ${unionName}=`
           + mappingKeys.reduce((source, mappingKey) => source + '|' + renameMappingInterface(mappingKey, ref, node), '')
           + ';';
@@ -209,7 +206,7 @@ function compileStatement<M extends ITsJtdMetadata>(ref: string, node: JtdNode<M
     },
 
     visitUnionMapping(mappingKey, mappingNode, unionNode, next) {
-      source += compileJtdComment(mappingNode)
+      source += compileDocComment(getDocComment(mappingNode))
           + `export interface ${renameMappingInterface(mappingKey, ref, unionNode)}{`
           + compilePropertyName(unionNode.discriminator)
           + ':'
@@ -223,8 +220,8 @@ function compileStatement<M extends ITsJtdMetadata>(ref: string, node: JtdNode<M
   return source;
 }
 
-function compileExpression<M extends ITsJtdMetadata>(node: JtdNode<M>, resolveRef: JtdRefResolver<M>, options: Required<IJtdTsOptions<M>>): string {
-  const {rewriteType} = options;
+function compileExpression<M>(node: JtdNode<M>, resolveRef: JtdRefResolver<M>, options: Required<IJtdTsOptions<M>>): string {
+  const {rewriteType, getDocComment} = options;
 
   let source = '';
 
@@ -264,12 +261,12 @@ function compileExpression<M extends ITsJtdMetadata>(node: JtdNode<M>, resolveRe
       source += '}';
     },
     visitProperty(propKey, propNode, objectNode, next) {
-      source += compileJtdComment(propNode) + compilePropertyName(propKey) + ':';
+      source += compileDocComment(getDocComment(propNode)) + compilePropertyName(propKey) + ':';
       next();
       source += ';';
     },
     visitOptionalProperty(propKey, propNode, objectNode, next) {
-      source += compileJtdComment(propNode) + compilePropertyName(propKey) + '?:';
+      source += compileDocComment(getDocComment(propNode)) + compilePropertyName(propKey) + '?:';
       next();
       source += ';';
     },
@@ -288,10 +285,6 @@ function compileExpression<M extends ITsJtdMetadata>(node: JtdNode<M>, resolveRe
   });
 
   return source;
-}
-
-function compileJtdComment(node: JtdNode<ITsJtdMetadata>): string {
-  return compileDocComment(node.jtd.metadata?.comment);
 }
 
 /**
@@ -332,6 +325,7 @@ export const jtdTsOptions: Required<IJtdTsOptions<any>> = {
   renameUnionEnumValue: upperSnakeCase,
   rewriteMappingKey: (mappingKey) => mappingKey,
   renameMappingInterface: (mappingKey, unionRef) => 'I' + pascalCase(unionRef) + pascalCase(mappingKey),
+  getDocComment: (node) => node.jtd.metadata?.comment,
 };
 
 export const jtdTsTypeMap: Record<JtdType, string> = {
