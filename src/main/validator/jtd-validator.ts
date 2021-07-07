@@ -29,58 +29,58 @@ const excludedVars = [ARG_VALUE, ARG_ERRORS, ARG_POINTER, TYPE_VALIDATOR, VAR_CA
  */
 export function compileValidatorModuleProlog(runtimeVar: string): string {
   return `const {${runtimeMethod.join(',')}}=${runtimeVar};`
-      + `const ${VAR_CACHE}:Record<string,any>={};`;
+      + `const ${VAR_CACHE}:Record<string,any>=Object.create(null);`;
 }
 
-export interface IValidatorOptions<Metadata> {
+export interface IValidatorOptions<M> {
 
   /**
    * Returns the name of an object property.
    */
-  renameProperty: (propKey: string, node: JtdNode<Metadata>, objectNode: IJtdObjectNode<Metadata>) => string;
+  renameProperty?: (propKey: string, node: JtdNode<M>, objectNode: IJtdObjectNode<M>) => string;
 
   /**
    * Returns the name of the emitted validator function.
    */
-  renameValidator: (ref: string, node: JtdNode<Metadata>) => string;
+  renameValidator?: (ref: string, node: JtdNode<M>) => string;
 
   /**
    * Returns the name of the checker function that should be used to check values of `type`.
    */
-  renameTypeChecker: (type: JtdType | string, node: IJtdTypeNode<Metadata>) => string;
+  renameTypeChecker?: (type: JtdType | string, node: IJtdTypeNode<M>) => string;
 
   /**
    * Returns the literal value of an enum that must rewrite the value declared in JTD.
    */
-  rewriteEnumValue: (value: string, node: IJtdEnumNode<Metadata>) => string | number | undefined;
+  rewriteEnumValue?: (value: string, node: IJtdEnumNode<M>) => string | number | undefined;
 
   /**
    * Returns the literal value of an enum that is used for mapping a discriminated union.
    */
-  rewriteMappingKey: (mappingKey: string, unionRef: string, unionNode: IJtdUnionNode<Metadata>) => string | number | undefined;
+  rewriteMappingKey?: (mappingKey: string, unionRef: string, unionNode: IJtdUnionNode<M>) => string | number | undefined;
 
   /**
    * If set to `true` then checker functions are emitted along with validators. Checkers are functions that should be
    * used for type refinement in TS.
    */
-  emitsCheckers: boolean;
+  emitsCheckers?: boolean;
 
   /**
    * Returns the name of the emitted checker function. This is used if {@link emitsCheckers} is enabled.
    */
-  renameChecker: (ref: string, node: JtdNode<Metadata>) => string;
+  renameChecker?: (ref: string, node: JtdNode<M>) => string;
 
   /**
    * If {@link emitsCheckers} is enabled then this callback is used to resolve a type name that corresponds to the ref.
    * If omitted then type checkers would be emitted with `as unknown`.
    */
-  resolveRef: JtdRefResolver<Metadata>;
+  resolveRef?: JtdRefResolver<M>;
 }
 
 /**
  * Returns source code of functions that validate JTD definitions.
  */
-export function compileValidators<Metadata>(definitions: IJtdNodeMap<Metadata>, options?: Partial<IValidatorOptions<Metadata>>): string {
+export function compileValidators<M>(definitions: IJtdNodeMap<M>, options?: Partial<IValidatorOptions<M>>): string {
   const opts = Object.assign({}, jtdValidatorOptions, options);
 
   const {
@@ -104,15 +104,16 @@ export function compileValidators<Metadata>(definitions: IJtdNodeMap<Metadata>, 
         + `${ARG_POINTER}||="";`
         + `${ARG_EXCLUDED}||=[];`
         + compileValidatorBody(ref, node, opts)
-        + `return ${ARG_ERRORS};};`;
+        + `return ${ARG_ERRORS};`
+        + '};';
 
     if (emitsCheckers) {
       const name = renameChecker(ref, node);
       aaa.push(name);
 
       source += `const ${name}=`
-          + `(${ARG_VALUE}:unknown):${ARG_VALUE} is ${resolveRef(ref, node)}=>`
-          + renameValidator(ref, node) + '(' + ARG_VALUE + ').length===0;';
+          + `(${ARG_VALUE}:unknown):${ARG_VALUE} is ${resolveRef(ref, node)}=>!`
+          + renameValidator(ref, node) + '(' + ARG_VALUE + ').length;';
     }
   }
 
@@ -124,7 +125,7 @@ export function compileValidators<Metadata>(definitions: IJtdNodeMap<Metadata>, 
 /**
  * Compiles the body of the validator function.
  */
-function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, options: IValidatorOptions<Metadata>): string {
+function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: Required<IValidatorOptions<M>>): string {
   const {
     renameProperty,
     renameValidator,
@@ -338,7 +339,7 @@ function compileCachedValue(ref: string, nextVar: () => string, valueSource: str
   return VAR_CACHE + '[' + JSON.stringify(ref + '.' + nextVar()) + ']||=' + valueSource;
 }
 
-export const jtdValidatorOptions: IValidatorOptions<any> = {
+export const jtdValidatorOptions: Required<IValidatorOptions<any>> = {
   renameProperty: (propKey) => propKey,
   renameValidator: (ref) => 'validate' + pascalCase(ref),
   renameTypeChecker: (type, node) => jtdTypeCheckerMap[node.type as JtdType] || 'check' + pascalCase(type),

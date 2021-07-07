@@ -7,8 +7,8 @@ import {IJtdNodeMap, IJtdObjectNode, IJtdUnionNode, JtdNode, JtdNodeType} from '
  * @param ref The ref of the root JTD.
  * @param jtdRoot The JTD to parse.
  */
-export function parseJtdRoot<Metadata>(ref: string, jtdRoot: IJtdRoot<Metadata>): IJtdNodeMap<Metadata> {
-  const nodes = jtdRoot.definitions ? parseJtdDefinitions(jtdRoot.definitions) : Object.create(null);
+export function parseJtdRoot<M>(ref: string, jtdRoot: IJtdRoot<M>): IJtdNodeMap<M> {
+  const nodes = jtdRoot.definitions ? parseJtdDefinitions(jtdRoot.definitions) : createMap();
   nodes[ref] = parseJtd(jtdRoot);
   return nodes;
 }
@@ -18,8 +18,8 @@ export function parseJtdRoot<Metadata>(ref: string, jtdRoot: IJtdRoot<Metadata>)
  *
  * @param definitions The dictionary of ref-JTD pairs.
  */
-export function parseJtdDefinitions<Metadata>(definitions: IJtdMap<Metadata>): IJtdNodeMap<Metadata> {
-  const nodes: IJtdNodeMap<Metadata> = Object.create(null);
+export function parseJtdDefinitions<M>(definitions: IJtdMap<M>): IJtdNodeMap<M> {
+  const nodes: IJtdNodeMap<M> = createMap();
 
   for (const [ref, jtd] of Object.entries(definitions)) {
     nodes[ref] = parseJtd(jtd);
@@ -35,9 +35,22 @@ export function parseJtdDefinitions<Metadata>(definitions: IJtdMap<Metadata>): I
  * @see https://tools.ietf.org/html/rfc8927 RFC8927
  * @see https://jsontypedef.com/docs/jtd-in-5-minutes JTD in 5 minutes
  */
-export function parseJtd<Metadata>(jtd: IJtd<Metadata>): JtdNode<Metadata> {
+export function parseJtd<M>(jtd: IJtd<M>): JtdNode<M> {
 
-  if (jtd.nullable) {
+  const {
+    nullable: jtdNullable,
+    type: jtdType,
+    ref: jtdRef,
+    enum: jtdEnum,
+    elements: jtdElements,
+    values: jtdValues,
+    properties: jtdProperties,
+    optionalProperties: jtdOptionalProperties,
+    discriminator: jtdDiscriminator,
+    mapping: jtdMapping,
+  } = jtd;
+
+  if (jtdNullable) {
     return {
       nodeType: JtdNodeType.NULLABLE,
       valueNode: parseJtd(Object.assign({}, jtd, {nullable: undefined})),
@@ -45,62 +58,62 @@ export function parseJtd<Metadata>(jtd: IJtd<Metadata>): JtdNode<Metadata> {
     };
   }
 
-  if (jtd.type) {
+  if (jtdType) {
     return {
       nodeType: JtdNodeType.TYPE,
-      type: jtd.type,
+      type: jtdType,
       jtd,
     };
   }
 
-  if (jtd.ref) {
+  if (jtdRef) {
     return {
       nodeType: JtdNodeType.REF,
-      ref: jtd.ref,
+      ref: jtdRef,
       jtd,
     };
   }
 
-  if (jtd.enum) {
+  if (jtdEnum) {
     return {
       nodeType: JtdNodeType.ENUM,
-      values: jtd.enum,
+      values: jtdEnum,
       jtd,
     };
   }
 
-  if (jtd.elements) {
+  if (jtdElements) {
     return {
       nodeType: JtdNodeType.ELEMENTS,
-      elementNode: parseJtd(jtd.elements),
+      elementNode: parseJtd(jtdElements),
       jtd,
     };
   }
 
-  if (jtd.values) {
+  if (jtdValues) {
     return {
       nodeType: JtdNodeType.VALUES,
-      valueNode: parseJtd(jtd.values),
+      valueNode: parseJtd(jtdValues),
       jtd,
     };
   }
 
-  if (jtd.properties || jtd.optionalProperties) {
+  if (jtdProperties || jtdOptionalProperties) {
 
-    const objectNode: IJtdObjectNode<Metadata> = {
+    const objectNode: IJtdObjectNode<M> = {
       nodeType: JtdNodeType.OBJECT,
-      properties: Object.create(null),
-      optionalProperties: Object.create(null),
+      properties: createMap(),
+      optionalProperties: createMap(),
       jtd,
     };
 
-    if (jtd.properties) {
-      for (const [propKey, propJtd] of Object.entries(jtd.properties)) {
+    if (jtdProperties) {
+      for (const [propKey, propJtd] of Object.entries(jtdProperties)) {
         objectNode.properties[propKey] = parseJtd(propJtd);
       }
     }
-    if (jtd.optionalProperties) {
-      for (const [propKey, propJtd] of Object.entries(jtd.optionalProperties)) {
+    if (jtdOptionalProperties) {
+      for (const [propKey, propJtd] of Object.entries(jtdOptionalProperties)) {
         if (propKey in objectNode.properties) {
           throw new Error('Duplicated property: ' + propKey);
         }
@@ -110,20 +123,24 @@ export function parseJtd<Metadata>(jtd: IJtd<Metadata>): JtdNode<Metadata> {
     return objectNode;
   }
 
-  if (jtd.discriminator && jtd.mapping) {
+  if (jtdDiscriminator || jtdMapping) {
 
-    const unionNode: IJtdUnionNode<Metadata> = {
+    if (!jtdDiscriminator || !jtdMapping) {
+      throw new Error('Malformed discriminated union');
+    }
+
+    const unionNode: IJtdUnionNode<M> = {
       nodeType: JtdNodeType.UNION,
-      discriminator: jtd.discriminator,
-      mapping: Object.create(null),
+      discriminator: jtdDiscriminator,
+      mapping: createMap(),
       jtd,
     };
 
-    for (const [mappingKey, mappingJtd] of Object.entries(jtd.mapping)) {
+    for (const [mappingKey, mappingJtd] of Object.entries(jtdMapping)) {
       const objectNode = parseJtd(mappingJtd);
 
       if (objectNode.nodeType !== JtdNodeType.OBJECT) {
-        throw new TypeError('Mappings must be object definitions: ' + mappingKey);
+        throw new Error('Mappings must be object definitions: ' + mappingKey);
       }
       unionNode.mapping[mappingKey] = objectNode;
     }
@@ -134,4 +151,8 @@ export function parseJtd<Metadata>(jtd: IJtd<Metadata>): JtdNode<Metadata> {
     nodeType: JtdNodeType.ANY,
     jtd,
   };
+}
+
+function createMap() {
+  return Object.create(null);
 }

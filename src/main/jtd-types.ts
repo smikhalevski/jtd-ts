@@ -25,29 +25,29 @@ export const enum JtdType {
  * @see https://tools.ietf.org/html/rfc8927 RFC8927
  * @see https://jsontypedef.com/docs/jtd-in-5-minutes JTD in 5 minutes
  */
-export interface IJtdRoot<Metadata> extends IJtd<Metadata> {
-  definitions?: IJtdMap<Metadata>;
+export interface IJtdRoot<M> extends IJtd<M> {
+  definitions?: IJtdMap<M>;
 }
 
 /**
  * The definition of a type.
  */
-export interface IJtd<Metadata> {
-  metadata?: Metadata;
+export interface IJtd<M> {
+  metadata?: M;
   nullable?: boolean;
   ref?: string;
   type?: JtdType | string;
   enum?: Array<string>;
-  elements?: IJtd<Metadata>;
-  values?: IJtd<Metadata>;
-  properties?: IJtdMap<Metadata>;
-  optionalProperties?: IJtdMap<Metadata>;
+  elements?: IJtd<M>;
+  values?: IJtd<M>;
+  properties?: IJtdMap<M>;
+  optionalProperties?: IJtdMap<M>;
   discriminator?: string;
-  mapping?: IJtdMap<Metadata>;
+  mapping?: IJtdMap<M>;
 }
 
 /**
  * Mapping from ref to the type definition.
  */
-export interface IJtdMap<Metadata> extends Record<string, IJtd<Metadata>> {
+export interface IJtdMap<M> extends Record<string, IJtd<M>> {
 }

@@ -12,7 +12,7 @@ import {
   JtdNodeType,
 } from './jtd-ast-types';
 
-export interface IJtdNodeVisitor<Metadata> {
+export interface IJtdNodeVisitor<M> {
 
   /**
    * If set to `true` then children visitors are invoked if parent visitor is absent.
@@ -20,20 +20,19 @@ export interface IJtdNodeVisitor<Metadata> {
    * @default false
    */
   transient?: boolean;
-
-  visitAny?: (node: IJtdAnyNode<Metadata>) => void;
-  visitRef?: (node: IJtdRefNode<Metadata>) => void;
-  visitNullable?: (node: IJtdNullableNode<Metadata>, next: () => void) => void;
-  visitType?: (node: IJtdTypeNode<Metadata>) => void;
-  visitEnum?: (node: IJtdEnumNode<Metadata>, next: () => void) => void;
-  visitEnumValue?: (value: string, node: IJtdEnumNode<Metadata>) => void;
-  visitElements?: (node: IJtdElementsNode<Metadata>, next: () => void) => void;
-  visitValues?: (node: IJtdValuesNode<Metadata>, next: () => void) => void;
-  visitObject?: (node: IJtdObjectNode<Metadata>, next: () => void) => void;
-  visitProperty?: (propKey: string, propNode: JtdNode<Metadata>, objectNode: IJtdObjectNode<Metadata>, next: () => void) => void;
-  visitOptionalProperty?: (propKey: string, propNode: JtdNode<Metadata>, objectNode: IJtdObjectNode<Metadata>, next: () => void) => void;
-  visitUnion?: (node: IJtdUnionNode<Metadata>, next: () => void) => void;
-  visitUnionMapping?: (mappingKey: string, mappingNode: IJtdObjectNode<Metadata>, unionNode: IJtdUnionNode<Metadata>, next: () => void) => void;
+  visitAny?: (node: IJtdAnyNode<M>) => void;
+  visitRef?: (node: IJtdRefNode<M>) => void;
+  visitNullable?: (node: IJtdNullableNode<M>, next: () => void) => void;
+  visitType?: (node: IJtdTypeNode<M>) => void;
+  visitEnum?: (node: IJtdEnumNode<M>, next: () => void) => void;
+  visitEnumValue?: (value: string, node: IJtdEnumNode<M>) => void;
+  visitElements?: (node: IJtdElementsNode<M>, next: () => void) => void;
+  visitValues?: (node: IJtdValuesNode<M>, next: () => void) => void;
+  visitObject?: (node: IJtdObjectNode<M>, next: () => void) => void;
+  visitProperty?: (propKey: string, propNode: JtdNode<M>, objectNode: IJtdObjectNode<M>, next: () => void) => void;
+  visitOptionalProperty?: (propKey: string, propNode: JtdNode<M>, objectNode: IJtdObjectNode<M>, next: () => void) => void;
+  visitUnion?: (node: IJtdUnionNode<M>, next: () => void) => void;
+  visitUnionMapping?: (mappingKey: string, mappingNode: IJtdObjectNode<M>, unionNode: IJtdUnionNode<M>, next: () => void) => void;
 }
 
 const transientVisit = (node: unknown, next: () => void) => next();
@@ -48,10 +47,9 @@ const transientVisitProperty = (key: string, node: unknown, parentNode: unknown,
  * @param node The root of the JTD node tree.
  * @param visitor Callbacks that must be invoked for nodes under `node`.
  */
-export function visitJtdNode<Metadata>(node: JtdNode<Metadata>, visitor: IJtdNodeVisitor<Metadata>): void {
+export function visitJtdNode<M>(node: JtdNode<M>, visitor: IJtdNodeVisitor<M>): void {
   const {
     transient,
-
     visitAny,
     visitRef,
     visitNullable = transient ? transientVisit : undefined,
@@ -113,10 +111,9 @@ export function visitJtdNode<Metadata>(node: JtdNode<Metadata>, visitor: IJtdNod
   }
 }
 
-function visitJtdObjectNodeProperties<Metadata>(node: IJtdObjectNode<Metadata>, visitor: IJtdNodeVisitor<Metadata>): void {
+function visitJtdObjectNodeProperties<M>(node: IJtdObjectNode<M>, visitor: IJtdNodeVisitor<M>): void {
   const {
     transient,
-
     visitProperty = transient ? transientVisitProperty : undefined,
     visitOptionalProperty = transient ? transientVisitProperty : undefined,
   } = visitor;

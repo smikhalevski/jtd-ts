@@ -1,4 +1,4 @@
-import {compileTsFromJtdDefinitions, ITsJtdMetadata} from '../main/jtd-ts';
+import {compileTsFromJtdDefinitions, ITsJtdMetadataetadata} from '../main/jtd-ts';
 import {parseJtdRoot} from '../main/jtd-ast';
 import {JtdNodeType} from '../main/jtd-ast-types';
 

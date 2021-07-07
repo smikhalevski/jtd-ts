@@ -12,46 +12,6 @@ import {JtdType} from './jtd-types';
 import {compileDocComment, compilePropertyName} from './compiler-utils';
 import {pascalCase, upperSnakeCase} from './rename-utils';
 
-export interface IJtdTsRenameOptions<Metadata> {
-
-  /**
-   * Returns the name of the interface.
-   */
-  renameInterface: (ref: string, objectNode: IJtdObjectNode<Metadata>) => string;
-
-  /**
-   * Returns the name the primitive type alias.
-   */
-  renameType: (ref: string, node: JtdNode<Metadata>) => string;
-
-  /**
-   * Returns the name of the enum.
-   */
-  renameEnum: (ref: string, node: IJtdEnumNode<Metadata>) => string;
-}
-
-/**
- * Returns the TS type name of the `ref` depending on `node` type.
- */
-export function renameRef<Metadata>(ref: string, node: JtdNode<Metadata>, options: IJtdTsRenameOptions<Metadata>): string {
-  switch (node.nodeType) {
-    case JtdNodeType.ANY:
-    case JtdNodeType.REF:
-    case JtdNodeType.NULLABLE:
-    case JtdNodeType.TYPE:
-    case JtdNodeType.ELEMENTS:
-    case JtdNodeType.VALUES:
-    case JtdNodeType.UNION:
-      return options.renameType(ref, node);
-
-    case JtdNodeType.ENUM:
-      return options.renameEnum(ref, node);
-
-    case JtdNodeType.OBJECT:
-      return options.renameInterface(ref, node);
-  }
-}
-
 /**
  * The TS-specific content of the JTD `metadata` object.
  */
@@ -63,16 +23,34 @@ export interface ITsJtdMetadata {
   comment?: string;
 }
 
-export interface IJtdTsOptions<Metadata> extends IJtdTsRenameOptions<Metadata> {
+export interface IJtdTsRefRenameOptions<M> {
 
   /**
-   * Resolves type name for a ref. Invoked only when ref isn't found among known definitions. If omitted then
-   * unresolved types are emitted as `never`.
+   * Returns the name of the interface.
+   */
+  renameInterface?: (ref: string, objectNode: IJtdObjectNode<M>) => string;
+
+  /**
+   * Returns the name the primitive type alias.
+   */
+  renameType?: (ref: string, node: JtdNode<M>) => string;
+
+  /**
+   * Returns the name of the enum.
+   */
+  renameEnum?: (ref: string, node: IJtdEnumNode<M>) => string;
+}
+
+export interface IJtdTsOptions<M> extends IJtdTsRefRenameOptions<M> {
+
+  /**
+   * Resolves type name for a ref. Invoked only when ref isn't found among known definitions. By default, unresolved
+   * types are emitted as `never`.
    *
    * @example
    * (ref) => 'Foo.' + upperFirst(camelCase(ref))
    */
-  resolveRef: JtdRefResolver<Metadata>;
+  resolveRef?: JtdRefResolver<M>;
 
   /**
    * Returns a TS name of the type that represents a custom type used in JTD. Standard JTD types are converted
@@ -81,53 +59,57 @@ export interface IJtdTsOptions<Metadata> extends IJtdTsRenameOptions<Metadata> {
    * @example
    * (node) => node.type === 'int64' ? 'bigint' : 'string'
    */
-  rewriteType: (node: IJtdTypeNode<Metadata>) => string;
+  rewriteType?: (node: IJtdTypeNode<M>) => string;
 
   /**
    * Returns the name of an object property.
    */
-  renameProperty: (propKey: string, node: JtdNode<Metadata>, objectNode: IJtdObjectNode<Metadata>) => string;
+  renameProperty?: (propKey: string, node: JtdNode<M>, objectNode: IJtdObjectNode<M>) => string;
 
   /**
    * Returns the name of the enum value.
    */
-  renameEnumValue: (value: string, node: IJtdEnumNode<Metadata>) => string;
+  renameEnumValue?: (value: string, node: IJtdEnumNode<M>) => string;
 
   /**
    * Returns the contents of the enum value.
    */
-  rewriteEnumValue: (value: string, node: IJtdEnumNode<Metadata>) => string | number | undefined;
+  rewriteEnumValue?: (value: string, node: IJtdEnumNode<M>) => string | number | undefined;
 
   /**
    * Returns the name of the enum that holds mapping keys for discriminated union of interfaces.
    */
-  renameUnionEnum: (unionRef: string, unionNode: IJtdUnionNode<Metadata>) => string;
+  renameUnionEnum?: (unionRef: string, unionNode: IJtdUnionNode<M>) => string;
 
   /**
    * Returns the contents of the value from the enum that holds discriminator values from the discriminated union.
    */
-  renameUnionEnumValue: (mappingKey: string, unionRef: string, unionNode: IJtdUnionNode<Metadata>) => string;
+  renameUnionEnumValue?: (mappingKey: string, unionRef: string, unionNode: IJtdUnionNode<M>) => string;
 
   /**
    * Returns the string value that would be used as a value of discriminator property in united interfaces.
    */
-  rewriteMappingKey: (mappingKey: string, unionRef: string, unionNode: IJtdUnionNode<Metadata>) => string | number | undefined;
+  rewriteMappingKey?: (mappingKey: string, unionRef: string, unionNode: IJtdUnionNode<M>) => string | number | undefined;
 
   /**
    * Returns the name of the interface that is part of the discriminated union mapping.
    */
-  renameMappingInterface: (mappingKey: string, unionRef: string, unionNode: IJtdUnionNode<Metadata>) => string;
+  renameMappingInterface?: (mappingKey: string, unionRef: string, unionNode: IJtdUnionNode<M>) => string;
 }
 
-export type JtdRefResolver<Metadata> = (ref: string, node: JtdNode<Metadata>) => string;
+/**
+ * Callback that returns the actual type name for the given ref. This may perform lookup in an external dictionary or
+ * infer type name from metadata that is accessible through `node`.
+ */
+export type JtdRefResolver<M> = (ref: string, node: JtdNode<M>) => string;
 
 /**
  * Compiles provided JTD definitions as a TS source that represents a set of types, interfaces and enums.
  */
-export function compileTsFromJtdDefinitions<Metadata extends ITsJtdMetadata>(definitions: IJtdNodeMap<Metadata>, options?: Partial<IJtdTsOptions<Metadata>>): string {
+export function compileTsFromJtdDefinitions<M extends ITsJtdMetadata>(definitions: IJtdNodeMap<M>, options?: IJtdTsOptions<M>): string {
   const opts = Object.assign({}, jtdTsOptions, options);
 
-  const resolveRef: JtdRefResolver<Metadata> = (ref, refNode) => {
+  const resolveRef: JtdRefResolver<M> = (ref, refNode) => {
     const node = definitions[ref];
     return node ? renameRef(ref, node, opts) : opts.resolveRef(ref, refNode);
   };
@@ -135,7 +117,7 @@ export function compileTsFromJtdDefinitions<Metadata extends ITsJtdMetadata>(def
   return Object.entries(definitions).reduce((source, [ref, node]) => source + compileStatement(ref, node, resolveRef, opts), '');
 }
 
-function compileStatement<Metadata extends ITsJtdMetadata>(ref: string, node: JtdNode<Metadata>, resolveRef: JtdRefResolver<Metadata>, options: IJtdTsOptions<Metadata>): string {
+function compileStatement<M extends ITsJtdMetadata>(ref: string, node: JtdNode<M>, resolveRef: JtdRefResolver<M>, options: Required<IJtdTsOptions<M>>): string {
   const {
     renameProperty,
     renameInterface,
@@ -151,7 +133,7 @@ function compileStatement<Metadata extends ITsJtdMetadata>(ref: string, node: Jt
 
   let source = '';
 
-  const compileTypeStatement = (node: JtdNode<Metadata>): void => {
+  const compileTypeStatement = (node: JtdNode<M>): void => {
     source += compileJtdComment(node)
         + `export type ${renameType(ref, node)}=${compileExpression(node, resolveRef, options)};`;
   };
@@ -167,9 +149,12 @@ function compileStatement<Metadata extends ITsJtdMetadata>(ref: string, node: Jt
 
     visitEnum(node, next) {
       const name = renameEnum(ref, node);
-      source += compileJtdComment(node) + `enum ${name}{`;
+
+      source += compileJtdComment(node)
+          + `enum ${name}{`;
       next();
       source += '}'
+          // Support of enum name mangling
           + `export{${name}};`;
     },
 
@@ -178,7 +163,8 @@ function compileStatement<Metadata extends ITsJtdMetadata>(ref: string, node: Jt
     },
 
     visitObject(node, next) {
-      source += compileJtdComment(node) + `export interface ${renameInterface(ref, node)}{`;
+      source += compileJtdComment(node)
+          + `export interface ${renameInterface(ref, node)}{`;
       next();
       source += '}';
     },
@@ -200,30 +186,35 @@ function compileStatement<Metadata extends ITsJtdMetadata>(ref: string, node: Jt
     },
 
     visitUnion(node, next) {
-      const name = renameType(ref, node);
+      const unionName = renameType(ref, node);
 
       const mappingKeys = Object.keys(node.mapping);
 
       if (mappingKeys.length === 0) {
-        source += `export type ${name}=never`;
-      } else {
-        const enumName = renameUnionEnum(ref, node);
-        source += `enum ${enumName}{`
-            + mappingKeys.reduce((source, mappingKey) => renameUnionEnumValue(mappingKey, ref, node) + '=' + JSON.stringify(rewriteMappingKey(mappingKey, ref, node)) + ',', '')
-            + '}'
-            + `export{${enumName}};`
-            + compileJtdComment(node)
-            + `export type ${name}=`
-            + mappingKeys.reduce((source, mappingKey) => source + '|' + renameMappingInterface(mappingKey, ref, node), '')
-            + ';';
-        next();
+        source += `export type ${unionName}=never;`;
+        return;
       }
+
+      const enumName = renameUnionEnum(ref, node);
+      source += `enum ${enumName}{`
+          + mappingKeys.reduce((source, mappingKey) => renameUnionEnumValue(mappingKey, ref, node) + '=' + JSON.stringify(rewriteMappingKey(mappingKey, ref, node)) + ',', '')
+          + '}'
+          // Support of enum name mangling
+          + `export{${enumName}};`
+          + compileJtdComment(node)
+          + `export type ${unionName}=`
+          + mappingKeys.reduce((source, mappingKey) => source + '|' + renameMappingInterface(mappingKey, ref, node), '')
+          + ';';
+      next();
     },
 
     visitUnionMapping(mappingKey, mappingNode, unionNode, next) {
       source += compileJtdComment(mappingNode)
           + `export interface ${renameMappingInterface(mappingKey, ref, unionNode)}{`
-          + compilePropertyName(unionNode.discriminator) + ':' + renameUnionEnum(ref, unionNode) + '.' + renameUnionEnumValue(mappingKey, ref, unionNode) + ';';
+          + compilePropertyName(unionNode.discriminator)
+          + ':'
+          + renameUnionEnum(ref, unionNode) + '.' + renameUnionEnumValue(mappingKey, ref, unionNode)
+          + ';';
       next();
       source += '}';
     },
@@ -232,7 +223,7 @@ function compileStatement<Metadata extends ITsJtdMetadata>(ref: string, node: Jt
   return source;
 }
 
-function compileExpression<Metadata extends ITsJtdMetadata>(node: JtdNode<Metadata>, resolveRef: JtdRefResolver<Metadata>, options: IJtdTsOptions<Metadata>): string {
+function compileExpression<M extends ITsJtdMetadata>(node: JtdNode<M>, resolveRef: JtdRefResolver<M>, options: Required<IJtdTsOptions<M>>): string {
   const {rewriteType} = options;
 
   let source = '';
@@ -249,7 +240,7 @@ function compileExpression<Metadata extends ITsJtdMetadata>(node: JtdNode<Metada
       source += '|null';
     },
     visitType(node) {
-      source += jtdTsTypeMap[node.type as JtdType] || rewriteType(node);
+      source += rewriteType(node);
     },
     visitEnum(node, next) {
       next();
@@ -304,9 +295,31 @@ function compileJtdComment(node: JtdNode<ITsJtdMetadata>): string {
 }
 
 /**
+ * Returns the TS type name of the `ref` depending on `node` type.
+ */
+export function renameRef<M>(ref: string, node: JtdNode<M>, options: Required<IJtdTsRefRenameOptions<M>>): string {
+  switch (node.nodeType) {
+    case JtdNodeType.ANY:
+    case JtdNodeType.REF:
+    case JtdNodeType.NULLABLE:
+    case JtdNodeType.TYPE:
+    case JtdNodeType.ELEMENTS:
+    case JtdNodeType.VALUES:
+    case JtdNodeType.UNION:
+      return options.renameType(ref, node);
+
+    case JtdNodeType.ENUM:
+      return options.renameEnum(ref, node);
+
+    case JtdNodeType.OBJECT:
+      return options.renameInterface(ref, node);
+  }
+}
+
+/**
  * Global default options used by {@link compileTsFromJtdDefinitions}.
  */
-export const jtdTsOptions: IJtdTsOptions<any> = {
+export const jtdTsOptions: Required<IJtdTsOptions<any>> = {
   resolveRef: () => 'never',
   renameInterface: (ref) => 'I' + pascalCase(ref),
   renameType: pascalCase,

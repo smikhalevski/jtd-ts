@@ -12,77 +12,77 @@ export const enum JtdNodeType {
   UNION,
 }
 
-export type JtdNode<Metadata> =
-    | IJtdAnyNode<Metadata>
-    | IJtdRefNode<Metadata>
-    | IJtdNullableNode<Metadata>
-    | IJtdTypeNode<Metadata>
-    | IJtdEnumNode<Metadata>
-    | IJtdElementsNode<Metadata>
-    | IJtdValuesNode<Metadata>
-    | IJtdObjectNode<Metadata>
-    | IJtdUnionNode<Metadata>;
+export type JtdNode<M> =
+    | IJtdAnyNode<M>
+    | IJtdRefNode<M>
+    | IJtdNullableNode<M>
+    | IJtdTypeNode<M>
+    | IJtdEnumNode<M>
+    | IJtdElementsNode<M>
+    | IJtdValuesNode<M>
+    | IJtdObjectNode<M>
+    | IJtdUnionNode<M>;
 
-export interface IJtdNode<Metadata> {
+export interface IJtdNode<M> {
   nodeType: JtdNodeType;
-  jtd: IJtd<Metadata>;
+  jtd: IJtd<M>;
 }
 
-export interface IJtdAnyNode<Metadata> extends IJtdNode<Metadata> {
+export interface IJtdAnyNode<M> extends IJtdNode<M> {
   nodeType: JtdNodeType.ANY;
 }
 
-export interface IJtdRefNode<Metadata> extends IJtdNode<Metadata> {
+export interface IJtdRefNode<M> extends IJtdNode<M> {
   nodeType: JtdNodeType.REF;
   ref: string;
 }
 
-export interface IJtdNullableNode<Metadata> extends IJtdNode<Metadata> {
+export interface IJtdNullableNode<M> extends IJtdNode<M> {
   nodeType: JtdNodeType.NULLABLE;
-  valueNode: JtdNode<Metadata>;
+  valueNode: JtdNode<M>;
 }
 
-export interface IJtdTypeNode<Metadata> extends IJtdNode<Metadata> {
+export interface IJtdTypeNode<M> extends IJtdNode<M> {
   nodeType: JtdNodeType.TYPE;
   type: JtdType | string;
 }
 
-export interface IJtdEnumNode<Metadata> extends IJtdNode<Metadata> {
+export interface IJtdEnumNode<M> extends IJtdNode<M> {
   nodeType: JtdNodeType.ENUM;
   values: Array<string>;
 }
 
-export interface IJtdElementsNode<Metadata> extends IJtdNode<Metadata> {
+export interface IJtdElementsNode<M> extends IJtdNode<M> {
   nodeType: JtdNodeType.ELEMENTS;
-  elementNode: JtdNode<Metadata>;
+  elementNode: JtdNode<M>;
 }
 
-export interface IJtdValuesNode<Metadata> extends IJtdNode<Metadata> {
+export interface IJtdValuesNode<M> extends IJtdNode<M> {
   nodeType: JtdNodeType.VALUES;
-  valueNode: JtdNode<Metadata>;
+  valueNode: JtdNode<M>;
 }
 
-export interface IJtdObjectNode<Metadata> extends IJtdNode<Metadata> {
+export interface IJtdObjectNode<M> extends IJtdNode<M> {
   nodeType: JtdNodeType.OBJECT;
-  properties: IJtdNodeMap<Metadata>;
-  optionalProperties: IJtdNodeMap<Metadata>;
+  properties: IJtdNodeMap<M>;
+  optionalProperties: IJtdNodeMap<M>;
 }
 
 /**
  * The discriminated union of objects.
  */
-export interface IJtdUnionNode<Metadata> extends IJtdNode<Metadata> {
+export interface IJtdUnionNode<M> extends IJtdNode<M> {
   nodeType: JtdNodeType.UNION;
 
   /**
    * The name of the property in discriminated objects that holds the mapping key.
    */
   discriminator: string;
-  mapping: Record<string, IJtdObjectNode<Metadata>>;
+  mapping: Record<string, IJtdObjectNode<M>>;
 }
 
 /**
  * Mapping from ref to the type definition.
  */
-export interface IJtdNodeMap<Metadata> extends Record<string, JtdNode<Metadata>> {
+export interface IJtdNodeMap<M> extends Record<string, JtdNode<M>> {
 }
