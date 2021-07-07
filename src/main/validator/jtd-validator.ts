@@ -92,14 +92,17 @@ export function compileValidators<Metadata>(definitions: IJtdNodeMap<Metadata>, 
 
   let source = '';
 
-  let aaa: Array<string> = []
+  let aaa: Array<string> = [];
 
   for (const [ref, node] of Object.entries(definitions)) {
     const name = renameValidator(ref, node);
     aaa.push(name);
 
     source += `const ${name}:${TYPE_VALIDATOR}=`
-        + `(${ARG_VALUE},${ARG_ERRORS}=[],${ARG_POINTER}="",${ARG_EXCLUDED}=[])=>{`
+        + `(${ARG_VALUE},${ARG_ERRORS},${ARG_POINTER},${ARG_EXCLUDED})=>{`
+        + `${ARG_ERRORS}||=[];`
+        + `${ARG_POINTER}||="";`
+        + `${ARG_EXCLUDED}||=[];`
         + compileValidatorBody(ref, node, opts)
         + `return ${ARG_ERRORS};};`;
 
@@ -113,7 +116,7 @@ export function compileValidators<Metadata>(definitions: IJtdNodeMap<Metadata>, 
     }
   }
 
-  source += `export {${aaa.join(',')}};`
+  source += `export {${aaa.join(',')}};`;
 
   return source;
 }
@@ -149,16 +152,11 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
 
   const pointerVars: Array<IEntry> = [];
 
-  let pointerSrc = '';
-  let pointerVarInitSrc = '';
-
   const compileValueVar = () => {
 
     if (pointer.length === 0) {
       pointerVar = ARG_POINTER;
       valueVar = ARG_VALUE;
-      pointerSrc = '';
-      pointerVarInitSrc = '';
       return '';
     }
 
@@ -182,8 +180,6 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
       if (pointer.length === o + 1) {
         pointerVar = e.pointerVar;
         valueVar = e.valueVar;
-        pointerSrc = '';
-        pointerVarInitSrc = '';
         return '';
       }
 
@@ -197,10 +193,8 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
 
     pointerVars.push({pointer: pointer.slice(0), pointerVar: pointerVar, valueVar});
 
-    pointerSrc = `${e ? e.pointerVar : ARG_POINTER}+${compileJsonPointer(p, RuntimeMethod.ESCAPE_JSON_POINTER)}`;
-    pointerVarInitSrc = `const ${pointerVar}=${e ? e.pointerVar : ARG_POINTER}+${compileJsonPointer(p, RuntimeMethod.ESCAPE_JSON_POINTER)};`;
-
-    return `const ${valueVar}=${e ? e.valueVar : ARG_VALUE}${compileAccessor(p)};`;
+    return `const ${valueVar}=${e ? e.valueVar : ARG_VALUE}${compileAccessor(p)};`
+        + `const ${pointerVar}=${e ? e.pointerVar : ARG_POINTER}+${compileJsonPointer(p, RuntimeMethod.ESCAPE_JSON_POINTER)};`;
   };
 
   visitJtdNode(node, {
@@ -211,8 +205,7 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
 
     visitNullable(node, next) {
       source += compileValueVar()
-          + `if(${valueVar}!==null){`
-          + pointerVarInitSrc;
+          + `if(${valueVar}!==null){`;
       next();
       source += '}';
     },
@@ -223,9 +216,9 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
     },
 
     visitEnum(node) {
-      const valuesSource = 'new Set(['
+      const valuesSource = '['
           + Array.from(node.values).map((value) => JSON.stringify(rewriteEnumValue(value, node))).join(',')
-          + '])';
+          + ']';
       source += compileCheckerCall(RuntimeMethod.CHECK_ENUM, valueVar, pointerVar, compileCachedValue(ref, nextVar, valuesSource)) + ';';
     },
 
@@ -238,11 +231,9 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
       const indexVar = nextVar();
       source += compileValueVar()
           + `if(${compileCheckerCall(RuntimeMethod.CHECK_ARRAY, valueVar, pointerVar)} && ${RuntimeMethod.EXCLUDE}(${ARG_EXCLUDED},${valueVar})){`
-          + pointerVarInitSrc
           + `for(let ${indexVar}=0;${indexVar}<${valueVar}.length;${indexVar}++){`;
       pointer.push({var: indexVar});
-      source += compileValueVar()
-          + pointerVarInitSrc;
+      source += compileValueVar();
       next();
       pointer.pop();
       source += '}}';
@@ -257,11 +248,9 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
       const keyVar = nextVar();
       source += compileValueVar()
           + `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, valueVar, pointerVar)} && ${RuntimeMethod.EXCLUDE}(${ARG_EXCLUDED},${valueVar})){`
-          + pointerVarInitSrc
           + `for(const ${keyVar} in ${valueVar}){`;
       pointer.push({var: keyVar});
-      source += compileValueVar()
-          + pointerVarInitSrc;
+      source += compileValueVar();
       next();
       pointer.pop();
       source += '}}';
@@ -269,16 +258,14 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
 
     visitObject(node, next) {
       source += compileValueVar()
-          + `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, valueVar, pointerVar)} && ${RuntimeMethod.EXCLUDE}(${ARG_EXCLUDED},${valueVar})){`
-          + pointerVarInitSrc;
+          + `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, valueVar, pointerVar)} && ${RuntimeMethod.EXCLUDE}(${ARG_EXCLUDED},${valueVar})){`;
       next();
       source += '}';
     },
 
     visitProperty(propKey, propNode, objectNode, next) {
       pointer.push({key: renameProperty(propKey, propNode, objectNode)});
-      source += compileValueVar()
-          + pointerVarInitSrc;
+      source += compileValueVar();
       next();
       pointer.pop();
     },
@@ -286,8 +273,7 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
     visitOptionalProperty(propKey, propNode, objectNode, next) {
       pointer.push({key: renameProperty(propKey, propNode, objectNode)});
       source += compileValueVar()
-          + `if(${valueVar}!==undefined){`
-          + pointerVarInitSrc;
+          + `if(${valueVar}!==undefined){`;
       next();
       source += '}';
       pointer.pop();
@@ -296,7 +282,6 @@ function compileValidatorBody<Metadata>(ref: string, node: JtdNode<Metadata>, op
     visitUnion(node, next) {
       source += compileValueVar()
           + `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, valueVar, pointerVar)} && ${RuntimeMethod.EXCLUDE}(${ARG_EXCLUDED},${valueVar})){`
-          + pointerVarInitSrc
           + `switch(${valueVar + compileAccessor([{key: node.discriminator}])}){`;
       next();
       source += 'default:'

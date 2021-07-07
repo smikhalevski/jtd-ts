@@ -29,6 +29,6 @@ export const runtimeMethod = [
 
 export const TYPE_VALIDATOR = '__Validator';
 
-export const VAR_CACHE = '__validatorCache';
+export const VAR_CACHE = '__cache';
 
-export const VAR_RUNTIME = '__validatorRuntime';
+export const VAR_RUNTIME = '__runtime';

@@ -64,8 +64,8 @@ export const checkBoolean: Checker<boolean> = (value, errors, pointer): value is
   return checkRequired(value, errors, pointer) && (typeof value === 'boolean' || raiseIllegalType(errors, pointer));
 };
 
-export function checkEnum(value: unknown, values: Set<string>, errors?: Array<IValidationError>, pointer?: string): value is string {
-  return checkString(value, errors, pointer) && (values.has(value) || raiseInvalid(errors, pointer));
+export function checkEnum(value: unknown, values: Array<string>, errors?: Array<IValidationError>, pointer?: string): value is string {
+  return checkString(value, errors, pointer) && (values.includes(value) || raiseInvalid(errors, pointer));
 }
 
 export function checkPattern(value: string, pattern: RegExp, errors?: Array<IValidationError>, pointer?: string): boolean {
