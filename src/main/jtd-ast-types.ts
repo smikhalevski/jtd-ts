@@ -1,4 +1,4 @@
-import {IJtd, JtdType} from './jtd-types';
+import {IJtdRoot, JtdType} from './jtd-types';
 
 export const enum JtdNodeType {
   ANY,
@@ -33,9 +33,12 @@ export type JtdNode<M> =
 export interface IJtdNode<M> {
   nodeType: JtdNodeType;
   parentNode: JtdNode<M> | null;
-  jtd: IJtd<M>;
+  jtd: IJtdRoot<M>;
 }
 
+/**
+ * The unconstrained type node.
+ */
 export interface IJtdAnyNode<M> extends IJtdNode<M> {
   nodeType: JtdNodeType.ANY;
 }
@@ -100,5 +103,5 @@ export interface IJtdMappingNode<M> extends IJtdNode<M> {
   nodeType: JtdNodeType.MAPPING;
   parentNode: IJtdUnionNode<M>;
   key: string;
-  valueNode: IJtdObjectNode<M>;
+  objectNode: IJtdObjectNode<M>;
 }

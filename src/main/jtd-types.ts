@@ -26,7 +26,7 @@ export const enum JtdType {
  * @see https://jsontypedef.com/docs/jtd-in-5-minutes JTD in 5 minutes
  */
 export interface IJtdRoot<M> extends IJtd<M> {
-  definitions?: IJtdMap<M>;
+  definitions?: Record<string, IJtd<M>>;
 }
 
 /**
@@ -40,14 +40,8 @@ export interface IJtd<M> {
   enum?: Array<string>;
   elements?: IJtd<M>;
   values?: IJtd<M>;
-  properties?: IJtdMap<M>;
-  optionalProperties?: IJtdMap<M>;
+  properties?: Record<string, IJtd<M>>;
+  optionalProperties?: Record<string, IJtd<M>>;
   discriminator?: string;
-  mapping?: IJtdMap<M>;
-}
-
-/**
- * Mapping from ref to the type definition.
- */
-export interface IJtdMap<M> extends Record<string, IJtd<M>> {
+  mapping?: Record<string, IJtd<M>>;
 }

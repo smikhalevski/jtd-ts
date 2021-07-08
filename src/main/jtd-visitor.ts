@@ -81,7 +81,7 @@ export function visitJtdNode<M>(node: JtdNode<M>, visitor: IJtdNodeVisitor<M>): 
       break;
 
     case JtdNodeType.MAPPING:
-      visitor.mapping?.(node, () => visitJtdNode(node.valueNode, visitor));
+      visitor.mapping?.(node, () => visitJtdNode(node.objectNode, visitor));
       break;
   }
 }

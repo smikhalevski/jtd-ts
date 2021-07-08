@@ -1,4 +1,4 @@
-import {IJtd, IJtdMap, IJtdRoot} from './jtd-types';
+import {IJtd, IJtdRoot} from './jtd-types';
 import {
   IJtdElementsNode,
   IJtdMappingNode,
@@ -28,7 +28,7 @@ export function parseJtdRoot<M>(ref: string, jtdRoot: IJtdRoot<M>): Record<strin
  *
  * @param definitions The dictionary of ref-JTD pairs.
  */
-export function parseJtdDefinitions<M>(definitions: IJtdMap<M>): Record<string, JtdRootNode<M>> {
+export function parseJtdDefinitions<M>(definitions: Record<string, IJtd<M>>): Record<string, JtdRootNode<M>> {
   const nodes: Record<string, JtdRootNode<M>> = createMap();
 
   for (const [ref, jtd] of Object.entries(definitions)) {
@@ -147,9 +147,11 @@ export function parseJtd<M>(jtd: IJtd<M>): JtdRootNode<M> {
 
     if (jtdOptionalProperties) {
       for (const [propKey, propJtd] of Object.entries(jtdOptionalProperties)) {
+
         if (jtdProperties != null && propKey in jtdProperties) {
           throw new Error('Duplicated property: ' + propKey);
         }
+
         const node: IJtdPropertyNode<M> = {
           nodeType: JtdNodeType.PROPERTY,
           parentNode: objectNode,
@@ -191,7 +193,7 @@ export function parseJtd<M>(jtd: IJtd<M>): JtdRootNode<M> {
         nodeType: JtdNodeType.MAPPING,
         parentNode: unionNode,
         key: mappingKey,
-        valueNode: objectNode,
+        objectNode: objectNode,
         jtd: mappingJtd,
       };
       objectNode.parentNode = node;

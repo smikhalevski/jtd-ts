@@ -1,339 +1,466 @@
-import {JtdNodeType} from '../main/jtd-ast-types';
+import {JtdNode, JtdNodeType, JtdRootNode} from '../main/jtd-ast-types';
 import {parseJtd, parseJtdDefinitions, parseJtdRoot} from '../main/jtd-ast';
+import {JtdType} from '../main/jtd-types';
 
 describe('parseJtdRoot', () => {
 
   test('parses JTD with definitions', () => {
-    expect(parseJtdRoot('bar', {
+    const nodeMap = parseJtdRoot('bar', {
       definitions: {
-        foo: {type: 'string'},
+        foo: {type: JtdType.STRING},
       },
       ref: 'foo',
-    })).toEqual({
+    });
+
+    const result: Record<string, JtdRootNode<any>> = {
       foo: {
-        jtd: {type: 'string'},
         nodeType: JtdNodeType.TYPE,
-        type: 'string',
+        type: JtdType.STRING,
+        parentNode: null,
+        jtd: {type: JtdType.STRING},
       },
       bar: {
+        nodeType: JtdNodeType.REF,
+        ref: 'foo',
+        parentNode: null,
         jtd: {
           definitions: {
-            foo: {type: 'string'},
+            foo: {type: JtdType.STRING},
           },
           ref: 'foo',
         },
-        nodeType: JtdNodeType.REF,
-        ref: 'foo',
       },
-    });
+    };
+
+    expect(nodeMap).toEqual(result);
   });
 });
 
 describe('parseJtdDefinitions', () => {
 
   test('parses definitions', () => {
-    expect(parseJtdDefinitions({
-      foo: {type: 'string'},
+    const nodeMap = parseJtdDefinitions({
+      foo: {type: JtdType.STRING},
       bar: {ref: 'foo'},
-    })).toEqual({
+    });
+
+    const result: Record<string, JtdRootNode<any>> = {
       foo: {
-        jtd: {type: 'string'},
         nodeType: JtdNodeType.TYPE,
-        type: 'string',
+        type: JtdType.STRING,
+        parentNode: null,
+        jtd: {type: JtdType.STRING},
       },
       bar: {
-        jtd: {ref: 'foo'},
         nodeType: JtdNodeType.REF,
         ref: 'foo',
+        parentNode: null,
+        jtd: {ref: 'foo'},
       },
-    });
+    };
+
+    expect(nodeMap).toEqual(result);
   });
 });
 
 describe('parseJtd', () => {
 
   test('parses type', () => {
-    expect(parseJtd({type: 'string'})).toEqual({
-      jtd: {
-        type: 'string',
-      },
+    const result: JtdNode<any> = {
       nodeType: JtdNodeType.TYPE,
-      type: 'string',
-    });
+      type: JtdType.STRING,
+      parentNode: null,
+      jtd: {type: JtdType.STRING},
+    };
+
+    expect(parseJtd({type: JtdType.STRING})).toEqual(result);
   });
 
   test('parses ref', () => {
-    expect(parseJtd({ref: 'foo'})).toEqual({
-      jtd: {
-        ref: 'foo',
-      },
+    const result: JtdNode<any> = {
       nodeType: JtdNodeType.REF,
       ref: 'foo',
-    });
+      parentNode: null,
+      jtd: {ref: 'foo'},
+    };
+
+    expect(parseJtd({ref: 'foo'})).toEqual(result);
   });
 
   test('parses enum', () => {
-    expect(parseJtd({enum: ['FOO', 'BAR']})).toEqual({
+    const result: JtdNode<any> = {
+      nodeType: JtdNodeType.ENUM,
+      values: ['FOO', 'BAR'],
+      parentNode: null,
       jtd: {
         enum: ['FOO', 'BAR'],
       },
-      nodeType: JtdNodeType.ENUM,
-      values: ['FOO', 'BAR'],
-    });
+    };
+
+    expect(parseJtd({enum: ['FOO', 'BAR']})).toEqual(result);
   });
 
   test('parses elements', () => {
-    expect(parseJtd({elements: {type: 'string'}})).toEqual({
-      jtd: {
-        elements: {type: 'string'},
-      },
+    const node = parseJtd({elements: {type: JtdType.STRING}});
+
+    const result: JtdNode<any> = {
       nodeType: JtdNodeType.ELEMENTS,
       elementNode: {
-        jtd: {
-          type: 'string',
-        },
         nodeType: JtdNodeType.TYPE,
-        type: 'string',
+        type: JtdType.STRING,
+        parentNode: null,
+        jtd: {type: JtdType.STRING},
       },
-    });
+      parentNode: null,
+      jtd: {
+        elements: {type: JtdType.STRING},
+      },
+    };
+    result.elementNode.parentNode = result;
+
+    expect(node).toEqual(result);
   });
 
   test('parses values', () => {
-    expect(parseJtd({values: {type: 'string'}})).toEqual({
-      jtd: {
-        values: {type: 'string'},
-      },
+    const node = parseJtd({values: {type: JtdType.STRING}});
+
+    const result: JtdNode<any> = {
       nodeType: JtdNodeType.VALUES,
       valueNode: {
-        jtd: {
-          type: 'string',
-        },
         nodeType: JtdNodeType.TYPE,
-        type: 'string',
+        type: JtdType.STRING,
+        parentNode: null,
+        jtd: {type: JtdType.STRING},
       },
-    });
+      parentNode: null,
+      jtd: {
+        values: {type: JtdType.STRING},
+      },
+    };
+    result.valueNode.parentNode = result;
+
+    expect(node).toEqual(result);
   });
 
   test('parses properties', () => {
-    expect(parseJtd({
-      properties: {foo: {type: 'string'}},
-    })).toEqual({
-      jtd: {
-        properties: {foo: {type: 'string'}},
-      },
-      nodeType: JtdNodeType.OBJECT,
+    const node = parseJtd({
       properties: {
-        foo: {
-          jtd: {
-            type: 'string',
+        foo: {type: JtdType.STRING},
+      },
+    });
+
+    const result: JtdNode<any> = {
+      nodeType: JtdNodeType.OBJECT,
+      propertyNodes: [
+        {
+          nodeType: JtdNodeType.PROPERTY,
+          key: 'foo',
+          optional: false,
+          valueNode: {
+            nodeType: JtdNodeType.TYPE,
+            type: JtdType.STRING,
+            parentNode: null,
+            jtd: {type: JtdType.STRING},
           },
-          nodeType: JtdNodeType.TYPE,
-          type: 'string',
+          parentNode: null as any,
+          jtd: {type: JtdType.STRING},
+        },
+      ],
+      parentNode: null,
+      jtd: {
+        properties: {
+          foo: {type: JtdType.STRING},
         },
       },
-      optionalProperties: {},
-    });
+    };
+
+    result.propertyNodes[0].parentNode = result;
+    result.propertyNodes[0].valueNode.parentNode = result.propertyNodes[0];
+
+    expect(node).toEqual(result);
   });
 
   test('parses optionalProperties', () => {
-    expect(parseJtd({
-      optionalProperties: {foo: {type: 'string'}},
-    })).toEqual({
-      jtd: {
-        optionalProperties: {foo: {type: 'string'}},
-      },
-      nodeType: JtdNodeType.OBJECT,
-      properties: {},
+    const node = parseJtd({
       optionalProperties: {
-        foo: {
-          jtd: {
-            type: 'string',
-          },
-          nodeType: JtdNodeType.TYPE,
-          type: 'string',
-        },
+        foo: {type: JtdType.STRING},
       },
     });
+
+    const result: JtdNode<any> = {
+      nodeType: JtdNodeType.OBJECT,
+      propertyNodes: [
+        {
+          nodeType: JtdNodeType.PROPERTY,
+          key: 'foo',
+          optional: true,
+          valueNode: {
+            nodeType: JtdNodeType.TYPE,
+            type: JtdType.STRING,
+            parentNode: null,
+            jtd: {type: JtdType.STRING},
+          },
+          parentNode: null as any,
+          jtd: {type: JtdType.STRING},
+        },
+      ],
+      parentNode: null,
+      jtd: {
+        optionalProperties: {
+          foo: {type: JtdType.STRING},
+        },
+      },
+    };
+    result.propertyNodes[0].parentNode = result;
+    result.propertyNodes[0].valueNode.parentNode = result.propertyNodes[0];
+
+    expect(node).toEqual(result);
   });
 
   test('parses both properties and optionalProperties', () => {
-    expect(parseJtd({
-      properties: {foo: {type: 'string'}},
-      optionalProperties: {bar: {type: 'string'}},
-    })).toEqual({
-      jtd: {
-        properties: {foo: {type: 'string'}},
-        optionalProperties: {bar: {type: 'string'}},
-      },
-      nodeType: JtdNodeType.OBJECT,
+    const node = parseJtd({
       properties: {
-        foo: {
-          jtd: {
-            type: 'string',
-          },
-          nodeType: JtdNodeType.TYPE,
-          type: 'string',
-        },
+        foo: {type: JtdType.STRING},
       },
       optionalProperties: {
-        bar: {
-          jtd: {
-            type: 'string',
-          },
-          nodeType: JtdNodeType.TYPE,
-          type: 'string',
-        },
+        bar: {type: JtdType.INT8},
       },
     });
+
+    const result: JtdNode<any> = {
+      nodeType: JtdNodeType.OBJECT,
+      propertyNodes: [
+        {
+          nodeType: JtdNodeType.PROPERTY,
+          key: 'foo',
+          optional: false,
+          valueNode: {
+            nodeType: JtdNodeType.TYPE,
+            type: JtdType.STRING,
+            parentNode: null,
+            jtd: {type: JtdType.STRING},
+          },
+          parentNode: null as any,
+          jtd: {type: JtdType.STRING},
+        },
+        {
+          nodeType: JtdNodeType.PROPERTY,
+          key: 'bar',
+          optional: true,
+          valueNode: {
+            nodeType: JtdNodeType.TYPE,
+            type: JtdType.INT8,
+            parentNode: null,
+            jtd: {type: JtdType.INT8},
+          },
+          parentNode: null as any,
+          jtd: {type: JtdType.INT8},
+        },
+      ],
+      parentNode: null,
+      jtd: {
+        properties: {
+          foo: {type: JtdType.STRING},
+        },
+        optionalProperties: {
+          bar: {type: JtdType.INT8},
+        },
+      },
+    };
+    result.propertyNodes[0].parentNode = result;
+    result.propertyNodes[0].valueNode.parentNode = result.propertyNodes[0];
+    result.propertyNodes[1].parentNode = result;
+    result.propertyNodes[1].valueNode.parentNode = result.propertyNodes[1];
+
+    expect(node).toEqual(result);
   });
 
   test('throws if property key is defined in both properties and optionalProperties', () => {
     expect(() => parseJtd({
-      properties: {foo: {type: 'string'}},
-      optionalProperties: {foo: {type: 'string'}},
+      properties: {
+        foo: {type: JtdType.STRING},
+      },
+      optionalProperties: {
+        foo: {type: JtdType.STRING},
+      },
     })).toThrow();
   });
 
   test('parses discriminated union', () => {
-    expect(parseJtd({
+    const node = parseJtd({
       discriminator: 'type',
       mapping: {
         AAA: {
           properties: {
-            foo: {type: 'string'},
+            foo: {type: JtdType.STRING},
           },
         },
         BBB: {
           properties: {
-            foo: {type: 'number'},
+            bar: {type: JtdType.INT8},
           },
         },
       },
-    })).toEqual({
-      jtd: {
-        discriminator: 'type',
-        mapping: {
-          AAA: {
-            properties: {
-              foo: {type: 'string'},
-            },
-          },
-          BBB: {
-            properties: {
-              foo: {type: 'number'},
-            },
-          },
-        },
-      },
+    });
+
+    const result: JtdNode<any> = {
       nodeType: JtdNodeType.UNION,
       discriminator: 'type',
-      mapping: {
-        AAA: {
+      mappingNodes: [
+        {
+          nodeType: JtdNodeType.MAPPING,
+          key: 'AAA',
+          objectNode: {
+            nodeType: JtdNodeType.OBJECT,
+            propertyNodes: [
+              {
+                nodeType: JtdNodeType.PROPERTY,
+                key: 'foo',
+                optional: false,
+                valueNode: {
+                  nodeType: JtdNodeType.TYPE,
+                  type: JtdType.STRING,
+                  parentNode: null,
+                  jtd: {type: JtdType.STRING},
+                },
+                parentNode: null as any,
+                jtd: {type: JtdType.STRING},
+              },
+            ],
+            parentNode: null,
+            jtd: {
+              properties: {
+                foo: {type: JtdType.STRING},
+              },
+            },
+          },
+          parentNode: null as any,
           jtd: {
             properties: {
-              foo: {type: 'string'},
+              foo: {type: JtdType.STRING},
             },
           },
-          nodeType: JtdNodeType.OBJECT,
-          properties: {
-            foo: {
-              jtd: {
-                type: 'string',
-              },
-              nodeType: JtdNodeType.TYPE,
-              type: 'string',
-            },
-          },
-          optionalProperties: {},
         },
-        BBB: {
+        {
+          nodeType: JtdNodeType.MAPPING,
+          key: 'BBB',
+          objectNode: {
+            nodeType: JtdNodeType.OBJECT,
+            propertyNodes: [
+              {
+                nodeType: JtdNodeType.PROPERTY,
+                key: 'bar',
+                optional: false,
+                valueNode: {
+                  nodeType: JtdNodeType.TYPE,
+                  type: JtdType.INT8,
+                  parentNode: null,
+                  jtd: {type: JtdType.INT8},
+                },
+                parentNode: null as any,
+                jtd: {type: JtdType.INT8},
+              },
+            ],
+            parentNode: null,
+            jtd: {
+              properties: {
+                bar: {type: JtdType.INT8},
+              },
+            },
+          },
+          parentNode: null as any,
           jtd: {
             properties: {
-              foo: {type: 'number'},
+              bar: {type: JtdType.INT8},
             },
           },
-          nodeType: JtdNodeType.OBJECT,
-          properties: {
-            foo: {
-              jtd: {
-                type: 'number',
-              },
-              nodeType: JtdNodeType.TYPE,
-              type: 'number',
-            },
-          },
-          optionalProperties: {},
         },
-      },
-    });
-  });
-
-  test('ignores discriminated union if discriminator is absent', () => {
-    expect(parseJtd({
-      mapping: {
-        AAA: {
-          properties: {
-            foo: {type: 'string'},
-          },
-        },
-        BBB: {
-          properties: {
-            foo: {type: 'number'},
-          },
-        },
-      },
-    })).toEqual({
+      ],
+      parentNode: null,
       jtd: {
+        discriminator: 'type',
         mapping: {
           AAA: {
             properties: {
-              foo: {type: 'string'},
+              foo: {type: JtdType.STRING},
             },
           },
           BBB: {
             properties: {
-              foo: {type: 'number'},
+              bar: {type: JtdType.INT8},
             },
           },
         },
       },
-      nodeType: JtdNodeType.ANY,
-    });
+    };
+
+    result.mappingNodes[0].parentNode = result;
+    result.mappingNodes[1].parentNode = result;
+
+    result.mappingNodes[0].objectNode.parentNode = result.mappingNodes[0];
+    result.mappingNodes[1].objectNode.parentNode = result.mappingNodes[1];
+
+    result.mappingNodes[0].objectNode.propertyNodes[0].parentNode = result.mappingNodes[0].objectNode;
+    result.mappingNodes[1].objectNode.propertyNodes[0].parentNode = result.mappingNodes[1].objectNode;
+
+    result.mappingNodes[0].objectNode.propertyNodes[0].valueNode.parentNode = result.mappingNodes[0].objectNode.propertyNodes[0];
+    result.mappingNodes[1].objectNode.propertyNodes[0].valueNode.parentNode = result.mappingNodes[1].objectNode.propertyNodes[0];
+
+    expect(node).toEqual(result);
   });
 
-  test('ignores discriminated union if mapping is absent', () => {
-    expect(parseJtd({discriminator: 'type'})).toEqual({
-      jtd: {
-        discriminator: 'type',
+  test('throws on discriminated union if discriminator is absent', () => {
+    expect(() => parseJtd({
+      mapping: {
+        AAA: {properties: {foo: {type: JtdType.STRING}}},
+        BBB: {properties: {foo: {type: JtdType.INT8}}},
       },
-      nodeType: JtdNodeType.ANY,
-    });
+    })).toThrow();
+  });
+
+  test('throws on discriminated union if mapping is absent', () => {
+    expect(() => parseJtd({
+      mapping: {
+        AAA: {properties: {foo: {type: JtdType.STRING}}},
+        BBB: {properties: {foo: {type: JtdType.INT8}}},
+      },
+    })).toThrow();
   });
 
   test('parses any', () => {
-    expect(parseJtd({})).toEqual({
-      jtd: {},
+    const result: JtdNode<any> = {
       nodeType: JtdNodeType.ANY,
-    });
+      parentNode: null,
+      jtd: {},
+    };
+
+    expect(parseJtd({})).toEqual(result);
   });
 
   test('parses nullable', () => {
-    expect(parseJtd({
-      type: 'string',
+
+    const node = parseJtd({
+      type: JtdType.STRING,
       nullable: true,
-    })).toEqual({
-      jtd: {
-        type: 'string',
-        nullable: true,
-      },
+    });
+
+    const result: JtdNode<any> = {
       nodeType: JtdNodeType.NULLABLE,
       valueNode: {
-        jtd: {
-          type: 'string',
-        },
         nodeType: JtdNodeType.TYPE,
-        type: 'string',
+        type: JtdType.STRING,
+        parentNode: null,
+        jtd: {type: JtdType.STRING},
       },
-    });
+      parentNode: null,
+      jtd: {
+        type: JtdType.STRING,
+        nullable: true,
+      },
+    };
+
+    result.valueNode.parentNode = result;
+
+    expect(node).toEqual(result);
   });
 });

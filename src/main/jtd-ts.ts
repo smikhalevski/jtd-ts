@@ -170,6 +170,10 @@ function compileStatement<M>(ref: string, node: JtdNode<M>, resolveRef: JtdRefRe
     },
 
     object(node, next) {
+      if (node.parentNode?.nodeType === JtdNodeType.MAPPING) {
+        next();
+        return;
+      }
       src += compileDocComment(getDocComment(node))
           + `export interface ${renameInterface(ref, node)}{`;
       next();
@@ -180,7 +184,7 @@ function compileStatement<M>(ref: string, node: JtdNode<M>, resolveRef: JtdRefRe
       src += compileDocComment(getDocComment(node))
           + compilePropertyName(renameProperty(node))
           + (node.optional ? '?:' : ':')
-          + compileExpression(node, resolveRef, options)
+          + compileExpression(node.valueNode, resolveRef, options)
           + ';';
     },
 
@@ -263,6 +267,10 @@ function compileExpression<M>(node: JtdNode<M>, resolveRef: JtdRefResolver<M>, o
       src += '>';
     },
     object(node, next) {
+      if (node.parentNode?.nodeType === JtdNodeType.MAPPING) {
+        next();
+        return;
+      }
       src += '{';
       next();
       src += '}';
@@ -330,7 +338,7 @@ export const jtdTsOptions: Required<IJtdTsOptions<any>> = {
   renameEnumValue: upperSnakeCase,
   rewriteEnumValue: (value) => value,
   renameUnionEnum: (ref, node) => pascalCase(ref) + pascalCase(node.discriminator),
-  renameUnionEnumValue: upperSnakeCase,
+  renameUnionEnumValue: (unionRef, mappingNode) => upperSnakeCase(mappingNode.key),
   renameDiscriminator: (node) => node.discriminator,
   rewriteMappingKey: (unionRef, mappingNode) => mappingNode.key,
   renameMappingInterface: (unionRef, mappingNode) => 'I' + pascalCase(unionRef) + pascalCase(mappingNode.key),
