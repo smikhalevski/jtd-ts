@@ -3,14 +3,12 @@ import {
   compileTsFromJtdDefinitions,
   IJtdTsOptions,
   IJtdTsRefRenameOptions,
-  ITsJtdMetadata,
   jtdTsOptions,
   renameRef,
 } from './jtd-ts';
 import {parseJtdDefinitions} from './jtd-ast';
-import {IJtdNodeMap, JtdNode} from './jtd-ast-types';
-import {compileValidatorModuleProlog, compileValidators, IValidatorOptions, jtdValidatorOptions} from './validator';
-import {TYPE_VALIDATOR, VAR_RUNTIME} from './validator/runtime-naming';
+import {JtdNode} from './jtd-ast-types';
+import {compileValidators, IValidatorOptions, jtdValidatorOptions} from './validator/jtd-validator';
 
 export interface IJtdTsModulesOptions<M> extends IJtdTsOptions<M>, IValidatorOptions<M> {
 
@@ -28,14 +26,14 @@ export interface IJtdTsModulesOptions<M> extends IJtdTsOptions<M>, IValidatorOpt
   alterSource?: (source: string, uri: string) => string;
 }
 
-interface IParsedModule<M> {
-  uri: string;
-  definitions: IJtdNodeMap<any>;
-  tsExports: Record<string, ITsExport<M>>;
-}
-
 export function compileJtdTsModules<M extends ITsJtdMetadata>(modules: Record<string, IJtdMap<M>>, options?: IJtdTsModulesOptions<M>): Record<string, string> {
   const tsModules: Record<string, string> = Object.create(null);
+
+  interface IParsedModule<M> {
+    uri: string;
+    definitions: IJtdNodeMap<any>;
+    tsExports: Record<string, ITsExport<M>>;
+  }
 
   const parsedModules: Array<IParsedModule<M>> = [];
 
@@ -78,7 +76,7 @@ export function compileJtdTsModules<M extends ITsJtdMetadata>(modules: Record<st
 
     // jtdc import of validator runtime
     if (opts.emitsValidators) {
-      source += `import {runtime as ${VAR_RUNTIME}, Validator as ${TYPE_VALIDATOR}} from "../validator/runtime";`
+      source += `import {runtime as r, Validator as ${TYPE_VALIDATOR}} from "../validator/runtime";`
           + compileValidatorModuleProlog(VAR_RUNTIME);
     }
 

@@ -22,7 +22,7 @@ describe('compileJtdTsModules', () => {
           enum: ['AAA', 'BBB'],
         },
       },
-    }, {emitsValidators: true, emitsCheckers: true});
+    }, {emitsValidators: true, emitsTypeNarrowing: true});
 
     expect(modules).toEqual({
       './bar.ts':

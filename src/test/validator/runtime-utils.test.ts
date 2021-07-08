@@ -4,7 +4,7 @@ import {
   raiseInvalid,
   raiseValidationError,
   ValidationErrorCode,
-} from '../../main/validator/runtime-lib';
+} from '../../main/validator/runtime';
 import {IValidationError} from '../../main/validator';
 
 describe('raiseValidationError', () => {

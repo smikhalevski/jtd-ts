@@ -1,8 +1,7 @@
 import {ModuleKind, transpileModule} from 'typescript';
-import {RuntimeMethod, TYPE_VALIDATOR, VAR_CACHE} from '../../main/validator/runtime-naming';
-import {compileValidatorModuleProlog, compileValidators} from '../../main/validator';
+import {compileValidators} from '../../main/validator/jtd-validator';
 import {parseJtdRoot} from '../../main/jtd-ast';
-import {JtdType} from '../../main';
+import {JtdType} from '../../main/jtd-types';
 
 function evalModule(source: string): Record<string, any> {
   return eval(`
@@ -25,7 +24,7 @@ describe('compileValidators', () => {
   });
 
   test('compiles type checker', () => {
-    expect(compileValidators(parseJtdRoot('foo', {type: 'string'}), {emitsCheckers: true})).toBe(
+    expect(compileValidators(parseJtdRoot('foo', {type: 'string'}), {emitsTypeNarrowing: true})).toBe(
         `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{` +
         RuntimeMethod.CHECK_STRING + '(value,errors,pointer);' +
         'return errors;' +
@@ -37,7 +36,7 @@ describe('compileValidators', () => {
 
   test('compiles type checker with resolver', () => {
     expect(compileValidators(parseJtdRoot('foo', {type: 'string'}), {
-      emitsCheckers: true,
+      emitsTypeNarrowing: true,
       resolveRef: () => 'Wow',
     })).toBe(
         `export const validateFoo:${TYPE_VALIDATOR}=(value,errors=[],pointer="")=>{` +
@@ -212,7 +211,7 @@ describe('compileValidators', () => {
               enum: ['AAA', 'BBB'],
             },
           },
-        }), {emitsCheckers: true});
+        }), {emitsTypeNarrowing: true});
 
     const module = evalModule(moduleSource);
 

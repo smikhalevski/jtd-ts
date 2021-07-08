@@ -1,53 +1,89 @@
-import {
-  IJtdEnumNode,
-  IJtdNodeMap,
-  IJtdObjectNode,
-  IJtdTypeNode,
-  IJtdUnionNode,
-  JtdNode,
-  JtdNodeType,
-} from '../jtd-ast-types';
+import {IJtdEnumNode, IJtdMappingNode, IJtdPropertyNode, JtdNode, JtdNodeType, JtdRootNode} from '../jtd-ast-types';
 import {visitJtdNode} from '../jtd-visitor';
-import {JtdType} from '../jtd-types';
-import {compileAccessor, compileJsonPointer, createVarProvider, IPropertyRef, isEqualRef} from '../compiler-utils';
-import {pascalCase} from '../rename-utils';
-import {RuntimeMethod, runtimeMethod, TYPE_VALIDATOR, VAR_CACHE, VAR_RUNTIME} from './runtime-naming';
 import {JtdRefResolver} from '../jtd-ts';
+import {createVarProvider} from '../compiler-utils';
+import {pascalCase} from '../rename-utils';
+import {checkerCompiler} from '../checker/compiler';
 
 const ARG_VALUE = 'value';
-const ARG_ERRORS = 'errors';
+const ARG_CONTEXT = 'ctx';
 const ARG_POINTER = 'pointer';
-const ARG_EXCLUDED = 'excluded';
 
-const excludedVars = [ARG_VALUE, ARG_ERRORS, ARG_POINTER, TYPE_VALIDATOR, VAR_CACHE, VAR_RUNTIME].concat(runtimeMethod);
+export interface ICheckerOptions<M> {
 
-/**
- * Returns source that maps fields exported from validation runtime to internal names used by compiled validators.
- * Runtime isn't used directly to allow code minification tools to effectively rename vars.
- *
- * @param runtimeVar The name of the variable that holds validator library exports.
- */
-export function compileValidatorModuleProlog(runtimeVar: string): string {
-  return `const {${runtimeMethod.join(',')}}=${runtimeVar};`
-      + `const ${VAR_CACHE}:Record<string,any>=Object.create(null);`;
+  /**
+   * Returns the new expression that wraps `src` so the result would be retained between checker invocations.
+   *
+   * @example
+   * // The array would be initialized only once.
+   * const src = wrapCache('["foo", "bar"]');
+   *
+   * return `(${src}).includes("foo")`;
+   * // → '(b.x||=["foo", "bar"]).includes("foo")'
+   */
+  wrapCache: (src: string) => string;
+
+  /**
+   * Returns the new declared variable that can be referenced in an expression.
+   *
+   * @example
+   * const aVar = nextVar(); // → 'x'
+   * const bVar = nextVar(); // → 'y'
+   *
+   * return `${aVar}=…, ${bVar}=…, ${aVar} && ${bVar}`;
+   * // → 'x=…, y=…, x && y'
+   */
+  nextVar: () => string;
+
+  /**
+   * The name of the variable that holds the context.
+   */
+  contextVar: string;
+
+  /**
+   * The expression that returns the currently validated value.
+   */
+  valueSrc: string;
+
+  /**
+   * The expression that returns the JSON pointer string of the currently validated value.
+   */
+  pointerSrc: string;
+}
+
+export interface ICheckerCompiler<M> {
+
+  /**
+   * The path of the module that exports the runtime as default.
+   */
+  runtimeModulePath: string;
+
+  /**
+   * Returns an expression of the checker invocation.
+   */
+  compileChecker: (node: JtdNode<M>, checkerOptions: ICheckerOptions<M>, validatorOptions: Required<IValidatorOptions<M>>) => string;
 }
 
 export interface IValidatorOptions<M> {
 
+  checkerRuntimeVar?: string;
+
+  validatorRuntimeVar?: string;
+
   /**
    * Returns the name of an object property.
    */
-  renameProperty?: (propKey: string, node: JtdNode<M>, objectNode: IJtdObjectNode<M>) => string;
+  renameProperty?: (node: IJtdPropertyNode<M>) => string;
 
   /**
    * Returns the name of the emitted validator function.
    */
-  renameValidator?: (ref: string, node: JtdNode<M>) => string;
+  renameValidator?: (ref: string, node: JtdRootNode<M>) => string;
 
   /**
-   * Returns the name of the checker function that should be used to check values of `type`.
+   * Compiler of runtime checker functions.
    */
-  renameTypeChecker?: (type: JtdType | string, node: IJtdTypeNode<M>) => string;
+  checkerCompiler?: ICheckerCompiler<M>;
 
   /**
    * Returns the literal value of an enum that must rewrite the value declared in JTD.
@@ -57,310 +93,270 @@ export interface IValidatorOptions<M> {
   /**
    * Returns the literal value of an enum that is used for mapping a discriminated union.
    */
-  rewriteMappingKey?: (mappingKey: string, unionRef: string, unionNode: IJtdUnionNode<M>) => string | number | undefined;
+  rewriteMappingKey?: (unionRef: string, mappingNode: IJtdMappingNode<M>) => string | number | undefined;
 
   /**
-   * If set to `true` then checker functions are emitted along with validators. Checkers are functions that should be
-   * used for type refinement in TS.
+   * If set to `true` then type narrowing functions are emitted along with validators.
+   *
+   * @see {@link https://www.typescriptlang.org/docs/handbook/2/narrowing.html TypeScript Narrowing}
    */
-  emitsCheckers?: boolean;
+  emitsTypeNarrowing?: boolean;
 
   /**
-   * Returns the name of the emitted checker function. This is used if {@link emitsCheckers} is enabled.
+   * Returns the name of the type narrowing function. This is used if {@link emitsTypeNarrowing} is enabled.
    */
-  renameChecker?: (ref: string, node: JtdNode<M>) => string;
+  renameTypeNarrowing?: (ref: string, node: JtdRootNode<M>) => string;
 
   /**
-   * If {@link emitsCheckers} is enabled then this callback is used to resolve a type name that corresponds to the ref.
-   * If omitted then type checkers would be emitted with `as unknown`.
+   * If {@link emitsTypeNarrowing} is enabled then this callback is used to resolve a type name that
+   * corresponds to the ref. If omitted then type narrowing functions would be emitted with `as unknown`.
    */
   resolveRef?: JtdRefResolver<M>;
+
+  /**
+   * If set to `true` then validator would traverse nodes that don't enforce any constraints.
+   *
+   * @default false
+   */
+  traversesAny?: boolean;
 }
 
 /**
  * Returns source code of functions that validate JTD definitions.
  */
-export function compileValidators<M>(definitions: IJtdNodeMap<M>, options?: Partial<IValidatorOptions<M>>): string {
+export function compileValidators<M>(definitions: Record<string, JtdRootNode<M>>, options?: Partial<IValidatorOptions<M>>): string {
   const opts = Object.assign({}, jtdValidatorOptions, options);
 
   const {
+    validatorRuntimeVar,
     renameValidator,
-    renameChecker,
-    emitsCheckers,
+    renameTypeNarrowing,
+    emitsTypeNarrowing,
     resolveRef,
   } = opts;
 
   let source = '';
 
-  let aaa: Array<string> = [];
+  let exportedNames: Array<string> = [];
 
   for (const [ref, node] of Object.entries(definitions)) {
     const name = renameValidator(ref, node);
-    aaa.push(name);
+    exportedNames.push(name);
 
-    source += `const ${name}:${TYPE_VALIDATOR}=`
-        + `(${ARG_VALUE},${ARG_ERRORS},${ARG_POINTER},${ARG_EXCLUDED})=>{`
-        + `${ARG_ERRORS}||=[];`
+    source += `const ${name}:${validatorRuntimeVar}.Validator=`
+        + `(${ARG_VALUE},${ARG_CONTEXT},${ARG_POINTER})=>{`
+        + `${ARG_CONTEXT}||={};`
         + `${ARG_POINTER}||="";`
-        + `${ARG_EXCLUDED}||=[];`
         + compileValidatorBody(ref, node, opts)
-        + `return ${ARG_ERRORS};`
+        + `return ${ARG_CONTEXT}.errors;`
         + '};';
 
-    if (emitsCheckers) {
-      const name = renameChecker(ref, node);
-      aaa.push(name);
+    if (emitsTypeNarrowing) {
+      const name = renameTypeNarrowing(ref, node);
+      exportedNames.push(name);
 
       source += `const ${name}=`
           + `(${ARG_VALUE}:unknown):${ARG_VALUE} is ${resolveRef(ref, node)}=>!`
-          + renameValidator(ref, node) + '(' + ARG_VALUE + ').length;';
+          + renameValidator(ref, node) + '(' + ARG_VALUE + ')?.length;';
     }
   }
 
-  source += `export {${aaa.join(',')}};`;
+  source += `export {${exportedNames.join(',')}};`;
 
   return source;
 }
 
-/**
- * Compiles the body of the validator function.
- */
-function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: Required<IValidatorOptions<M>>): string {
+export function compileValidatorBody<M>(ref: string, node: JtdRootNode<M>, options: Required<IValidatorOptions<M>>): string {
   const {
-    renameProperty,
-    renameValidator,
-    renameTypeChecker,
-    rewriteEnumValue,
     rewriteMappingKey,
+    checkerCompiler,
+    renameValidator,
+    traversesAny,
   } = options;
 
-  let source = '';
+  let src = '';
 
-  // Returns the next variable name
-  const nextVar = createVarProvider(excludedVars);
+  const {compileChecker} = checkerCompiler;
 
-  // Current pointer in ARV_VALUE variable
-  const pointer: Array<IPropertyRef> = [];
+  const nextVar = createVarProvider();
 
-  interface IEntry {
-    pointer: Array<IPropertyRef>,
-    valueVar: string,
-    pointerVar: string
-  }
+  let cacheVar: string | undefined;
 
-  let pointerVar = ARG_POINTER;
-  let valueVar = ARG_VALUE;
+  const valueVars: Array<string> = [ARG_VALUE];
 
-  const pointerVars: Array<IEntry> = [];
+  let pointer: string | { var: string } | undefined;
+  let index = 0;
+  let valueSrc = ARG_VALUE;
 
-  const compileValueVar = () => {
+  const checkerOptions: ICheckerOptions<M> = {
+    wrapCache: (src1: string) => {
+      if (cacheVar == null) {
+        cacheVar = nextVar();
+        src = cacheVar + '=' + renameValidator(ref, node) + '.cache||={};';
+      }
+      return cacheVar + '.' + nextVar() + '||=' + src1;
+    },
+    nextVar,
+    contextVar: ARG_CONTEXT,
+    valueSrc: ARG_VALUE,
+    pointerSrc: ARG_POINTER,
+  };
 
-    if (pointer.length === 0) {
-      pointerVar = ARG_POINTER;
-      valueVar = ARG_VALUE;
+  const compileVars = () => {
+    if (!pointer) {
       return '';
     }
-
-    let e: IEntry | undefined;
-    let o = -1;
-
-    for (const entry of pointerVars) {
-      if (entry.pointer.length <= pointer.length) {
-        for (let i = 0; i < entry.pointer.length; i++) {
-          if (isEqualRef(entry.pointer[i], pointer[i]) && i > o) {
-            e = entry;
-            o = i;
-          }
-        }
-      }
+    index++;
+    const valueVar = valueVars[index] ||= nextVar();
+    const source = `${valueVar}=${valueSrc};`;
+    valueSrc = valueVar;
+    return source;
+  };
+  const enterScope = (p: string | { var: string }) => {
+    pointer = p;
+    valueSrc += typeof pointer === 'string' ? '.' + pointer : `[${pointer.var}]`;
+  };
+  const exitScope = () => {
+    if (!pointer) {
+      index--;
     }
-
-    let p;
-
-    if (e) {
-      if (pointer.length === o + 1) {
-        pointerVar = e.pointerVar;
-        valueVar = e.valueVar;
-        return '';
-      }
-
-      p = pointer.slice(o + 1);
-    } else {
-      p = pointer;
-    }
-
-    pointerVar = nextVar();
-    valueVar = nextVar();
-
-    pointerVars.push({pointer: pointer.slice(0), pointerVar: pointerVar, valueVar});
-
-    return `const ${valueVar}=${e ? e.valueVar : ARG_VALUE}${compileAccessor(p)};`
-        + `const ${pointerVar}=${e ? e.pointerVar : ARG_POINTER}+${compileJsonPointer(p, RuntimeMethod.ESCAPE_JSON_POINTER)};`;
+    pointer = undefined;
+    valueSrc = valueVars[index];
   };
 
   visitJtdNode(node, {
 
-    visitRef(node) {
-      source += compileValidatorCall(renameValidator(node.ref, node), valueVar, pointerVar) + ';';
+    any() {
+      src += compileChecker(node, checkerOptions, options) + ';';
     },
 
-    visitNullable(node, next) {
-      source += compileValueVar()
-          + `if(${valueVar}!==null){`;
+    ref() {
+      src += compileChecker(node, checkerOptions, options) + ';';
+    },
+
+    nullable(node, next) {
+      if (!traversesAny && isAnyNode(node.valueNode)) {
+        return;
+      }
+      src += compileVars()
+          + `if(${compileChecker(node, checkerOptions, options)}){`;
       next();
-      source += '}';
+      src += '}';
     },
 
-    visitType(node) {
-      const validatorName = renameTypeChecker(node.type, node);
-      source += compileCheckerCall(validatorName, valueVar, pointerVar) + ';';
+    type() {
+      src += compileChecker(node, checkerOptions, options) + ';';
     },
 
-    visitEnum(node) {
-      const valuesSource = '['
-          + Array.from(node.values).map((value) => JSON.stringify(rewriteEnumValue(value, node))).join(',')
-          + ']';
-      source += compileCheckerCall(RuntimeMethod.CHECK_ENUM, valueVar, pointerVar, compileCachedValue(ref, nextVar, valuesSource)) + ';';
+    enum() {
+      src += compileChecker(node, checkerOptions, options) + ';';
     },
 
-    visitElements(node, next) {
-      if (node.elementNode.nodeType === JtdNodeType.ANY) {
-        source += compileCheckerCall(RuntimeMethod.CHECK_ARRAY, valueVar, pointerVar) + ';';
+    elements(node, next) {
+      if (!traversesAny && isAnyNode(node.elementNode)) {
+        src += compileChecker(node, checkerOptions, options) + ';';
         return;
       }
 
       const indexVar = nextVar();
-      source += compileValueVar()
-          + `if(${compileCheckerCall(RuntimeMethod.CHECK_ARRAY, valueVar, pointerVar)} && ${RuntimeMethod.EXCLUDE}(${ARG_EXCLUDED},${valueVar})){`
-          + `for(let ${indexVar}=0;${indexVar}<${valueVar}.length;${indexVar}++){`;
-      pointer.push({var: indexVar});
-      source += compileValueVar();
+      src += `if(${compileChecker(node, checkerOptions, options)}){`
+          + `for(let ${indexVar}=0;${indexVar}<${valueSrc}.length;${indexVar}++){`;
+      enterScope({var: indexVar});
       next();
-      pointer.pop();
-      source += '}}';
+      exitScope();
+      src += '}}';
     },
 
-    visitValues(node, next) {
-      if (node.valueNode.nodeType === JtdNodeType.ANY) {
-        source += compileCheckerCall(RuntimeMethod.CHECK_OBJECT, valueVar, pointerVar) + ';';
+    values(node, next) {
+      if (!traversesAny && isAnyNode(node.valueNode)) {
+        src += compileChecker(node, checkerOptions, options) + ';';
         return;
       }
 
       const keyVar = nextVar();
-      source += compileValueVar()
-          + `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, valueVar, pointerVar)} && ${RuntimeMethod.EXCLUDE}(${ARG_EXCLUDED},${valueVar})){`
-          + `for(const ${keyVar} in ${valueVar}){`;
-      pointer.push({var: keyVar});
-      source += compileValueVar();
+      src += `if(${compileChecker(node, checkerOptions, options)}){`
+          + `for(const ${keyVar} in ${valueSrc}){`;
+      enterScope({var: keyVar});
       next();
-      pointer.pop();
-      source += '}}';
+      exitScope();
+      src += '}}';
     },
 
-    visitObject(node, next) {
-      source += compileValueVar()
-          + `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, valueVar, pointerVar)} && ${RuntimeMethod.EXCLUDE}(${ARG_EXCLUDED},${valueVar})){`;
+    object(node, next) {
+      if (!traversesAny && node.propertyNodes.every(isAnyNode)) {
+        src += compileChecker(node, checkerOptions, options) + ';';
+        return;
+      }
+      src += compileVars()
+          + `if(${compileChecker(node, checkerOptions, options)}){`;
       next();
-      source += '}';
+      src += '}';
     },
 
-    visitProperty(propKey, propNode, objectNode, next) {
-      pointer.push({key: renameProperty(propKey, propNode, objectNode)});
-      source += compileValueVar();
-      next();
-      pointer.pop();
+    property(node, next) {
+      if (!traversesAny && isAnyNode(node)) {
+        return;
+      }
+      enterScope(node.key);
+      if (node.optional) {
+        src += compileVars()
+            + `if(${compileChecker(node, checkerOptions, options)}){`;
+        next();
+        src += '}';
+      } else {
+        next();
+      }
+      exitScope();
     },
 
-    visitOptionalProperty(propKey, propNode, objectNode, next) {
-      pointer.push({key: renameProperty(propKey, propNode, objectNode)});
-      source += compileValueVar()
-          + `if(${valueVar}!==undefined){`;
+    union(node, next) {
+      src += compileVars()
+          + `if(${compileChecker(node, checkerOptions, options)}){`
+          + `switch(${valueSrc + node.discriminator}){`;
       next();
-      source += '}';
-      pointer.pop();
-    },
-
-    visitUnion(node, next) {
-      source += compileValueVar()
-          + `if(${compileCheckerCall(RuntimeMethod.CHECK_OBJECT, valueVar, pointerVar)} && ${RuntimeMethod.EXCLUDE}(${ARG_EXCLUDED},${valueVar})){`
-          + `switch(${valueVar + compileAccessor([{key: node.discriminator}])}){`;
-      next();
-      source += 'default:'
-          + RuntimeMethod.RAISE_INVALID + '('
-          + ARG_ERRORS + ','
-          + ARG_POINTER + '+' + compileJsonPointer(pointer.concat({key: node.discriminator}), RuntimeMethod.ESCAPE_JSON_POINTER)
-          + ');'
+      src += 'default:'
+          + 'raiseInvalid()'
           + '}}';
     },
 
-    visitUnionMapping(mappingKey, mappingNode, unionNode, next) {
-      source += `case ${JSON.stringify(rewriteMappingKey(mappingKey, ref, unionNode))}:`;
+    mapping(node, next) {
+      src += `case ${JSON.stringify(rewriteMappingKey(ref, node))}:`;
       next();
-      source += 'break;';
+      src += 'break;';
     },
   });
 
-  return source;
+  return src;
 }
 
 /**
- * Returns a validator function call site source code.
+ * Returns `true` if `node` doesn't enforce any constraints.
  */
-function compileValidatorCall(validatorName: string, valueVar: string, pointerVar: string): string {
-  return validatorName + '('
-      // value
-      + valueVar + ','
-      // errors
-      + ARG_ERRORS + ','
-      // pointer
-      + pointerVar + ','
-      // excluded
-      + ARG_EXCLUDED
-      + ')';
-}
+function isAnyNode<M>(node: JtdNode<M>): boolean {
+  switch (node.nodeType) {
 
-/**
- * Returns a checker function call site source code.
- */
-function compileCheckerCall(checkerName: string, valueVar: string, pointerVar: string, ...args: Array<string>): string {
-  return checkerName + '('
-      // value
-      + valueVar + ','
-      // args
-      + (args.length ? args.join(',') + ',' : '')
-      // errors
-      + ARG_ERRORS + ','
-      // pointer
-      + pointerVar
-      + ')';
-}
+    case JtdNodeType.ANY:
+      return true;
 
-function compileCachedValue(ref: string, nextVar: () => string, valueSource: string): string {
-  return VAR_CACHE + '[' + JSON.stringify(ref + '.' + nextVar()) + ']||=' + valueSource;
+    case JtdNodeType.PROPERTY:
+    case JtdNodeType.NULLABLE:
+      return isAnyNode(node.valueNode);
+
+    default:
+      return false;
+  }
 }
 
 export const jtdValidatorOptions: Required<IValidatorOptions<any>> = {
-  renameProperty: (propKey) => propKey,
+  checkerRuntimeVar: 'r',
+  validatorRuntimeVar: 'v',
+  renameProperty: (node) => node.key,
   renameValidator: (ref) => 'validate' + pascalCase(ref),
-  renameTypeChecker: (type, node) => jtdTypeCheckerMap[node.type as JtdType] || 'check' + pascalCase(type),
+  checkerCompiler,
   rewriteEnumValue: (value) => value,
   rewriteMappingKey: (mappingKey) => mappingKey,
-
-  emitsCheckers: false,
-  renameChecker: (ref) => 'is' + pascalCase(ref),
+  emitsTypeNarrowing: false,
+  renameTypeNarrowing: (ref) => 'is' + pascalCase(ref),
   resolveRef: (ref) => 'unknown',
-};
-
-export const jtdTypeCheckerMap: Record<JtdType, string> = {
-  [JtdType.BOOLEAN]: RuntimeMethod.CHECK_BOOLEAN,
-  [JtdType.STRING]: RuntimeMethod.CHECK_STRING,
-  [JtdType.TIMESTAMP]: RuntimeMethod.CHECK_INTEGER,
-  [JtdType.FLOAT32]: RuntimeMethod.CHECK_NUMBER,
-  [JtdType.FLOAT64]: RuntimeMethod.CHECK_NUMBER,
-  [JtdType.INT8]: RuntimeMethod.CHECK_INTEGER,
-  [JtdType.UINT8]: RuntimeMethod.CHECK_INTEGER,
-  [JtdType.INT16]: RuntimeMethod.CHECK_INTEGER,
-  [JtdType.UINT16]: RuntimeMethod.CHECK_INTEGER,
-  [JtdType.INT32]: RuntimeMethod.CHECK_INTEGER,
-  [JtdType.UINT32]: RuntimeMethod.CHECK_INTEGER,
+  traversesAny: false,
 };

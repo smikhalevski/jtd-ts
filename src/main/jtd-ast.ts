@@ -1,5 +1,15 @@
 import {IJtd, IJtdMap, IJtdRoot} from './jtd-types';
-import {IJtdNodeMap, IJtdObjectNode, IJtdUnionNode, JtdNode, JtdNodeType} from './jtd-ast-types';
+import {
+  IJtdElementsNode,
+  IJtdMappingNode,
+  IJtdNullableNode,
+  IJtdObjectNode,
+  IJtdPropertyNode,
+  IJtdUnionNode,
+  IJtdValuesNode,
+  JtdNodeType,
+  JtdRootNode,
+} from './jtd-ast-types';
 
 /**
  * Converts JTD and its dependencies to a map of nodes where key is `ref` and value is a parsed node.
@@ -7,7 +17,7 @@ import {IJtdNodeMap, IJtdObjectNode, IJtdUnionNode, JtdNode, JtdNodeType} from '
  * @param ref The ref of the root JTD.
  * @param jtdRoot The JTD to parse.
  */
-export function parseJtdRoot<M>(ref: string, jtdRoot: IJtdRoot<M>): IJtdNodeMap<M> {
+export function parseJtdRoot<M>(ref: string, jtdRoot: IJtdRoot<M>): Record<string, JtdRootNode<M>> {
   const nodes = jtdRoot.definitions ? parseJtdDefinitions(jtdRoot.definitions) : createMap();
   nodes[ref] = parseJtd(jtdRoot);
   return nodes;
@@ -18,8 +28,8 @@ export function parseJtdRoot<M>(ref: string, jtdRoot: IJtdRoot<M>): IJtdNodeMap<
  *
  * @param definitions The dictionary of ref-JTD pairs.
  */
-export function parseJtdDefinitions<M>(definitions: IJtdMap<M>): IJtdNodeMap<M> {
-  const nodes: IJtdNodeMap<M> = createMap();
+export function parseJtdDefinitions<M>(definitions: IJtdMap<M>): Record<string, JtdRootNode<M>> {
+  const nodes: Record<string, JtdRootNode<M>> = createMap();
 
   for (const [ref, jtd] of Object.entries(definitions)) {
     nodes[ref] = parseJtd(jtd);
@@ -35,7 +45,7 @@ export function parseJtdDefinitions<M>(definitions: IJtdMap<M>): IJtdNodeMap<M> 
  * @see https://tools.ietf.org/html/rfc8927 RFC8927
  * @see https://jsontypedef.com/docs/jtd-in-5-minutes JTD in 5 minutes
  */
-export function parseJtd<M>(jtd: IJtd<M>): JtdNode<M> {
+export function parseJtd<M>(jtd: IJtd<M>): JtdRootNode<M> {
 
   const {
     nullable: jtdNullable,
@@ -51,17 +61,21 @@ export function parseJtd<M>(jtd: IJtd<M>): JtdNode<M> {
   } = jtd;
 
   if (jtdNullable) {
-    return {
+    const node: IJtdNullableNode<M> = {
       nodeType: JtdNodeType.NULLABLE,
       valueNode: parseJtd(Object.assign({}, jtd, {nullable: undefined})),
+      parentNode: null,
       jtd,
     };
+    node.valueNode.parentNode = node;
+    return node;
   }
 
   if (jtdType) {
     return {
       nodeType: JtdNodeType.TYPE,
       type: jtdType,
+      parentNode: null,
       jtd,
     };
   }
@@ -70,6 +84,7 @@ export function parseJtd<M>(jtd: IJtd<M>): JtdNode<M> {
     return {
       nodeType: JtdNodeType.REF,
       ref: jtdRef,
+      parentNode: null,
       jtd,
     };
   }
@@ -78,46 +93,73 @@ export function parseJtd<M>(jtd: IJtd<M>): JtdNode<M> {
     return {
       nodeType: JtdNodeType.ENUM,
       values: jtdEnum,
+      parentNode: null,
       jtd,
     };
   }
 
   if (jtdElements) {
-    return {
+    const node: IJtdElementsNode<M> = {
       nodeType: JtdNodeType.ELEMENTS,
       elementNode: parseJtd(jtdElements),
+      parentNode: null,
       jtd,
     };
+    node.elementNode.parentNode = node;
+    return node;
   }
 
   if (jtdValues) {
-    return {
+    const node: IJtdValuesNode<M> = {
       nodeType: JtdNodeType.VALUES,
       valueNode: parseJtd(jtdValues),
+      parentNode: null,
       jtd,
     };
+    node.valueNode.parentNode = node;
+    return node;
   }
 
   if (jtdProperties || jtdOptionalProperties) {
 
+    const propertyNodes: Array<IJtdPropertyNode<M>> = [];
     const objectNode: IJtdObjectNode<M> = {
       nodeType: JtdNodeType.OBJECT,
-      properties: createMap(),
-      optionalProperties: createMap(),
+      parentNode: null,
+      propertyNodes,
       jtd,
     };
 
     if (jtdProperties) {
       for (const [propKey, propJtd] of Object.entries(jtdProperties)) {
-        objectNode.properties[propKey] = parseJtd(propJtd);
+        const node: IJtdPropertyNode<M> = {
+          nodeType: JtdNodeType.PROPERTY,
+          parentNode: objectNode,
+          key: propKey,
+          optional: false,
+          valueNode: parseJtd(propJtd),
+          jtd: propJtd,
+        };
+        node.valueNode.parentNode = node;
+        propertyNodes.push(node);
       }
     }
+
     if (jtdOptionalProperties) {
       for (const [propKey, propJtd] of Object.entries(jtdOptionalProperties)) {
-        if (propKey in objectNode.properties) {
+        if (jtdProperties != null && propKey in jtdProperties) {
           throw new Error('Duplicated property: ' + propKey);
         }
-        objectNode.optionalProperties[propKey] = parseJtd(propJtd);
+        const node: IJtdPropertyNode<M> = {
+          nodeType: JtdNodeType.PROPERTY,
+          parentNode: objectNode,
+          key: propKey,
+          optional: true,
+          valueNode: parseJtd(propJtd),
+          jtd: propJtd,
+        };
+        node.valueNode.parentNode = node;
+        propertyNodes.push(node);
       }
     }
     return objectNode;
@@ -129,10 +171,12 @@ export function parseJtd<M>(jtd: IJtd<M>): JtdNode<M> {
       throw new Error('Malformed discriminated union');
     }
 
+    const mappingNodes: Array<IJtdMappingNode<M>> = [];
     const unionNode: IJtdUnionNode<M> = {
       nodeType: JtdNodeType.UNION,
+      parentNode: null,
       discriminator: jtdDiscriminator,
-      mapping: createMap(),
+      mappingNodes,
       jtd,
     };
 
@@ -142,13 +186,23 @@ export function parseJtd<M>(jtd: IJtd<M>): JtdNode<M> {
       if (objectNode.nodeType !== JtdNodeType.OBJECT) {
         throw new Error('Mappings must be object definitions: ' + mappingKey);
       }
-      unionNode.mapping[mappingKey] = objectNode;
+
+      const node: IJtdMappingNode<M> = {
+        nodeType: JtdNodeType.MAPPING,
+        parentNode: unionNode,
+        key: mappingKey,
+        valueNode: objectNode,
+        jtd: mappingJtd,
+      };
+      objectNode.parentNode = node;
+      mappingNodes.push(node);
     }
     return unionNode;
   }
 
   return {
     nodeType: JtdNodeType.ANY,
+    parentNode: null,
     jtd,
   };
 }

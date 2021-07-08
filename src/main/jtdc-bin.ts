@@ -3,7 +3,6 @@ import {compileJtdTsModules, IJtdTsModulesOptions} from './jtd-ts-modules';
 import {IJtdMap} from './jtd-types';
 import fs from 'fs';
 import path from 'path';
-import {ITsJtdMetadata} from './jtd-ts';
 
 const CONFIG_PATH = 'jtdc.config.js';
 
@@ -28,7 +27,7 @@ const rootDir = path.resolve(cwd, opts.rootDir);
 const configPath = path.join(cwd, opts.config);
 const filePaths: Array<string> = opts.files;
 
-let config: IJtdTsModulesOptions<ITsJtdMetadata> = {};
+let config: IJtdTsModulesOptions<any> = {};
 
 if (fs.existsSync(configPath)) {
   config = require(configPath);
@@ -38,14 +37,14 @@ if (fs.existsSync(configPath)) {
 }
 
 config.emitsValidators ||= opts.validators;
-config.emitsCheckers ||= opts.checkers;
+config.emitsTypeNarrowing ||= opts.checkers;
 
 if (!filePaths.length) {
   console.log('error: No files to compile');
   process.exit(1);
 }
 
-const modules = filePaths.reduce<Record<string, IJtdMap<ITsJtdMetadata>>>((modules, filePath) => {
+const modules = filePaths.reduce<Record<string, IJtdMap<any>>>((modules, filePath) => {
   filePath = path.resolve(cwd, filePath);
 
   if (!filePath.startsWith(rootDir)) {

@@ -94,10 +94,6 @@ export interface IPropertyRef {
   optional?: boolean;
 }
 
-export function isEqualRef(refA: IPropertyRef, refB: IPropertyRef): boolean {
-  return refA.key === refB.key && refA.var === refB.var && refA.optional === refB.optional;
-}
-
 /**
  * Compiles a TS source that produces a JSON pointer string when evaluated.
  *

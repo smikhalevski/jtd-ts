@@ -1,11 +1,13 @@
 import {
   IJtdEnumNode,
-  IJtdNodeMap,
+  IJtdMappingNode,
   IJtdObjectNode,
+  IJtdPropertyNode,
   IJtdTypeNode,
   IJtdUnionNode,
   JtdNode,
   JtdNodeType,
+  JtdRootNode,
 } from './jtd-ast-types';
 import {visitJtdNode} from './jtd-visitor';
 import {JtdType} from './jtd-types';
@@ -17,12 +19,12 @@ export interface IJtdTsRefRenameOptions<M> {
   /**
    * Returns the name of the interface.
    */
-  renameInterface?: (ref: string, objectNode: IJtdObjectNode<M>) => string;
+  renameInterface?: (ref: string, node: IJtdObjectNode<M>) => string;
 
   /**
    * Returns the name the primitive type alias.
    */
-  renameType?: (ref: string, node: JtdNode<M>) => string;
+  renameType?: (ref: string, node: JtdRootNode<M>) => string;
 
   /**
    * Returns the name of the enum.
@@ -53,7 +55,7 @@ export interface IJtdTsOptions<M> extends IJtdTsRefRenameOptions<M> {
   /**
    * Returns the name of an object property.
    */
-  renameProperty?: (propKey: string, node: JtdNode<M>, objectNode: IJtdObjectNode<M>) => string;
+  renameProperty?: (node: IJtdPropertyNode<M>) => string;
 
   /**
    * Returns the name of the enum value.
@@ -68,22 +70,27 @@ export interface IJtdTsOptions<M> extends IJtdTsRefRenameOptions<M> {
   /**
    * Returns the name of the enum that holds mapping keys for discriminated union of interfaces.
    */
-  renameUnionEnum?: (unionRef: string, unionNode: IJtdUnionNode<M>) => string;
+  renameUnionEnum?: (ref: string, node: IJtdUnionNode<M>) => string;
 
   /**
    * Returns the contents of the value from the enum that holds discriminator values from the discriminated union.
    */
-  renameUnionEnumValue?: (mappingKey: string, unionRef: string, unionNode: IJtdUnionNode<M>) => string;
+  renameUnionEnumValue?: (unionRef: string, mappingNode: IJtdMappingNode<M>) => string;
+
+  /**
+   * Returns the name of the union discriminator property.
+   */
+  renameDiscriminator?: (node: IJtdUnionNode<M>) => string;
 
   /**
    * Returns the string value that would be used as a value of discriminator property in united interfaces.
    */
-  rewriteMappingKey?: (mappingKey: string, unionRef: string, unionNode: IJtdUnionNode<M>) => string | number | undefined;
+  rewriteMappingKey?: (unionRef: string, mappingNode: IJtdMappingNode<M>) => string | number | undefined;
 
   /**
    * Returns the name of the interface that is part of the discriminated union mapping.
    */
-  renameMappingInterface?: (mappingKey: string, unionRef: string, unionNode: IJtdUnionNode<M>) => string;
+  renameMappingInterface?: (unionRef: string, mappingNode: IJtdMappingNode<M>) => string;
 
   /**
    * Returns the doc comment string associated with the node.
@@ -97,12 +104,12 @@ export interface IJtdTsOptions<M> extends IJtdTsRefRenameOptions<M> {
  * Callback that returns the actual type name for the given ref. This may perform lookup in an external dictionary or
  * infer type name from metadata that is accessible through `node`.
  */
-export type JtdRefResolver<M> = (ref: string, node: JtdNode<M>) => string;
+export type JtdRefResolver<M> = (ref: string, node: JtdRootNode<M>) => string;
 
 /**
  * Compiles provided JTD definitions as a TS source that represents a set of types, interfaces and enums.
  */
-export function compileTsFromJtdDefinitions<M>(definitions: IJtdNodeMap<M>, options?: IJtdTsOptions<M>): string {
+export function compileTsFromJtdDefinitions<M>(definitions: Record<string, JtdRootNode<M>>, options?: IJtdTsOptions<M>): string {
   const opts = Object.assign({}, jtdTsOptions, options);
 
   const resolveRef: JtdRefResolver<M> = (ref, refNode) => {
@@ -110,7 +117,7 @@ export function compileTsFromJtdDefinitions<M>(definitions: IJtdNodeMap<M>, opti
     return node ? renameRef(ref, node, opts) : opts.resolveRef(ref, refNode);
   };
 
-  return Object.entries(definitions).reduce((source, [ref, node]) => source + compileStatement(ref, node, resolveRef, opts), '');
+  return Object.entries(definitions).reduce((src, [ref, node]) => src + compileStatement(ref, node, resolveRef, opts), '');
 }
 
 function compileStatement<M>(ref: string, node: JtdNode<M>, resolveRef: JtdRefResolver<M>, options: Required<IJtdTsOptions<M>>): string {
@@ -123,174 +130,175 @@ function compileStatement<M>(ref: string, node: JtdNode<M>, resolveRef: JtdRefRe
     rewriteEnumValue,
     renameUnionEnum,
     renameUnionEnumValue,
+    renameDiscriminator,
     rewriteMappingKey,
     renameMappingInterface,
     getDocComment,
   } = options;
 
-  let source = '';
+  let src = '';
 
-  const compileTypeStatement = (node: JtdNode<M>): void => {
-    source += compileDocComment(getDocComment(node))
+  const compileTypeStatement = (node: JtdRootNode<M>): void => {
+    src += compileDocComment(getDocComment(node))
         + `export type ${renameType(ref, node)}=${compileExpression(node, resolveRef, options)};`;
   };
 
   visitJtdNode(node, {
 
-    visitAny: compileTypeStatement,
-    visitRef: compileTypeStatement,
-    visitNullable: compileTypeStatement,
-    visitType: compileTypeStatement,
-    visitElements: compileTypeStatement,
-    visitValues: compileTypeStatement,
+    any: compileTypeStatement,
+    ref: compileTypeStatement,
+    nullable: compileTypeStatement,
+    type: compileTypeStatement,
+    elements: compileTypeStatement,
+    values: compileTypeStatement,
 
-    visitEnum(node, next) {
+    enum(node) {
       const name = renameEnum(ref, node);
 
-      source += compileDocComment(getDocComment(node))
+      src += compileDocComment(getDocComment(node))
           + `enum ${name}{`;
-      next();
-      source += '}'
+
+      for (const value of node.values) {
+        src += renameEnumValue(value, node)
+            + '='
+            + JSON.stringify(rewriteEnumValue(value, node))
+            + ',';
+      }
+      src += '}'
           // Support of enum name mangling
           + `export{${name}};`;
     },
 
-    visitEnumValue(value, node) {
-      source += renameEnumValue(value, node) + '=' + JSON.stringify(rewriteEnumValue(value, node)) + ',';
-    },
-
-    visitObject(node, next) {
-      source += compileDocComment(getDocComment(node))
+    object(node, next) {
+      src += compileDocComment(getDocComment(node))
           + `export interface ${renameInterface(ref, node)}{`;
       next();
-      source += '}';
+      src += '}';
     },
 
-    visitProperty(propKey, propNode, objectNode) {
-      source += compileDocComment(getDocComment(propNode))
-          + compilePropertyName(renameProperty(propKey, propNode, objectNode))
-          + ':'
-          + compileExpression(propNode, resolveRef, options)
+    property(node) {
+      src += compileDocComment(getDocComment(node))
+          + compilePropertyName(renameProperty(node))
+          + (node.optional ? '?:' : ':')
+          + compileExpression(node, resolveRef, options)
           + ';';
     },
 
-    visitOptionalProperty(propKey, propNode, objectNode) {
-      source += compileDocComment(getDocComment(propNode))
-          + compilePropertyName(renameProperty(propKey, propNode, objectNode))
-          + '?:'
-          + compileExpression(propNode, resolveRef, options)
-          + ';';
-    },
-
-    visitUnion(node, next) {
+    union(node, next) {
       const unionName = renameType(ref, node);
 
-      const mappingKeys = Object.keys(node.mapping);
-
-      if (mappingKeys.length === 0) {
-        source += `export type ${unionName}=never;`;
+      if (node.mappingNodes.length === 0) {
+        src += `export type ${unionName}=never;`;
         return;
       }
 
       const enumName = renameUnionEnum(ref, node);
-      source += `enum ${enumName}{`
-          + mappingKeys.reduce((source, mappingKey) => renameUnionEnumValue(mappingKey, ref, node) + '=' + JSON.stringify(rewriteMappingKey(mappingKey, ref, node)) + ',', '')
+      src += `enum ${enumName}{`
+          + node.mappingNodes.reduce((src, mappingNode) => src
+              + renameUnionEnumValue(ref, mappingNode)
+              + '='
+              + JSON.stringify(rewriteMappingKey(ref, mappingNode))
+              + ',',
+              '',
+          )
           + '}'
           // Support of enum name mangling
           + `export{${enumName}};`
           + compileDocComment(getDocComment(node))
           + `export type ${unionName}=`
-          + mappingKeys.reduce((source, mappingKey) => source + '|' + renameMappingInterface(mappingKey, ref, node), '')
+          + node.mappingNodes.reduce((src, mappingNode) => src + '|' + renameMappingInterface(ref, mappingNode), '')
           + ';';
       next();
     },
 
-    visitUnionMapping(mappingKey, mappingNode, unionNode, next) {
-      source += compileDocComment(getDocComment(mappingNode))
-          + `export interface ${renameMappingInterface(mappingKey, ref, unionNode)}{`
-          + compilePropertyName(unionNode.discriminator)
+    mapping(node, next) {
+      src += compileDocComment(getDocComment(node))
+          + `export interface ${renameMappingInterface(ref, node)}{`
+          + compilePropertyName(renameDiscriminator(node.parentNode))
           + ':'
-          + renameUnionEnum(ref, unionNode) + '.' + renameUnionEnumValue(mappingKey, ref, unionNode)
+          + renameUnionEnum(ref, node.parentNode) + '.' + renameUnionEnumValue(ref, node)
           + ';';
       next();
-      source += '}';
+      src += '}';
     },
   });
 
-  return source;
+  return src;
 }
 
 function compileExpression<M>(node: JtdNode<M>, resolveRef: JtdRefResolver<M>, options: Required<IJtdTsOptions<M>>): string {
-  const {rewriteType, getDocComment} = options;
+  const {
+    rewriteType,
+    renameDiscriminator,
+    getDocComment,
+  } = options;
 
-  let source = '';
+  let src = '';
 
   visitJtdNode(node, {
-    visitAny() {
-      source += 'any';
+    any() {
+      src += 'any';
     },
-    visitRef(node) {
-      source += resolveRef(node.ref, node);
+    ref(node) {
+      src += resolveRef(node.ref, node);
     },
-    visitNullable(node, next) {
+    nullable(node, next) {
       next();
-      source += '|null';
+      src += '|null';
     },
-    visitType(node) {
-      source += rewriteType(node);
+    type(node) {
+      src += rewriteType(node);
     },
-    visitEnum(node, next) {
+    enum(node) {
+      src += node.values.reduce((src, value) => src + '|' + JSON.stringify(value), '');
+    },
+    elements(node, next) {
+      src += 'Array<';
       next();
+      src += '>';
     },
-    visitEnumValue(value) {
-      source += '|' + JSON.stringify(value);
-    },
-    visitElements(node, next) {
-      source += 'Array<';
+    values(node, next) {
+      src += 'Record<string,';
       next();
-      source += '>';
+      src += '>';
     },
-    visitValues(node, next) {
-      source += 'Record<string,';
+    object(node, next) {
+      src += '{';
       next();
-      source += '>';
+      src += '}';
     },
-    visitObject(node, next) {
-      source += '{';
+    property(node, next) {
+      src += compileDocComment(getDocComment(node))
+          + compilePropertyName(node.key)
+          + (node.optional ? '?:' : ':');
       next();
-      source += '}';
+      src += ';';
     },
-    visitProperty(propKey, propNode, objectNode, next) {
-      source += compileDocComment(getDocComment(propNode)) + compilePropertyName(propKey) + ':';
-      next();
-      source += ';';
-    },
-    visitOptionalProperty(propKey, propNode, objectNode, next) {
-      source += compileDocComment(getDocComment(propNode)) + compilePropertyName(propKey) + '?:';
-      next();
-      source += ';';
-    },
-    visitUnion(node, next) {
-      if (Object.keys(node.mapping).length === 0) {
-        source += 'never';
+    union(node, next) {
+      if (node.mappingNodes.length === 0) {
+        src += 'never';
       } else {
         next();
       }
     },
-    visitUnionMapping(mappingKey, mappingNode, unionNode, next) {
-      source += '|{' + unionNode.discriminator + ':' + JSON.stringify(mappingKey) + ';';
+    mapping(node, next) {
+      src += '|{'
+          + renameDiscriminator(node.parentNode)
+          + ':'
+          + JSON.stringify(node.key)
+          + ';';
       next();
-      source += '}';
+      src += '}';
     },
   });
 
-  return source;
+  return src;
 }
 
 /**
  * Returns the TS type name of the `ref` depending on `node` type.
  */
-export function renameRef<M>(ref: string, node: JtdNode<M>, options: Required<IJtdTsRefRenameOptions<M>>): string {
+export function renameRef<M>(ref: string, node: JtdRootNode<M>, options: Required<IJtdTsRefRenameOptions<M>>): string {
   switch (node.nodeType) {
     case JtdNodeType.ANY:
     case JtdNodeType.REF:
@@ -316,19 +324,20 @@ export const jtdTsOptions: Required<IJtdTsOptions<any>> = {
   resolveRef: () => 'never',
   renameInterface: (ref) => 'I' + pascalCase(ref),
   renameType: pascalCase,
-  renameProperty: (propKey) => propKey,
-  rewriteType: (node) => jtdTsTypeMap[node.type as JtdType] || 'never',
+  renameProperty: (node) => node.key,
+  rewriteType: (node) => jtdTsTypeMap[node.type] || 'never',
   renameEnum: pascalCase,
   renameEnumValue: upperSnakeCase,
   rewriteEnumValue: (value) => value,
-  renameUnionEnum: (unionRef, unionNode) => pascalCase(unionRef) + pascalCase(unionNode.discriminator),
+  renameUnionEnum: (ref, node) => pascalCase(ref) + pascalCase(node.discriminator),
   renameUnionEnumValue: upperSnakeCase,
-  rewriteMappingKey: (mappingKey) => mappingKey,
-  renameMappingInterface: (mappingKey, unionRef) => 'I' + pascalCase(unionRef) + pascalCase(mappingKey),
+  renameDiscriminator: (node) => node.discriminator,
+  rewriteMappingKey: (unionRef, mappingNode) => mappingNode.key,
+  renameMappingInterface: (unionRef, mappingNode) => 'I' + pascalCase(unionRef) + pascalCase(mappingNode.key),
   getDocComment: (node) => node.jtd.metadata?.comment,
 };
 
-export const jtdTsTypeMap: Record<JtdType, string> = {
+export const jtdTsTypeMap: Record<string, string> = {
   [JtdType.BOOLEAN]: 'boolean',
   [JtdType.STRING]: 'string',
   [JtdType.TIMESTAMP]: 'number',
