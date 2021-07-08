@@ -143,6 +143,23 @@ export function compileJsonPointer(pointer: Array<IPropertyRef>, escapeVar: stri
   return source;
 }
 
+export function compilePropertyAccessor(key: string, optional = false): string {
+  let src = '';
+  if (optional) {
+    src = '?';
+  }
+  if (isIdentifier(key)) {
+    return src + '.' + key;
+  }
+  if (optional) {
+    src = '?.';
+  }
+  if (isArrayIndex(key)) {
+    return src + '[' + key + ']';
+  }
+  return src + '[' + JSON.stringify(key) + ']';
+}
+
 /**
  * Returns an accessor for the property described by a pointer.
  *
@@ -154,8 +171,12 @@ export function compileJsonPointer(pointer: Array<IPropertyRef>, escapeVar: stri
  * @example
  * compilePropertyAccessor([{key: 'foo'}, {var: 'i', optional: true}, {key: 'бдыщ'}]) // → '.foo[i]?.["бдыщ"]'
  */
-export function compileAccessor(pointer: Array<IPropertyRef | string>, optional?: boolean): string {
+export function compileAccessorArray(pointer: IPropertyRef | string | Array<IPropertyRef | string>, optional?: boolean): string {
   let source = '';
+
+  if (!Array.isArray(pointer)) {
+    pointer = [pointer];
+  }
 
   for (let i = 0; i < pointer.length; i++) {
     let ref = pointer[i];

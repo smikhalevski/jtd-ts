@@ -74,7 +74,7 @@ export interface IJtdTsOptions<M> extends IJtdTsRefRenameOptions<M> {
   /**
    * Returns the string value that would be used as a value of discriminator property in united interfaces.
    */
-  rewriteMappingKey?: (mappingKey: string, mappingNode: IJtdObjectNode<M>, unionRef: string, unionNode: IJtdUnionNode<M>) => string | number | undefined;
+  rewriteMappingKey?: (mappingKey: string, mappingNode: IJtdObjectNode<M>, unionRef: string | undefined, unionNode: IJtdUnionNode<M>) => string | number | undefined;
 
   /**
    * Returns the name of the interface that is part of the discriminated union mapping.
@@ -230,6 +230,8 @@ function compileStatement<M>(ref: string, node: JtdNode<M>, resolveRef: JtdRefRe
 function compileExpression<M>(node: JtdNode<M>, resolveRef: JtdRefResolver<M>, options: Required<IJtdTsOptions<M>>): string {
   const {
     rewriteType,
+    rewriteEnumValue,
+    rewriteMappingKey,
     renameDiscriminatorKey,
     getDocComment,
   } = options;
@@ -251,7 +253,7 @@ function compileExpression<M>(node: JtdNode<M>, resolveRef: JtdRefResolver<M>, o
       src += rewriteType(node);
     },
     enum(node) {
-      src += node.values.reduce((src, value) => src + '|' + JSON.stringify(value), '');
+      src += node.values.reduce((src, value) => src + '|' + JSON.stringify(rewriteEnumValue(value, node)), '');
     },
     elements(node, next) {
       src += 'Array<';
@@ -293,7 +295,7 @@ function compileExpression<M>(node: JtdNode<M>, resolveRef: JtdRefResolver<M>, o
       src += '|{'
           + renameDiscriminatorKey(unionNode)
           + ':'
-          + JSON.stringify(mappingKey)
+          + JSON.stringify(rewriteMappingKey(mappingKey, mappingNode, undefined, unionNode))
           + ';';
       next();
       src += '}';
@@ -330,7 +332,7 @@ export function renameRef<M>(ref: string, node: JtdNode<M>, options: Required<IJ
  */
 export const jtdTsOptions: Required<IJtdTsOptions<any>> = {
   resolveRef: (ref) => {
-    throw new Error('Reference not found: ' + ref);
+    throw new Error('Unresolved reference: ' + ref);
   },
 
   renameInterface: (ref) => 'I' + pascalCase(ref),

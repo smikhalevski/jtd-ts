@@ -1,5 +1,5 @@
 import {
-  compileAccessor,
+  compileAccessorArray,
   compileDocComment,
   compileJsonPointer,
   compilePropertyName,
@@ -76,24 +76,24 @@ describe('compileJsonPointer', () => {
 describe('compileAccessor', () => {
 
   test('compiles accessor', () => {
-    expect(compileAccessor([{key: 'a'}, {key: 'b'}, {var: 'i'}, {key: 'c'}])).toBe('.a.b[i].c');
+    expect(compileAccessorArray([{key: 'a'}, {key: 'b'}, {var: 'i'}, {key: 'c'}])).toBe('.a.b[i].c');
   });
 
   test('compiles key accessor', () => {
-    expect(compileAccessor([{key: 'a'}], true)).toBe('?.a');
-    expect(compileAccessor([{key: 'a', optional: true}])).toBe('.a');
-    expect(compileAccessor([{key: 'a', optional: true}, {key: 'b'}])).toBe('.a?.b');
-    expect(compileAccessor([{key: '#$%@', optional: true}, {key: 'b'}])).toBe('["#$%@"]?.b');
+    expect(compileAccessorArray([{key: 'a'}], true)).toBe('?.a');
+    expect(compileAccessorArray([{key: 'a', optional: true}])).toBe('.a');
+    expect(compileAccessorArray([{key: 'a', optional: true}, {key: 'b'}])).toBe('.a?.b');
+    expect(compileAccessorArray([{key: '#$%@', optional: true}, {key: 'b'}])).toBe('["#$%@"]?.b');
   });
 
   test('compiles index accessor', () => {
-    expect(compileAccessor([{key: '0'}], true)).toBe('?.[0]');
-    expect(compileAccessor([{key: '0', optional: true}])).toBe('[0]');
-    expect(compileAccessor([{key: '0', optional: true}, {key: 'b'}])).toBe('[0]?.b');
+    expect(compileAccessorArray([{key: '0'}], true)).toBe('?.[0]');
+    expect(compileAccessorArray([{key: '0', optional: true}])).toBe('[0]');
+    expect(compileAccessorArray([{key: '0', optional: true}, {key: 'b'}])).toBe('[0]?.b');
   });
 
   test('compiles string keys', () => {
-    expect(compileAccessor(['a', '0', 'b'])).toBe('.a[0].b');
+    expect(compileAccessorArray(['a', '0', 'b'])).toBe('.a[0].b');
   });
 });
 

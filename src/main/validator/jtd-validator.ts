@@ -1,15 +1,16 @@
-import {IJtdEnumNode, IJtdMappingNode, IJtdPropertyNode, JtdNode, JtdNodeType, JtdNode} from '../jtd-ast-types';
 import {visitJtdNode} from '../jtd-visitor';
 import {JtdRefResolver} from '../jtd-ts';
-import {createVarProvider} from '../compiler-utils';
+import {compilePropertyAccessor, createVarProvider} from '../compiler-utils';
 import {pascalCase} from '../rename-utils';
-import {checkerCompiler} from '../checker/compiler';
+import jtdCheckerCompiler from '../checker';
+import {IJtdEnumNode, IJtdObjectNode, IJtdUnionNode, JtdNode, JtdNodeType} from '../jtd-ast-types';
+import {ValidatorRuntimeKey} from './runtime';
 
 const ARG_VALUE = 'value';
 const ARG_CONTEXT = 'ctx';
 const ARG_POINTER = 'pointer';
 
-export interface ICheckerOptions<M> {
+export interface ICheckerCompilerOptions<M> {
 
   /**
    * Returns the new expression that wraps `src` so the result would be retained between checker invocations.
@@ -61,19 +62,25 @@ export interface ICheckerCompiler<M> {
   /**
    * Returns an expression of the checker invocation.
    */
-  compileChecker: (node: JtdNode<M>, checkerOptions: ICheckerOptions<M>, validatorOptions: Required<IValidatorOptions<M>>) => string;
+  compileChecker: (node: JtdNode<M>, checkerOptions: ICheckerCompilerOptions<M>, validatorOptions: Required<IValidatorCompilerOptions<M>>) => string;
 }
 
-export interface IValidatorOptions<M> {
-
-  checkerRuntimeVar?: string;
-
-  validatorRuntimeVar?: string;
+export interface IValidatorCompilerOptions<M> {
 
   /**
-   * Returns the name of an object property.
+   * The compiler that describes how checkers are invoked by validators.
    */
-  renameProperty?: (node: IJtdPropertyNode<M>) => string;
+  checkerCompiler?: ICheckerCompiler<M>;
+
+  /**
+   * The name of the variable that holds the checker runtime.
+   */
+  checkerRuntimeVar?: string;
+
+  /**
+   * The name of the variable that holds the validator runtime.
+   */
+  validatorRuntimeVar?: string;
 
   /**
    * Returns the name of the emitted validator function.
@@ -81,19 +88,24 @@ export interface IValidatorOptions<M> {
   renameValidator?: (ref: string, node: JtdNode<M>) => string;
 
   /**
-   * Compiler of runtime checker functions.
+   * Returns the name of an object property.
    */
-  checkerCompiler?: ICheckerCompiler<M>;
+  renamePropertyKey?: (propKey: string, propNode: JtdNode<M>, objectNode: IJtdObjectNode<M>) => string;
 
   /**
-   * Returns the literal value of an enum that must rewrite the value declared in JTD.
+   * Returns the name of the union discriminator property.
+   */
+  renameDiscriminatorKey?: (node: IJtdUnionNode<M>) => string;
+
+  /**
+   * Returns the contents of the enum value.
    */
   rewriteEnumValue?: (value: string, node: IJtdEnumNode<M>) => string | number | undefined;
 
   /**
-   * Returns the literal value of an enum that is used for mapping a discriminated union.
+   * Returns the string value that would be used as a value of discriminator property in united interfaces.
    */
-  rewriteMappingKey?: (unionRef: string, mappingNode: IJtdMappingNode<M>) => string | number | undefined;
+  rewriteMappingKey?: (mappingKey: string, mappingNode: IJtdObjectNode<M>, unionRef: string | undefined, unionNode: IJtdUnionNode<M>) => string | number | undefined;
 
   /**
    * If set to `true` then type narrowing functions are emitted along with validators.
@@ -118,24 +130,24 @@ export interface IValidatorOptions<M> {
    *
    * @default false
    */
-  traversesAny?: boolean;
+  traversesUnconstrained?: boolean;
 }
 
 /**
  * Returns source code of functions that validate JTD definitions.
  */
-export function compileValidators<M>(definitions: Record<string, JtdNode<M>>, options?: Partial<IValidatorOptions<M>>): string {
+export function compileValidators<M>(definitions: Record<string, JtdNode<M>>, options?: Partial<IValidatorCompilerOptions<M>>): string {
   const opts = Object.assign({}, jtdValidatorOptions, options);
 
   const {
     validatorRuntimeVar,
     renameValidator,
-    renameTypeNarrowing,
     emitsTypeNarrowing,
+    renameTypeNarrowing,
     resolveRef,
   } = opts;
 
-  let source = '';
+  let src = '';
 
   let exportedNames: Array<string> = [];
 
@@ -143,7 +155,7 @@ export function compileValidators<M>(definitions: Record<string, JtdNode<M>>, op
     const name = renameValidator(ref, node);
     exportedNames.push(name);
 
-    source += `const ${name}:${validatorRuntimeVar}.Validator=`
+    src += `const ${name}:${validatorRuntimeVar}.Validator=`
         + `(${ARG_VALUE},${ARG_CONTEXT},${ARG_POINTER})=>{`
         + `${ARG_CONTEXT}||={};`
         + `${ARG_POINTER}||="";`
@@ -155,30 +167,34 @@ export function compileValidators<M>(definitions: Record<string, JtdNode<M>>, op
       const name = renameTypeNarrowing(ref, node);
       exportedNames.push(name);
 
-      source += `const ${name}=`
+      src += `const ${name}=`
           + `(${ARG_VALUE}:unknown):${ARG_VALUE} is ${resolveRef(ref, node)}=>!`
-          + renameValidator(ref, node) + '(' + ARG_VALUE + ')?.length;';
+          + renameValidator(ref, node) + '(' + ARG_VALUE + ',{lazy:true});';
     }
   }
 
-  source += `export {${exportedNames.join(',')}};`;
+  src += `export{${exportedNames.join(',')}};`;
 
-  return source;
+  return src;
 }
 
-export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: Required<IValidatorOptions<M>>): string {
+export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: Required<IValidatorCompilerOptions<M>>): string {
   const {
-    rewriteMappingKey,
-    checkerCompiler,
+    checkerCompiler: {compileChecker},
+    validatorRuntimeVar,
     renameValidator,
-    traversesAny,
+    renameDiscriminatorKey,
+    rewriteMappingKey,
+    traversesUnconstrained,
   } = options;
 
   let src = '';
 
-  const {compileChecker} = checkerCompiler;
-
   const nextVar = createVarProvider();
+
+
+
+
 
   let cacheVar: string | undefined;
 
@@ -187,8 +203,9 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
   let pointer: string | { var: string } | undefined;
   let index = 0;
   let valueSrc = ARG_VALUE;
+  let pointerSrc = ARG_POINTER;
 
-  const checkerOptions: ICheckerOptions<M> = {
+  const checkerOptions: ICheckerCompilerOptions<M> = {
     wrapCache: (src1: string) => {
       if (cacheVar == null) {
         cacheVar = nextVar();
@@ -212,11 +229,13 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
     valueSrc = valueVar;
     return source;
   };
-  const enterScope = (p: string | { var: string }) => {
+
+  const enterProperty = (p: string | { var: string }) => {
     pointer = p;
     valueSrc += typeof pointer === 'string' ? '.' + pointer : `[${pointer.var}]`;
   };
-  const exitScope = () => {
+
+  const exitProperty = () => {
     if (!pointer) {
       index--;
     }
@@ -224,9 +243,18 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
     valueSrc = valueVars[index];
   };
 
+
+
+
+
+
+
   visitJtdNode(node, {
 
     any() {
+      if (!traversesUnconstrained) {
+        return;
+      }
       src += compileChecker(node, checkerOptions, options) + ';';
     },
 
@@ -235,7 +263,7 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
     },
 
     nullable(node, next) {
-      if (!traversesAny && isAnyNode(node.valueNode)) {
+      if (!traversesUnconstrained && isUnconstrainedNode(node.valueNode)) {
         return;
       }
       src += compileVars()
@@ -253,7 +281,7 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
     },
 
     elements(node, next) {
-      if (!traversesAny && isAnyNode(node.elementNode)) {
+      if (!traversesUnconstrained && isUnconstrainedNode(node.elementNode)) {
         src += compileChecker(node, checkerOptions, options) + ';';
         return;
       }
@@ -261,14 +289,14 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
       const indexVar = nextVar();
       src += `if(${compileChecker(node, checkerOptions, options)}){`
           + `for(let ${indexVar}=0;${indexVar}<${valueSrc}.length;${indexVar}++){`;
-      enterScope({var: indexVar});
+      enterProperty({var: indexVar});
       next();
-      exitScope();
+      exitProperty();
       src += '}}';
     },
 
     values(node, next) {
-      if (!traversesAny && isAnyNode(node.valueNode)) {
+      if (!traversesUnconstrained && isUnconstrainedNode(node.valueNode)) {
         src += compileChecker(node, checkerOptions, options) + ';';
         return;
       }
@@ -276,14 +304,18 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
       const keyVar = nextVar();
       src += `if(${compileChecker(node, checkerOptions, options)}){`
           + `for(const ${keyVar} in ${valueSrc}){`;
-      enterScope({var: keyVar});
+      enterProperty({var: keyVar});
       next();
-      exitScope();
+      exitProperty();
       src += '}}';
     },
 
     object(node, next) {
-      if (!traversesAny && node.propertyNodes.every(isAnyNode)) {
+      if (
+          !traversesUnconstrained
+          && Object.values(node.properties).every(isUnconstrainedNode)
+          && Object.values(node.optionalProperties).every(isUnconstrainedNode)
+      ) {
         src += compileChecker(node, checkerOptions, options) + ';';
         return;
       }
@@ -293,34 +325,39 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
       src += '}';
     },
 
-    property(node, next) {
-      if (!traversesAny && isAnyNode(node)) {
+    property(propKey, propNode, objectNode, next) {
+      if (!traversesUnconstrained && isUnconstrainedNode(propNode)) {
         return;
       }
-      enterScope(node.key);
-      if (node.optional) {
-        src += compileVars()
-            + `if(${compileChecker(node, checkerOptions, options)}){`;
-        next();
-        src += '}';
-      } else {
-        next();
+      enterProperty(propKey);
+      next();
+      exitProperty();
+    },
+
+    optionalProperty(propKey, propNode, objectNode, next) {
+      if (!traversesUnconstrained && isUnconstrainedNode(propNode)) {
+        return;
       }
-      exitScope();
+      enterProperty(propKey);
+      src += compileVars()
+          + `if(${compileChecker(propNode, checkerOptions, options)}){`;
+      next();
+      src += '}';
+      exitProperty();
     },
 
     union(node, next) {
       src += compileVars()
           + `if(${compileChecker(node, checkerOptions, options)}){`
-          + `switch(${valueSrc + node.discriminator}){`;
+          + `switch(${valueSrc + compilePropertyAccessor(renameDiscriminatorKey(node))}){`;
       next();
       src += 'default:'
-          + 'raiseInvalid()'
+          + `${validatorRuntimeVar}.${ValidatorRuntimeKey.RAISE_INVALID}(${ARG_CONTEXT},${pointerSrc})`
           + '}}';
     },
 
-    mapping(node, next) {
-      src += `case ${JSON.stringify(rewriteMappingKey(ref, node))}:`;
+    mapping(mappingKey, mappingNode, unionNode, next) {
+      src += `case ${JSON.stringify(rewriteMappingKey(mappingKey, mappingNode, ref, unionNode))}:`;
       next();
       src += 'break;';
     },
@@ -332,31 +369,23 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
 /**
  * Returns `true` if `node` doesn't enforce any constraints.
  */
-function isAnyNode<M>(node: JtdNode<M>): boolean {
-  switch (node.nodeType) {
-
-    case JtdNodeType.ANY:
-      return true;
-
-    case JtdNodeType.PROPERTY:
-    case JtdNodeType.NULLABLE:
-      return isAnyNode(node.valueNode);
-
-    default:
-      return false;
-  }
+function isUnconstrainedNode<M>(node: JtdNode<M>): boolean {
+  return node.nodeType === JtdNodeType.ANY || node.nodeType === JtdNodeType.NULLABLE && isUnconstrainedNode(node.valueNode);
 }
 
-export const jtdValidatorOptions: Required<IValidatorOptions<any>> = {
-  checkerRuntimeVar: 'r',
+export const jtdValidatorOptions: Required<IValidatorCompilerOptions<any>> = {
+  checkerCompiler: jtdCheckerCompiler,
+  checkerRuntimeVar: 'c',
   validatorRuntimeVar: 'v',
-  renameProperty: (node) => node.key,
   renameValidator: (ref) => 'validate' + pascalCase(ref),
-  checkerCompiler,
+  renamePropertyKey: (propKey) => propKey,
   rewriteEnumValue: (value) => value,
+  renameDiscriminatorKey: (node) => node.discriminator,
   rewriteMappingKey: (mappingKey) => mappingKey,
   emitsTypeNarrowing: false,
   renameTypeNarrowing: (ref) => 'is' + pascalCase(ref),
-  resolveRef: (ref) => 'unknown',
-  traversesAny: false,
+  resolveRef: (ref) => {
+    throw new Error('Unresolved reference: ' + ref);
+  },
+  traversesUnconstrained: false,
 };

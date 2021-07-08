@@ -8,9 +8,9 @@ import {
 } from './jtd-ts';
 import {parseJtdDefinitions} from './jtd-ast';
 import {JtdNode} from './jtd-ast-types';
-import {compileValidators, IValidatorOptions, jtdValidatorOptions} from './validator/jtd-validator';
+import {compileValidators, IValidatorCompilerOptions, jtdValidatorOptions} from './validator/jtd-validator';
 
-export interface IJtdTsModulesOptions<M> extends IJtdTsOptions<M>, IValidatorOptions<M> {
+export interface IJtdTsModulesOptions<M> extends IJtdTsOptions<M>, IValidatorCompilerOptions<M> {
 
   /**
    * If set to `true` then validator functions are emitted along with type.

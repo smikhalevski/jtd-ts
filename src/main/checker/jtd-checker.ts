@@ -1,17 +1,19 @@
 import {JtdNode, JtdNodeType} from '../jtd-ast-types';
-import {ICheckerCompiler, ICheckerOptions, IValidatorOptions} from '../validator/jtd-validator';
+import {ICheckerCompiler, ICheckerCompilerOptions, IValidatorCompilerOptions} from '../validator';
 import {JtdType} from '../jtd-types';
-import {CheckerName} from './runtime';
+import {CheckerRuntimeKey} from './runtime';
 
-export const checkerCompiler: ICheckerCompiler<any> = {
+const jtdCheckerCompiler: ICheckerCompiler<any> = {
   runtimeModulePath: 'jtdc/lib/checker/runtime',
   compileChecker,
 };
 
+export default jtdCheckerCompiler;
+
 /**
  * The compiler of the default checker.
  */
-function compileChecker<M>(node: JtdNode<M>, checkerOptions: ICheckerOptions<M>, validatorOptions: Required<IValidatorOptions<M>>): string {
+function compileChecker<M>(node: JtdNode<M>, checkerOptions: ICheckerCompilerOptions<M>, validatorOptions: Required<IValidatorCompilerOptions<M>>): string {
   const {
     wrapCache,
     contextVar,
@@ -21,8 +23,8 @@ function compileChecker<M>(node: JtdNode<M>, checkerOptions: ICheckerOptions<M>,
 
   const {
     checkerRuntimeVar,
-    rewriteEnumValue,
     renameValidator,
+    rewriteEnumValue,
   } = validatorOptions;
 
   const checkerHost = checkerRuntimeVar + '.';
@@ -42,7 +44,7 @@ function compileChecker<M>(node: JtdNode<M>, checkerOptions: ICheckerOptions<M>,
       return renameValidator(node.ref, node) + checkerArgs;
 
     case JtdNodeType.ENUM:
-      return checkerHost + CheckerName.ENUM
+      return checkerHost + CheckerRuntimeKey.ENUM
           + '('
           + valueSrc
           + ',' + wrapCache('[' + node.values.map((value) => JSON.stringify(rewriteEnumValue(value, node))) + ']')
@@ -53,34 +55,28 @@ function compileChecker<M>(node: JtdNode<M>, checkerOptions: ICheckerOptions<M>,
     case JtdNodeType.UNION:
     case JtdNodeType.OBJECT:
     case JtdNodeType.VALUES:
-      return checkerHost + CheckerName.OBJECT + checkerArgs;
+      return checkerHost + CheckerRuntimeKey.OBJECT + checkerArgs;
 
     case JtdNodeType.ELEMENTS:
-      return checkerHost + CheckerName.ARRAY + checkerArgs;
+      return checkerHost + CheckerRuntimeKey.ARRAY + checkerArgs;
 
     case JtdNodeType.NULLABLE:
       return valueSrc + '!==null';
-
-    case JtdNodeType.PROPERTY:
-      return node.optional ? valueSrc + '!==undefined' : 'true';
-
-    case JtdNodeType.MAPPING:
-      throw new Error('Illegal state');
 
     case JtdNodeType.TYPE:
 
       switch (node.type) {
 
         case JtdType.BOOLEAN:
-          return checkerHost + CheckerName.BOOLEAN + checkerArgs;
+          return checkerHost + CheckerRuntimeKey.BOOLEAN + checkerArgs;
 
         case JtdType.STRING:
         case JtdType.TIMESTAMP:
-          return checkerHost + CheckerName.STRING + checkerArgs;
+          return checkerHost + CheckerRuntimeKey.STRING + checkerArgs;
 
         case JtdType.FLOAT32:
         case JtdType.FLOAT64:
-          return checkerHost + CheckerName.NUMBER + checkerArgs;
+          return checkerHost + CheckerRuntimeKey.NUMBER + checkerArgs;
 
         case JtdType.INT8:
         case JtdType.UINT8:
@@ -88,7 +84,7 @@ function compileChecker<M>(node: JtdNode<M>, checkerOptions: ICheckerOptions<M>,
         case JtdType.UINT16:
         case JtdType.INT32:
         case JtdType.UINT32:
-          return checkerHost + CheckerName.INTEGER + checkerArgs;
+          return checkerHost + CheckerRuntimeKey.INTEGER + checkerArgs;
       }
 
       throw new Error('Unexpected type: ' + node.type);
