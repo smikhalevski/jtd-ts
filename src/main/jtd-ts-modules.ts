@@ -1,14 +1,8 @@
-import {IJtdMap} from './jtd-types';
-import {
-  compileTsFromJtdDefinitions,
-  IJtdTsOptions,
-  IJtdTsRefRenameOptions,
-  jtdTsOptions,
-  renameRef,
-} from './jtd-ts';
+import {compileTsFromJtdDefinitions, IJtdTsOptions, IJtdTsRefRenameOptions, jtdTsOptions, renameRef} from './jtd-ts';
 import {parseJtdDefinitions} from './jtd-ast';
 import {JtdNode} from './jtd-ast-types';
-import {compileValidators, IValidatorCompilerOptions, jtdValidatorOptions} from './validator/jtd-validator';
+import {compileValidators, IValidatorCompilerOptions, jtdValidatorOptions} from './validator';
+import {IJtd} from './jtd-types';
 
 export interface IJtdTsModulesOptions<M> extends IJtdTsOptions<M>, IValidatorCompilerOptions<M> {
 
@@ -26,12 +20,12 @@ export interface IJtdTsModulesOptions<M> extends IJtdTsOptions<M>, IValidatorCom
   alterSource?: (source: string, uri: string) => string;
 }
 
-export function compileJtdTsModules<M extends ITsJtdMetadata>(modules: Record<string, IJtdMap<M>>, options?: IJtdTsModulesOptions<M>): Record<string, string> {
+export function compileJtdTsModules<M>(modules: Record<string, Record<string, IJtd<M>>>, options?: IJtdTsModulesOptions<M>): Record<string, string> {
   const tsModules: Record<string, string> = Object.create(null);
 
   interface IParsedModule<M> {
     uri: string;
-    definitions: IJtdNodeMap<any>;
+    definitions: Record<string, JtdNode<M>>;
     tsExports: Record<string, ITsExport<M>>;
   }
 
@@ -39,7 +33,15 @@ export function compileJtdTsModules<M extends ITsJtdMetadata>(modules: Record<st
 
   const opts = Object.assign({}, jtdValidatorOptions, jtdTsOptions, options);
 
-  const resolveRef = opts.resolveRef;
+  const {
+    checkerRuntimeVar,
+    validatorRuntimeVar,
+    checkerCompiler: {runtimeModulePath},
+    resolveRef,
+    emitsValidators,
+    alterSource,
+    renameValidator,
+  } = opts;
 
   // Parse AST and extract exports
   for (const uri of Object.keys(modules)) {
@@ -75,9 +77,9 @@ export function compileJtdTsModules<M extends ITsJtdMetadata>(modules: Record<st
     let source = '';
 
     // jtdc import of validator runtime
-    if (opts.emitsValidators) {
-      source += `import {runtime as r, Validator as ${TYPE_VALIDATOR}} from "../validator/runtime";`
-          + compileValidatorModuleProlog(VAR_RUNTIME);
+    if (emitsValidators) {
+      source += `import ${checkerRuntimeVar} from "${runtimeModulePath}";`
+          + `import ${validatorRuntimeVar} from "jtdc/lib/validator/runtime";`;
     }
 
     // Module types
@@ -91,8 +93,8 @@ export function compileJtdTsModules<M extends ITsJtdMetadata>(modules: Record<st
           + Object.values(tsImport).map((tsExport) => tsExport.name).join(',');
 
       // Import validators
-      if (opts.emitsValidators) {
-        source += ',' + Object.entries(tsImport).map(([ref, tsExport]) => opts.renameValidator(ref, tsExport.node)).join(',');
+      if (emitsValidators) {
+        source += ',' + Object.entries(tsImport).map(([ref, tsExport]) => renameValidator(ref, tsExport.node)).join(',');
       }
       source += `} from ${JSON.stringify(uri)};`;
     }
@@ -101,13 +103,13 @@ export function compileJtdTsModules<M extends ITsJtdMetadata>(modules: Record<st
     source += typeSource;
 
     // Validator and checker source
-    if (opts.emitsValidators) {
+    if (emitsValidators) {
       opts.resolveRef = (ref) => tsExports[ref].name;
       source += compileValidators(definitions, opts);
     }
 
-    if (opts.alterSource) {
-      source = opts.alterSource(source, uri);
+    if (alterSource) {
+      source = alterSource(source, uri);
     }
 
     tsModules[uri] = source;
@@ -132,7 +134,7 @@ interface ITsExport<M> {
 /**
  * Returns map from ref to a TS type name.
  */
-function getTsExports<M>(definitions: IJtdNodeMap<M>, options: Required<IJtdTsRefRenameOptions<M>>): Record<string, ITsExport<M>> {
+function getTsExports<M>(definitions: Record<string, JtdNode<M>>, options: Required<IJtdTsRefRenameOptions<M>>): Record<string, ITsExport<M>> {
   const exports: Record<string, ITsExport<M>> = Object.create(null);
 
   for (const [ref, node] of Object.entries(definitions)) {

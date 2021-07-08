@@ -26,38 +26,45 @@ describe('compileJtdTsModules', () => {
 
     expect(modules).toEqual({
       './bar.ts':
-          'import __validatorRuntime, {Validator as __Validator} from "jtd-ts/lib/validator/runtime";' +
+          'import c from "jtdc/lib/checker/runtime";' +
+          'import v from "jtdc/lib/validator/runtime";' +
 
-          'const {__enum,__array,__object,__string,__number,__integer,__boolean,__invalid,__pointer}=__validatorRuntime;' +
-          'const __validatorCache:Record<string,any>={};' +
+          'enum Bar{AAA="AAA",BBB="BBB",}' +
+          'export{Bar};' +
 
-          'export enum Bar{AAA="AAA",BBB="BBB",}' +
-
-          'export const validateBar:__Validator=(value,errors=[],pointer="")=>{' +
-          '__enum(value,__validatorCache["bar.a"]||=new Set(["AAA","BBB"]),errors,pointer);' +
-          'return errors;' +
+          'const validateBar:v.Validator=(value,ctx,pointer)=>{' +
+          'ctx||={};' +
+          'pointer||="";' +
+          'let a=validateBar.c||={};' +
+          'c.e(value,a.b||=["AAA","BBB"],ctx,pointer);' +
+          'return ctx.errors;' +
           '};' +
 
-          'export const isBar=(value:unknown):value is Bar=>validateBar(value).length===0;',
+          'const isBar=(value:unknown):value is Bar=>!validateBar(value,{lazy:true});' +
+
+          'export{validateBar,isBar};',
 
       './foo.ts':
-          'import {Bar,validateBar} from "./bar.ts";' +
-          'import __validatorRuntime, {Validator as __Validator} from "jtd-ts/lib/validator/runtime";' +
+          'import c from "jtdc/lib/checker/runtime";' +
+          'import v from "jtdc/lib/validator/runtime";' +
 
-          'const {__enum,__array,__object,__string,__number,__integer,__boolean,__invalid,__pointer}=__validatorRuntime;' +
-          'const __validatorCache:Record<string,any>={};' +
+          'import {Bar,validateBar} from "./bar.ts";' +
 
           'export interface IFoo{aaa:number;bbb:Bar;}' +
 
-          'export const validateFoo:__Validator=(value,errors=[],pointer="")=>{' +
-          'if(__object(value,errors,pointer)){' +
-          '__integer(value.aaa,errors,pointer+"/aaa");' +
-          'validateBar(value.bbb,errors,pointer+"/bbb");' +
+          'const validateFoo:v.Validator=(value,ctx,pointer)=>{' +
+          'ctx||={};' +
+          'pointer||="";' +
+          'if(c.o(value,ctx,pointer)){' +
+          'c.i(value.aaa,ctx,pointer+"/aaa");' +
+          'validateBar(value.bbb,ctx,pointer+"/bbb");' +
           '}' +
-          'return errors;' +
+          'return ctx.errors;' +
           '};' +
 
-          'export const isFoo=(value:unknown):value is IFoo=>validateFoo(value).length===0;',
+          'const isFoo=(value:unknown):value is IFoo=>!validateFoo(value,{lazy:true});' +
+
+          'export{validateFoo,isFoo};',
     });
   });
 });
