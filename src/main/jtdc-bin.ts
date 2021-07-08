@@ -1,8 +1,8 @@
 import {program} from 'commander';
 import {compileJtdTsModules, IJtdTsModulesOptions} from './jtd-ts-modules';
-import {IJtdMap} from './jtd-types';
 import fs from 'fs';
 import path from 'path';
+import {IJtd} from './jtd-types';
 
 const CONFIG_PATH = 'jtdc.config.js';
 
@@ -44,7 +44,7 @@ if (!filePaths.length) {
   process.exit(1);
 }
 
-const modules = filePaths.reduce<Record<string, IJtdMap<any>>>((modules, filePath) => {
+const modules = filePaths.reduce<Record<string, Record<string, IJtd<any>>>>((modules, filePath) => {
   filePath = path.resolve(cwd, filePath);
 
   if (!filePath.startsWith(rootDir)) {
