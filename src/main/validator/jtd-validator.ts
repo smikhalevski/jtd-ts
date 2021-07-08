@@ -5,6 +5,7 @@ import {pascalCase} from '../rename-utils';
 import jtdCheckerCompiler from '../checker';
 import {IJtdEnumNode, IJtdObjectNode, IJtdUnionNode, JtdNode, JtdNodeType} from '../jtd-ast-types';
 import {ValidatorRuntimeKey} from './runtime';
+import JsonPointer from 'json-pointer';
 
 const ARG_VALUE = 'value';
 const ARG_CONTEXT = 'ctx';
@@ -180,8 +181,9 @@ export function compileValidators<M>(definitions: Record<string, JtdNode<M>>, op
 
 export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: Required<IValidatorCompilerOptions<M>>): string {
   const {
-    checkerCompiler: {compileChecker},
+    checkerRuntimeVar,
     validatorRuntimeVar,
+    checkerCompiler: {compileChecker},
     renameValidator,
     renameDiscriminatorKey,
     rewriteMappingKey,
@@ -190,75 +192,124 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
 
   let src = '';
 
-  const nextVar = createVarProvider();
+  const declaredVars = new Set<string>();
 
+  const nextVar = createVarProvider([
+    ARG_VALUE,
+    ARG_CONTEXT,
+    ARG_POINTER,
+    checkerRuntimeVar,
+    validatorRuntimeVar,
+  ]);
 
-
-
-
+  // Validator cache variable
   let cacheVar: string | undefined;
 
+  // Stacks of vars
   const valueVars: Array<string> = [ARG_VALUE];
+  const pointerVars: Array<string> = [ARG_POINTER];
 
-  let pointer: string | { var: string } | undefined;
+  // Index in stack
   let index = 0;
+
+  // Current value and pointer accessors
   let valueSrc = ARG_VALUE;
   let pointerSrc = ARG_POINTER;
 
   const checkerOptions: ICheckerCompilerOptions<M> = {
-    wrapCache: (src1: string) => {
-      if (cacheVar == null) {
+
+    wrapCache(cachedSrc) {
+      if (!cacheVar) {
         cacheVar = nextVar();
-        src = cacheVar + '=' + renameValidator(ref, node) + '.cache||={};';
       }
-      return cacheVar + '.' + nextVar() + '||=' + src1;
+      return cacheVar + '.' + nextVar() + '||=' + cachedSrc;
     },
-    nextVar,
+
+    nextVar() {
+      const customVar = nextVar();
+      declaredVars.add(customVar);
+      return customVar;
+    },
+
     contextVar: ARG_CONTEXT,
-    valueSrc: ARG_VALUE,
-    pointerSrc: ARG_POINTER,
+    valueSrc,
+    pointerSrc,
   };
 
+  let propertyPending = false;
+
   const compileVars = () => {
-    if (!pointer) {
+    if (!propertyPending) {
       return '';
     }
+
     index++;
+
     const valueVar = valueVars[index] ||= nextVar();
-    const source = `${valueVar}=${valueSrc};`;
+    const pointerVar = pointerVars[index] ||= nextVar();
+
+    declaredVars.add(valueVar);
+    declaredVars.add(pointerVar);
+
+    const source = `${valueVar}=${valueSrc};`
+        + `${pointerVar}=${pointerSrc};`;
+
     valueSrc = valueVar;
+    pointerSrc = pointerVar;
+
+    checkerOptions.valueSrc = valueSrc;
+    checkerOptions.pointerSrc = pointerSrc;
+
     return source;
   };
 
-  const enterProperty = (p: string | { var: string }) => {
-    pointer = p;
-    valueSrc += typeof pointer === 'string' ? '.' + pointer : `[${pointer.var}]`;
+  const enterPropertyByKey = (propKey: string): void => {
+    propertyPending = true;
+
+    valueSrc += compilePropertyAccessor(propKey);
+    pointerSrc += '+' + JSON.stringify('/' + JsonPointer.escape(propKey));
+
+    checkerOptions.valueSrc = valueSrc;
+    checkerOptions.pointerSrc = pointerSrc;
+  };
+
+  const enterPropertyByVar = (propVar: string, escapeRequired: boolean): void => {
+    propertyPending = true;
+    valueSrc += '[' + propVar + ']';
+
+    if (escapeRequired) {
+      pointerSrc += `+"/"+${validatorRuntimeVar}.${ValidatorRuntimeKey.ESCAPE_JSON_POINTER}(${propVar})`;
+    } else {
+      pointerSrc += `+"/"+${propVar}`;
+    }
+
+    checkerOptions.valueSrc = valueSrc;
+    checkerOptions.pointerSrc = pointerSrc;
   };
 
   const exitProperty = () => {
-    if (!pointer) {
+    if (!propertyPending) {
       index--;
     }
-    pointer = undefined;
+    propertyPending = false;
+
     valueSrc = valueVars[index];
+    pointerSrc = pointerVars[index];
+
+    checkerOptions.valueSrc = valueSrc;
+    checkerOptions.pointerSrc = pointerSrc;
   };
-
-
-
-
-
-
 
   visitJtdNode(node, {
 
-    any() {
+    any(node) {
       if (!traversesUnconstrained) {
         return;
       }
       src += compileChecker(node, checkerOptions, options) + ';';
     },
 
-    ref() {
+    ref(node) {
       src += compileChecker(node, checkerOptions, options) + ';';
     },
 
@@ -272,11 +323,11 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
       src += '}';
     },
 
-    type() {
+    type(node) {
       src += compileChecker(node, checkerOptions, options) + ';';
     },
 
-    enum() {
+    enum(node) {
       src += compileChecker(node, checkerOptions, options) + ';';
     },
 
@@ -289,7 +340,7 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
       const indexVar = nextVar();
       src += `if(${compileChecker(node, checkerOptions, options)}){`
           + `for(let ${indexVar}=0;${indexVar}<${valueSrc}.length;${indexVar}++){`;
-      enterProperty({var: indexVar});
+      enterPropertyByVar(indexVar, false);
       next();
       exitProperty();
       src += '}}';
@@ -304,7 +355,7 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
       const keyVar = nextVar();
       src += `if(${compileChecker(node, checkerOptions, options)}){`
           + `for(const ${keyVar} in ${valueSrc}){`;
-      enterProperty({var: keyVar});
+      enterPropertyByVar(keyVar, true);
       next();
       exitProperty();
       src += '}}';
@@ -329,7 +380,7 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
       if (!traversesUnconstrained && isUnconstrainedNode(propNode)) {
         return;
       }
-      enterProperty(propKey);
+      enterPropertyByKey(propKey);
       next();
       exitProperty();
     },
@@ -338,21 +389,22 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
       if (!traversesUnconstrained && isUnconstrainedNode(propNode)) {
         return;
       }
-      enterProperty(propKey);
+      enterPropertyByKey(propKey);
       src += compileVars()
-          + `if(${compileChecker(propNode, checkerOptions, options)}){`;
+          + `if(${valueSrc}!==undefined){`;
       next();
       src += '}';
       exitProperty();
     },
 
     union(node, next) {
+      const discriminatorKey = renameDiscriminatorKey(node);
       src += compileVars()
           + `if(${compileChecker(node, checkerOptions, options)}){`
-          + `switch(${valueSrc + compilePropertyAccessor(renameDiscriminatorKey(node))}){`;
+          + `switch(${valueSrc + compilePropertyAccessor(discriminatorKey)}){`;
       next();
       src += 'default:'
-          + `${validatorRuntimeVar}.${ValidatorRuntimeKey.RAISE_INVALID}(${ARG_CONTEXT},${pointerSrc})`
+          + `${validatorRuntimeVar}.${ValidatorRuntimeKey.RAISE_INVALID}(${ARG_CONTEXT},${pointerSrc}+${JSON.stringify('/' + JsonPointer.escape(discriminatorKey))})`
           + '}}';
     },
 
@@ -362,6 +414,13 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
       src += 'break;';
     },
   });
+
+  if (declaredVars.size) {
+    src = 'let ' + Array.from(declaredVars).join(',') + ';' + src;
+  }
+  if (cacheVar) {
+    src = 'let ' + cacheVar + '=' + renameValidator(ref, node) + '.' + ValidatorRuntimeKey.VALIDATOR_CACHE + '||={};' + src;
+  }
 
   return src;
 }

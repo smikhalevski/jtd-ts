@@ -60,12 +60,13 @@ export interface Validator {
   /**
    * The cache object populated by the validator during execution.
    */
-  cache?: Record<string, any>;
+  [ValidatorRuntimeKey.VALIDATOR_CACHE]?: Record<string, any>;
 }
 
 export const enum ValidatorRuntimeKey {
   ESCAPE_JSON_POINTER = 'p',
   RAISE_INVALID = 'r',
+  VALIDATOR_CACHE = 'c',
 }
 
 export default {
