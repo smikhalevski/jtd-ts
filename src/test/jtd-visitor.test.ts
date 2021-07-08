@@ -85,11 +85,15 @@ describe('visitJtdNode', () => {
 
     expect(propertyMock).toHaveBeenCalledTimes(2);
     expect(propertyMock).toHaveBeenNthCalledWith(1,
-        expect.objectContaining({nodeType: JtdNodeType.PROPERTY}),
+        'foo',
+        expect.objectContaining({nodeType: JtdNodeType.TYPE}),
+        expect.objectContaining({nodeType: JtdNodeType.OBJECT}),
         expect.any(Function),
     );
     expect(propertyMock).toHaveBeenNthCalledWith(2,
-        expect.objectContaining({nodeType: JtdNodeType.PROPERTY}),
+        'bar',
+        expect.objectContaining({nodeType: JtdNodeType.ENUM}),
+        expect.objectContaining({nodeType: JtdNodeType.OBJECT}),
         expect.any(Function),
     );
   });
@@ -139,11 +143,15 @@ describe('visitJtdNode', () => {
 
     expect(unionMappingMock).toHaveBeenCalledTimes(2);
     expect(unionMappingMock).toHaveBeenNthCalledWith(1,
-        expect.objectContaining({nodeType: JtdNodeType.MAPPING}),
+        'AAA',
+        expect.objectContaining({nodeType: JtdNodeType.OBJECT}),
+        expect.objectContaining({nodeType: JtdNodeType.UNION}),
         expect.any(Function),
     );
     expect(unionMappingMock).toHaveBeenNthCalledWith(2,
-        expect.objectContaining({nodeType: JtdNodeType.MAPPING}),
+        'BBB',
+        expect.objectContaining({nodeType: JtdNodeType.OBJECT}),
+        expect.objectContaining({nodeType: JtdNodeType.UNION}),
         expect.any(Function),
     );
   });

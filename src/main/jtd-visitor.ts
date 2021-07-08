@@ -2,10 +2,8 @@ import {
   IJtdAnyNode,
   IJtdElementsNode,
   IJtdEnumNode,
-  IJtdMappingNode,
   IJtdNullableNode,
   IJtdObjectNode,
-  IJtdPropertyNode,
   IJtdRefNode,
   IJtdTypeNode,
   IJtdUnionNode,
@@ -23,21 +21,20 @@ export interface IJtdNodeVisitor<M> {
   elements?: (node: IJtdElementsNode<M>, next: () => void) => void;
   values?: (node: IJtdValuesNode<M>, next: () => void) => void;
   object?: (node: IJtdObjectNode<M>, next: () => void) => void;
-  property?: (node: IJtdPropertyNode<M>, next: () => void) => void;
+  property?: (propKey: string, propNode: JtdNode<M>, objectNode: IJtdObjectNode<M>, next: () => void) => void;
+  optionalProperty?: (propKey: string, propNode: JtdNode<M>, objectNode: IJtdObjectNode<M>, next: () => void) => void;
   union?: (node: IJtdUnionNode<M>, next: () => void) => void;
-  mapping?: (node: IJtdMappingNode<M>, next: () => void) => void;
+  mapping?: (mappingKey: string, mappingNode: IJtdObjectNode<M>, unionNode: IJtdUnionNode<M>, next: () => void) => void;
 }
 
 /**
  * Invokes callbacks from `visitor` for a node tree under `node`.
  *
- * **Note:** If particular visitor that receives `next` callback is absent then all subtree under the node to which the
- * visitor refers is skipped.
- *
  * @param node The root of the JTD node tree.
  * @param visitor Callbacks that must be invoked for nodes under `node`.
  */
 export function visitJtdNode<M>(node: JtdNode<M>, visitor: IJtdNodeVisitor<M>): void {
+
   switch (node.nodeType) {
 
     case JtdNodeType.ANY:
@@ -69,25 +66,24 @@ export function visitJtdNode<M>(node: JtdNode<M>, visitor: IJtdNodeVisitor<M>): 
       break;
 
     case JtdNodeType.OBJECT:
-      visitor.object?.(node, () => visitJtdNodeArray(node.propertyNodes, visitor));
-      break;
-
-    case JtdNodeType.PROPERTY:
-      visitor.property?.(node, () => visitJtdNode(node.valueNode, visitor));
+      visitor.object?.(node, () => visitJtdObjectNodeProperties(node, visitor));
       break;
 
     case JtdNodeType.UNION:
-      visitor.union?.(node, () => visitJtdNodeArray(node.mappingNodes, visitor));
-      break;
-
-    case JtdNodeType.MAPPING:
-      visitor.mapping?.(node, () => visitJtdNode(node.objectNode, visitor));
+      visitor.union?.(node, () => {
+        for (const [mappingKey, mappingNode] of Object.entries(node.mapping)) {
+          visitor.mapping?.(mappingKey, mappingNode, node, () => visitJtdObjectNodeProperties(mappingNode, visitor));
+        }
+      });
       break;
   }
 }
 
-function visitJtdNodeArray<M>(nodes: Array<JtdNode<M>>, visitor: IJtdNodeVisitor<M>): void {
-  for (let i = 0; i < nodes.length; i++) {
-    visitJtdNode(nodes[i], visitor);
+function visitJtdObjectNodeProperties<M>(node: IJtdObjectNode<M>, visitor: IJtdNodeVisitor<M>): void {
+  for (const [propKey, propNode] of Object.entries(node.properties)) {
+    visitor.property?.(propKey, propNode, node, () => visitJtdNode(propNode, visitor));
+  }
+  for (const [propKey, propNode] of Object.entries(node.optionalProperties)) {
+    visitor.optionalProperty?.(propKey, propNode, node, () => visitJtdNode(propNode, visitor));
   }
 }

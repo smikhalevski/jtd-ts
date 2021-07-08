@@ -9,12 +9,10 @@ export const enum JtdNodeType {
   ELEMENTS,
   VALUES,
   OBJECT,
-  PROPERTY,
   UNION,
-  MAPPING,
 }
 
-export type JtdRootNode<M> =
+export type JtdNode<M> =
     | IJtdAnyNode<M>
     | IJtdRefNode<M>
     | IJtdNullableNode<M>
@@ -25,20 +23,12 @@ export type JtdRootNode<M> =
     | IJtdObjectNode<M>
     | IJtdUnionNode<M>;
 
-export type JtdNode<M> =
-    | JtdRootNode<M>
-    | IJtdPropertyNode<M>
-    | IJtdMappingNode<M>;
-
 export interface IJtdNode<M> {
   nodeType: JtdNodeType;
   parentNode: JtdNode<M> | null;
   jtd: IJtdRoot<M>;
 }
 
-/**
- * The unconstrained type node.
- */
 export interface IJtdAnyNode<M> extends IJtdNode<M> {
   nodeType: JtdNodeType.ANY;
 }
@@ -75,15 +65,8 @@ export interface IJtdValuesNode<M> extends IJtdNode<M> {
 
 export interface IJtdObjectNode<M> extends IJtdNode<M> {
   nodeType: JtdNodeType.OBJECT;
-  propertyNodes: Array<IJtdPropertyNode<M>>;
-}
-
-export interface IJtdPropertyNode<M> extends IJtdNode<M> {
-  nodeType: JtdNodeType.PROPERTY;
-  parentNode: IJtdObjectNode<M>;
-  key: string;
-  optional: boolean;
-  valueNode: JtdNode<M>;
+  properties: Record<string, JtdNode<M>>;
+  optionalProperties: Record<string, JtdNode<M>>;
 }
 
 /**
@@ -96,12 +79,5 @@ export interface IJtdUnionNode<M> extends IJtdNode<M> {
    * The name of the property in discriminated objects that holds the mapping key.
    */
   discriminator: string;
-  mappingNodes: Array<IJtdMappingNode<M>>;
-}
-
-export interface IJtdMappingNode<M> extends IJtdNode<M> {
-  nodeType: JtdNodeType.MAPPING;
-  parentNode: IJtdUnionNode<M>;
-  key: string;
-  objectNode: IJtdObjectNode<M>;
+  mapping: Record<string, IJtdObjectNode<M>>;
 }

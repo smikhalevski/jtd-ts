@@ -227,22 +227,18 @@ describe('compileTsFromJtdDefinitions', () => {
     expect(src).toBe(`export interface IFoo{\n/**\n * Okay\n */\nbar:any;}`);
   });
 
-  test('resolves non-JTD types as never', () => {
-    const src = compileTsFromJtdDefinitions(parseJtdRoot('foo', {
+  test('throws on unknown type', () => {
+    expect(() => compileTsFromJtdDefinitions(parseJtdRoot('foo', {
       properties: {
         bar: {type: 'wow'},
       },
-    }));
-
-    expect(src).toBe('export interface IFoo{bar:never;}');
+    }))).toThrow();
   });
 
-  test('resolves external refs as never', () => {
-    const src = compileTsFromJtdDefinitions(parseJtdRoot('foo', {
+  test('throws on unknown external refs', () => {
+    expect(() => compileTsFromJtdDefinitions(parseJtdRoot('foo', {
       ref: 'wow',
-    }));
-
-    expect(src).toBe('export type Foo=never;');
+    }))).toThrow();
   });
 
   test('resolves external refs with resolveRef', () => {

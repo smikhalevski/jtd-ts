@@ -1,4 +1,4 @@
-import {JtdNode, JtdNodeType, JtdRootNode} from '../main/jtd-ast-types';
+import {JtdNode, JtdNodeType} from '../main/jtd-ast-types';
 import {parseJtd, parseJtdDefinitions, parseJtdRoot} from '../main/jtd-ast';
 import {JtdType} from '../main/jtd-types';
 
@@ -12,7 +12,7 @@ describe('parseJtdRoot', () => {
       ref: 'foo',
     });
 
-    const result: Record<string, JtdRootNode<any>> = {
+    const result: Record<string, JtdNode<any>> = {
       foo: {
         nodeType: JtdNodeType.TYPE,
         type: JtdType.STRING,
@@ -44,7 +44,7 @@ describe('parseJtdDefinitions', () => {
       bar: {ref: 'foo'},
     });
 
-    const result: Record<string, JtdRootNode<any>> = {
+    const result: Record<string, JtdNode<any>> = {
       foo: {
         nodeType: JtdNodeType.TYPE,
         type: JtdType.STRING,
@@ -151,21 +151,15 @@ describe('parseJtd', () => {
 
     const result: JtdNode<any> = {
       nodeType: JtdNodeType.OBJECT,
-      propertyNodes: [
-        {
-          nodeType: JtdNodeType.PROPERTY,
-          key: 'foo',
-          optional: false,
-          valueNode: {
-            nodeType: JtdNodeType.TYPE,
-            type: JtdType.STRING,
-            parentNode: null,
-            jtd: {type: JtdType.STRING},
-          },
-          parentNode: null as any,
+      properties: {
+        foo: {
+          nodeType: JtdNodeType.TYPE,
+          type: JtdType.STRING,
+          parentNode: null,
           jtd: {type: JtdType.STRING},
         },
-      ],
+      },
+      optionalProperties: {},
       parentNode: null,
       jtd: {
         properties: {
@@ -174,8 +168,7 @@ describe('parseJtd', () => {
       },
     };
 
-    result.propertyNodes[0].parentNode = result;
-    result.propertyNodes[0].valueNode.parentNode = result.propertyNodes[0];
+    result.properties.foo.parentNode = result;
 
     expect(node).toEqual(result);
   });
@@ -189,21 +182,15 @@ describe('parseJtd', () => {
 
     const result: JtdNode<any> = {
       nodeType: JtdNodeType.OBJECT,
-      propertyNodes: [
-        {
-          nodeType: JtdNodeType.PROPERTY,
-          key: 'foo',
-          optional: true,
-          valueNode: {
-            nodeType: JtdNodeType.TYPE,
-            type: JtdType.STRING,
-            parentNode: null,
-            jtd: {type: JtdType.STRING},
-          },
-          parentNode: null as any,
+      properties: {},
+      optionalProperties: {
+        foo: {
+          nodeType: JtdNodeType.TYPE,
+          type: JtdType.STRING,
+          parentNode: null,
           jtd: {type: JtdType.STRING},
         },
-      ],
+      },
       parentNode: null,
       jtd: {
         optionalProperties: {
@@ -211,8 +198,7 @@ describe('parseJtd', () => {
         },
       },
     };
-    result.propertyNodes[0].parentNode = result;
-    result.propertyNodes[0].valueNode.parentNode = result.propertyNodes[0];
+    result.optionalProperties.foo.parentNode = result;
 
     expect(node).toEqual(result);
   });
@@ -229,34 +215,22 @@ describe('parseJtd', () => {
 
     const result: JtdNode<any> = {
       nodeType: JtdNodeType.OBJECT,
-      propertyNodes: [
-        {
-          nodeType: JtdNodeType.PROPERTY,
-          key: 'foo',
-          optional: false,
-          valueNode: {
-            nodeType: JtdNodeType.TYPE,
-            type: JtdType.STRING,
-            parentNode: null,
-            jtd: {type: JtdType.STRING},
-          },
-          parentNode: null as any,
+      properties: {
+        foo: {
+          nodeType: JtdNodeType.TYPE,
+          type: JtdType.STRING,
+          parentNode: null,
           jtd: {type: JtdType.STRING},
         },
-        {
-          nodeType: JtdNodeType.PROPERTY,
-          key: 'bar',
-          optional: true,
-          valueNode: {
-            nodeType: JtdNodeType.TYPE,
-            type: JtdType.INT8,
-            parentNode: null,
-            jtd: {type: JtdType.INT8},
-          },
-          parentNode: null as any,
+      },
+      optionalProperties: {
+        bar: {
+          nodeType: JtdNodeType.TYPE,
+          type: JtdType.INT8,
+          parentNode: null,
           jtd: {type: JtdType.INT8},
         },
-      ],
+      },
       parentNode: null,
       jtd: {
         properties: {
@@ -267,10 +241,8 @@ describe('parseJtd', () => {
         },
       },
     };
-    result.propertyNodes[0].parentNode = result;
-    result.propertyNodes[0].valueNode.parentNode = result.propertyNodes[0];
-    result.propertyNodes[1].parentNode = result;
-    result.propertyNodes[1].valueNode.parentNode = result.propertyNodes[1];
+    result.properties.foo.parentNode = result;
+    result.optionalProperties.bar.parentNode = result;
 
     expect(node).toEqual(result);
   });
@@ -306,76 +278,44 @@ describe('parseJtd', () => {
     const result: JtdNode<any> = {
       nodeType: JtdNodeType.UNION,
       discriminator: 'type',
-      mappingNodes: [
-        {
-          nodeType: JtdNodeType.MAPPING,
-          key: 'AAA',
-          objectNode: {
-            nodeType: JtdNodeType.OBJECT,
-            propertyNodes: [
-              {
-                nodeType: JtdNodeType.PROPERTY,
-                key: 'foo',
-                optional: false,
-                valueNode: {
-                  nodeType: JtdNodeType.TYPE,
-                  type: JtdType.STRING,
-                  parentNode: null,
-                  jtd: {type: JtdType.STRING},
-                },
-                parentNode: null as any,
-                jtd: {type: JtdType.STRING},
-              },
-            ],
-            parentNode: null,
-            jtd: {
-              properties: {
-                foo: {type: JtdType.STRING},
-              },
+      mapping: {
+        AAA: {
+          nodeType: JtdNodeType.OBJECT,
+          properties: {
+            foo: {
+              nodeType: JtdNodeType.TYPE,
+              type: JtdType.STRING,
+              parentNode: null,
+              jtd: {type: JtdType.STRING},
             },
           },
-          parentNode: null as any,
+          optionalProperties: {},
+          parentNode: null,
           jtd: {
             properties: {
               foo: {type: JtdType.STRING},
             },
           },
         },
-        {
-          nodeType: JtdNodeType.MAPPING,
-          key: 'BBB',
-          objectNode: {
-            nodeType: JtdNodeType.OBJECT,
-            propertyNodes: [
-              {
-                nodeType: JtdNodeType.PROPERTY,
-                key: 'bar',
-                optional: false,
-                valueNode: {
-                  nodeType: JtdNodeType.TYPE,
-                  type: JtdType.INT8,
-                  parentNode: null,
-                  jtd: {type: JtdType.INT8},
-                },
-                parentNode: null as any,
-                jtd: {type: JtdType.INT8},
-              },
-            ],
-            parentNode: null,
-            jtd: {
-              properties: {
-                bar: {type: JtdType.INT8},
-              },
+        BBB: {
+          nodeType: JtdNodeType.OBJECT,
+          properties: {
+            bar: {
+              nodeType: JtdNodeType.TYPE,
+              type: JtdType.INT8,
+              parentNode: null,
+              jtd: {type: JtdType.INT8},
             },
           },
-          parentNode: null as any,
+          optionalProperties: {},
+          parentNode: null,
           jtd: {
             properties: {
               bar: {type: JtdType.INT8},
             },
           },
         },
-      ],
+      },
       parentNode: null,
       jtd: {
         discriminator: 'type',
@@ -394,17 +334,11 @@ describe('parseJtd', () => {
       },
     };
 
-    result.mappingNodes[0].parentNode = result;
-    result.mappingNodes[1].parentNode = result;
+    result.mapping.AAA.parentNode = result;
+    result.mapping.BBB.parentNode = result;
 
-    result.mappingNodes[0].objectNode.parentNode = result.mappingNodes[0];
-    result.mappingNodes[1].objectNode.parentNode = result.mappingNodes[1];
-
-    result.mappingNodes[0].objectNode.propertyNodes[0].parentNode = result.mappingNodes[0].objectNode;
-    result.mappingNodes[1].objectNode.propertyNodes[0].parentNode = result.mappingNodes[1].objectNode;
-
-    result.mappingNodes[0].objectNode.propertyNodes[0].valueNode.parentNode = result.mappingNodes[0].objectNode.propertyNodes[0];
-    result.mappingNodes[1].objectNode.propertyNodes[0].valueNode.parentNode = result.mappingNodes[1].objectNode.propertyNodes[0];
+    result.mapping.AAA.properties.foo.parentNode = result.mapping.AAA;
+    result.mapping.BBB.properties.bar.parentNode = result.mapping.BBB;
 
     expect(node).toEqual(result);
   });
@@ -412,8 +346,12 @@ describe('parseJtd', () => {
   test('throws on discriminated union if discriminator is absent', () => {
     expect(() => parseJtd({
       mapping: {
-        AAA: {properties: {foo: {type: JtdType.STRING}}},
-        BBB: {properties: {foo: {type: JtdType.INT8}}},
+        AAA: {
+          properties: {foo: {type: JtdType.STRING}},
+        },
+        BBB: {
+          properties: {foo: {type: JtdType.INT8}},
+        },
       },
     })).toThrow();
   });
@@ -421,8 +359,12 @@ describe('parseJtd', () => {
   test('throws on discriminated union if mapping is absent', () => {
     expect(() => parseJtd({
       mapping: {
-        AAA: {properties: {foo: {type: JtdType.STRING}}},
-        BBB: {properties: {foo: {type: JtdType.INT8}}},
+        AAA: {
+          properties: {foo: {type: JtdType.STRING}},
+        },
+        BBB: {
+          properties: {foo: {type: JtdType.INT8}},
+        },
       },
     })).toThrow();
   });

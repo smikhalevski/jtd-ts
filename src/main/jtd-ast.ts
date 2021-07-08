@@ -1,14 +1,12 @@
 import {IJtd, IJtdRoot} from './jtd-types';
 import {
   IJtdElementsNode,
-  IJtdMappingNode,
   IJtdNullableNode,
   IJtdObjectNode,
-  IJtdPropertyNode,
   IJtdUnionNode,
   IJtdValuesNode,
+  JtdNode,
   JtdNodeType,
-  JtdRootNode,
 } from './jtd-ast-types';
 
 /**
@@ -17,7 +15,7 @@ import {
  * @param ref The ref of the root JTD.
  * @param jtdRoot The JTD to parse.
  */
-export function parseJtdRoot<M>(ref: string, jtdRoot: IJtdRoot<M>): Record<string, JtdRootNode<M>> {
+export function parseJtdRoot<M>(ref: string, jtdRoot: IJtdRoot<M>): Record<string, JtdNode<M>> {
   const nodes = jtdRoot.definitions ? parseJtdDefinitions(jtdRoot.definitions) : createMap();
   nodes[ref] = parseJtd(jtdRoot);
   return nodes;
@@ -28,8 +26,8 @@ export function parseJtdRoot<M>(ref: string, jtdRoot: IJtdRoot<M>): Record<strin
  *
  * @param definitions The dictionary of ref-JTD pairs.
  */
-export function parseJtdDefinitions<M>(definitions: Record<string, IJtd<M>>): Record<string, JtdRootNode<M>> {
-  const nodes: Record<string, JtdRootNode<M>> = createMap();
+export function parseJtdDefinitions<M>(definitions: Record<string, IJtd<M>>): Record<string, JtdNode<M>> {
+  const nodes: Record<string, JtdNode<M>> = createMap();
 
   for (const [ref, jtd] of Object.entries(definitions)) {
     nodes[ref] = parseJtd(jtd);
@@ -45,7 +43,7 @@ export function parseJtdDefinitions<M>(definitions: Record<string, IJtd<M>>): Re
  * @see https://tools.ietf.org/html/rfc8927 RFC8927
  * @see https://jsontypedef.com/docs/jtd-in-5-minutes JTD in 5 minutes
  */
-export function parseJtd<M>(jtd: IJtd<M>): JtdRootNode<M> {
+export function parseJtd<M>(jtd: IJtd<M>): JtdNode<M> {
 
   const {
     nullable: jtdNullable,
@@ -122,46 +120,28 @@ export function parseJtd<M>(jtd: IJtd<M>): JtdRootNode<M> {
 
   if (jtdProperties || jtdOptionalProperties) {
 
-    const propertyNodes: Array<IJtdPropertyNode<M>> = [];
     const objectNode: IJtdObjectNode<M> = {
       nodeType: JtdNodeType.OBJECT,
+      properties: createMap(),
+      optionalProperties: createMap(),
       parentNode: null,
-      propertyNodes,
       jtd,
     };
 
     if (jtdProperties) {
       for (const [propKey, propJtd] of Object.entries(jtdProperties)) {
-        const node: IJtdPropertyNode<M> = {
-          nodeType: JtdNodeType.PROPERTY,
-          parentNode: objectNode,
-          key: propKey,
-          optional: false,
-          valueNode: parseJtd(propJtd),
-          jtd: propJtd,
-        };
-        node.valueNode.parentNode = node;
-        propertyNodes.push(node);
+        const propNode = objectNode.properties[propKey] = parseJtd(propJtd);
+        propNode.parentNode = objectNode;
       }
     }
-
     if (jtdOptionalProperties) {
       for (const [propKey, propJtd] of Object.entries(jtdOptionalProperties)) {
 
-        if (jtdProperties != null && propKey in jtdProperties) {
+        if (propKey in objectNode.properties) {
           throw new Error('Duplicated property: ' + propKey);
         }
-
-        const node: IJtdPropertyNode<M> = {
-          nodeType: JtdNodeType.PROPERTY,
-          parentNode: objectNode,
-          key: propKey,
-          optional: true,
-          valueNode: parseJtd(propJtd),
-          jtd: propJtd,
-        };
-        node.valueNode.parentNode = node;
-        propertyNodes.push(node);
+        const propNode = objectNode.optionalProperties[propKey] = parseJtd(propJtd);
+        propNode.parentNode = objectNode;
       }
     }
     return objectNode;
@@ -173,12 +153,11 @@ export function parseJtd<M>(jtd: IJtd<M>): JtdRootNode<M> {
       throw new Error('Malformed discriminated union');
     }
 
-    const mappingNodes: Array<IJtdMappingNode<M>> = [];
     const unionNode: IJtdUnionNode<M> = {
       nodeType: JtdNodeType.UNION,
-      parentNode: null,
       discriminator: jtdDiscriminator,
-      mappingNodes,
+      mapping: createMap(),
+      parentNode: null,
       jtd,
     };
 
@@ -188,16 +167,8 @@ export function parseJtd<M>(jtd: IJtd<M>): JtdRootNode<M> {
       if (objectNode.nodeType !== JtdNodeType.OBJECT) {
         throw new Error('Mappings must be object definitions: ' + mappingKey);
       }
-
-      const node: IJtdMappingNode<M> = {
-        nodeType: JtdNodeType.MAPPING,
-        parentNode: unionNode,
-        key: mappingKey,
-        objectNode: objectNode,
-        jtd: mappingJtd,
-      };
-      objectNode.parentNode = node;
-      mappingNodes.push(node);
+      unionNode.mapping[mappingKey] = objectNode;
+      objectNode.parentNode = unionNode;
     }
     return unionNode;
   }

@@ -1,4 +1,4 @@
-import {IJtdEnumNode, IJtdMappingNode, IJtdPropertyNode, JtdNode, JtdNodeType, JtdRootNode} from '../jtd-ast-types';
+import {IJtdEnumNode, IJtdMappingNode, IJtdPropertyNode, JtdNode, JtdNodeType, JtdNode} from '../jtd-ast-types';
 import {visitJtdNode} from '../jtd-visitor';
 import {JtdRefResolver} from '../jtd-ts';
 import {createVarProvider} from '../compiler-utils';
@@ -78,7 +78,7 @@ export interface IValidatorOptions<M> {
   /**
    * Returns the name of the emitted validator function.
    */
-  renameValidator?: (ref: string, node: JtdRootNode<M>) => string;
+  renameValidator?: (ref: string, node: JtdNode<M>) => string;
 
   /**
    * Compiler of runtime checker functions.
@@ -105,7 +105,7 @@ export interface IValidatorOptions<M> {
   /**
    * Returns the name of the type narrowing function. This is used if {@link emitsTypeNarrowing} is enabled.
    */
-  renameTypeNarrowing?: (ref: string, node: JtdRootNode<M>) => string;
+  renameTypeNarrowing?: (ref: string, node: JtdNode<M>) => string;
 
   /**
    * If {@link emitsTypeNarrowing} is enabled then this callback is used to resolve a type name that
@@ -124,7 +124,7 @@ export interface IValidatorOptions<M> {
 /**
  * Returns source code of functions that validate JTD definitions.
  */
-export function compileValidators<M>(definitions: Record<string, JtdRootNode<M>>, options?: Partial<IValidatorOptions<M>>): string {
+export function compileValidators<M>(definitions: Record<string, JtdNode<M>>, options?: Partial<IValidatorOptions<M>>): string {
   const opts = Object.assign({}, jtdValidatorOptions, options);
 
   const {
@@ -166,7 +166,7 @@ export function compileValidators<M>(definitions: Record<string, JtdRootNode<M>>
   return source;
 }
 
-export function compileValidatorBody<M>(ref: string, node: JtdRootNode<M>, options: Required<IValidatorOptions<M>>): string {
+export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: Required<IValidatorOptions<M>>): string {
   const {
     rewriteMappingKey,
     checkerCompiler,
