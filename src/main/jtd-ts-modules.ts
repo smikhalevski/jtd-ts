@@ -79,7 +79,7 @@ export function compileJtdTsModules<M>(modules: Record<string, Record<string, IJ
     // jtdc import of validator runtime
     if (emitsValidators) {
       source += `import ${checkerRuntimeVar} from "${runtimeModulePath}";`
-          + `import ${validatorRuntimeVar} from "jtdc/lib/validator/runtime";`;
+          + `import ${validatorRuntimeVar},{Validator} from "jtdc/lib/validator/runtime";`;
     }
 
     // Module types

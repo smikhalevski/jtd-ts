@@ -139,7 +139,7 @@ describe('compileValidators', () => {
     );
   });
 
-  test('compiles object properties validator', () => {
+  test('compiles object properties checker', () => {
     expect(compileValidators(parseJtdRoot('foo', {
       properties: {
         foo: {type: JtdType.STRING},
@@ -166,7 +166,42 @@ describe('compileValidators', () => {
     );
   });
 
-  test('compiles discriminated union validator', () => {
+  test('compiles multiple optional properties', () => {
+    expect(compileValidators(parseJtdRoot('foo', {
+      optionalProperties: {
+        foo: {type: JtdType.STRING},
+        bar: {type: JtdType.FLOAT32},
+      },
+    }))).toBe(
+        'const validateFoo:v.Validator=(value,ctx,pointer)=>{'
+        + 'ctx||={};'
+        + 'pointer||="";'
+
+        + 'let a,b;'
+
+        + 'if(c.o(value,ctx,pointer)){'
+
+        + 'a=value.foo;'
+        + 'b=pointer+"/foo";'
+        + 'if(a!==undefined){'
+        + 'c.s(a,ctx,b);'
+        + '}'
+
+        + 'a=value.bar;'
+        + 'b=pointer+"/bar";'
+        + 'if(a!==undefined){'
+        + 'c.n(a,ctx,b);'
+        + '}'
+
+        + '}'
+
+        + 'return ctx.errors;'
+        + '};'
+        + 'export{validateFoo};',
+    );
+  });
+
+  test('compiles discriminated union checker', () => {
     expect(compileValidators(parseJtdRoot('foo', {
       discriminator: 'type',
       mapping: {
@@ -226,7 +261,7 @@ describe('compileValidators', () => {
     );
   });
 
-  test('compiles nested', () => {
+  test('compiles nested objects', () => {
     expect(compileValidators(parseJtdRoot('foo', {
       properties: {
         aaa: {
@@ -255,10 +290,43 @@ describe('compileValidators', () => {
     );
   });
 
-  /*test('compiles valid syntax', () => {
+  test('compiles self-reference', () => {
+    expect(compileValidators(parseJtdRoot('foo', {
+      properties: {
+        aaa: {
+          type: JtdType.STRING,
+        },
+        bbb: {
+          elements: {
+            ref: 'foo',
+          },
+        },
+      },
+    }))).toBe(
+        'const validateFoo:v.Validator=(value,ctx,pointer)=>{'
+        + 'ctx||={};'
+        + 'pointer||="";'
+        + 'let b,d;'
+        + 'if(c.o(value,ctx,pointer)){'
+        + 'c.s(value.aaa,ctx,pointer+"/aaa");'
+        + 'b=value.bbb;'
+        + 'd=pointer+"/bbb";'
+        + 'if(c.a(b,ctx,d)){'
+        + 'for(let a=0;a<b.length;a++){'
+        + 'validateFoo(b[a],ctx,d+"/"+a);'
+        + '}'
+        + '}'
+        + '}'
+        + 'return ctx.errors;'
+        + '};'
+        + 'export{validateFoo};',
+    );
+  });
 
-    const moduleSource = 'import lib from "../../main/validator/runtime";'
-        + compileValidatorModuleProlog('lib')
+  test('compiles valid syntax', () => {
+
+    const src = 'import v, {Validator} from "../../main/validator/runtime";'
+        + 'import c from "../../main/checker/runtime";'
         + compileValidators(parseJtdRoot('foo', {
           nullable: true,
           properties: {
@@ -266,13 +334,16 @@ describe('compileValidators', () => {
               enum: ['AAA', 'BBB'],
             },
           },
-        }), {emitsTypeNarrowing: true});
+        }), {
+          emitsTypeNarrowing: true,
+          resolveRef: () => 'IFoo',
+        });
 
-    const module = evalModule(moduleSource);
+    const module = evalModule(src);
 
-    expect(module.validateFoo(null)).toEqual([]);
+    expect(module.validateFoo(null)).toBeUndefined();
 
-    expect(module.validateFoo({bar: 'AAA'})).toEqual([]);
+    expect(module.validateFoo({bar: 'AAA'})).toBeUndefined();
 
     expect(module.validateFoo({})).toEqual([
       {pointer: '/bar', code: 'required'},
@@ -287,6 +358,6 @@ describe('compileValidators', () => {
     expect(module.isFoo({})).toBe(false);
 
     expect(module.isFoo({bar: 'AAA'})).toBe(true);
-  });*/
+  });
 
 });

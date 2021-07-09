@@ -1,70 +1,162 @@
 import {compileJtdTsModules} from '../main/jtd-ts-modules';
-import {JtdType} from '../main/jtd-types';
 
 describe('compileJtdTsModules', () => {
 
-  test('compiles modules', () => {
+  test('compiles demo modules', () => {
     const modules = compileJtdTsModules({
-      './foo.ts': {
-        foo: {
+      './account.ts': {
+        account: {
           properties: {
-            aaa: {
-              type: JtdType.INT8,
+            user: {
+              ref: 'user',
             },
-            bbb: {
-              ref: 'bar',
+            stats: {
+              properties: {
+                visitCount: {
+                  type: 'int32',
+                },
+              },
+            },
+          },
+          optionalProperties: {
+            roles: {
+              metadata: {
+                comment: 'Default role is guest',
+              },
+              elements: {
+                ref: 'role',
+              },
             },
           },
         },
-      },
-      './bar.ts': {
-        bar: {
-          enum: ['AAA', 'BBB'],
+        role: {
+          enum: ['admin', 'guest'],
+        },
+      }
+      ,
+      './user.ts': {
+        user: {
+          properties: {
+            email: {
+              type: 'string',
+            },
+            friends: {
+              elements: {
+                ref: 'user',
+              },
+            },
+          },
+          optionalProperties: {
+            name: {
+              type: 'string',
+            },
+            age: {
+              type: 'int8',
+            },
+          },
         },
       },
     }, {emitsValidators: true, emitsTypeNarrowing: true});
 
     expect(modules).toEqual({
-      './bar.ts':
-          'import c from "jtdc/lib/checker/runtime";' +
-          'import v from "jtdc/lib/validator/runtime";' +
+      './account.ts':
+          'import c from "../checker/runtime";'
+          + 'import v,{Validator} from "../validator/runtime";'
+          + 'import {IUser,validateUser} from "./user.ts";'
 
-          'enum Bar{AAA="AAA",BBB="BBB",}' +
-          'export{Bar};' +
+          + 'export interface IAccount{'
+          + 'user:IUser;'
+          + 'stats:{'
+          + 'visitCount:number;'
+          + '};'
+          + '\n'
+          + '/**\n'
+          + ' * Default role is guest\n'
+          + ' */'
+          + '\n'
+          + 'roles?:Array<Role>;'
+          + '}'
 
-          'const validateBar:v.Validator=(value,ctx,pointer)=>{' +
-          'ctx||={};' +
-          'pointer||="";' +
-          'let a=validateBar.c||={};' +
-          'c.e(value,a.b||=["AAA","BBB"],ctx,pointer);' +
-          'return ctx.errors;' +
-          '};' +
+          + 'enum Role{ADMIN="admin",GUEST="guest",}'
+          + 'export{Role};'
 
-          'const isBar=(value:unknown):value is Bar=>!validateBar(value,{lazy:true});' +
+          + 'const validateAccount:v.Validator=(value,ctx,pointer)=>{'
+          + 'ctx||={};'
+          + 'pointer||="";'
+          + 'let a,b;'
+          + 'if(c.o(value,ctx,pointer)){'
+          + 'validateUser(value.user,ctx,pointer+"/user");'
+          + 'a=value.stats;'
+          + 'b=pointer+"/stats";'
+          + 'if(c.o(a,ctx,b)){'
+          + 'c.i(a.visitCount,ctx,b+"/visitCount");'
+          + '}'
+          + 'a=value.roles;'
+          + 'b=pointer+"/roles";'
+          + 'if(a!==undefined){'
+          + 'if(c.a(a,ctx,b)){'
+          + 'for(let d=0;d<a.length;d++){'
+          + 'validateRole(a[d],ctx,b+"/"+d);'
+          + '}'
+          + '}'
+          + '}'
+          + '}'
+          + 'return ctx.errors;'
+          + '};'
 
-          'export{validateBar,isBar};',
+          + 'const isAccount=(value:unknown):value is IAccount=>!validateAccount(value,{lazy:true});'
 
-      './foo.ts':
-          'import c from "jtdc/lib/checker/runtime";' +
-          'import v from "jtdc/lib/validator/runtime";' +
+          + 'const validateRole:v.Validator=(value,ctx,pointer)=>{'
+          + 'ctx||={};'
+          + 'pointer||="";'
+          + 'let a=validateRole.c||={};'
+          + 'c.e(value,a.b||=["admin","guest"],ctx,pointer);'
+          + 'return ctx.errors;'
+          + '};'
 
-          'import {Bar,validateBar} from "./bar.ts";' +
+          + 'const isRole=(value:unknown):value is Role=>!validateRole(value,{lazy:true});'
 
-          'export interface IFoo{aaa:number;bbb:Bar;}' +
+          + 'export{validateAccount,isAccount,validateRole,isRole};',
 
-          'const validateFoo:v.Validator=(value,ctx,pointer)=>{' +
-          'ctx||={};' +
-          'pointer||="";' +
-          'if(c.o(value,ctx,pointer)){' +
-          'c.i(value.aaa,ctx,pointer+"/aaa");' +
-          'validateBar(value.bbb,ctx,pointer+"/bbb");' +
-          '}' +
-          'return ctx.errors;' +
-          '};' +
+      './user.ts':
+          'import c from "../checker/runtime";'
+          + 'import v,{Validator} from "../validator/runtime";'
 
-          'const isFoo=(value:unknown):value is IFoo=>!validateFoo(value,{lazy:true});' +
+          + 'export interface IUser{email:string;friends:Array<IUser>;'
+          + 'name?:string;'
+          + 'age?:number;'
+          + '}'
 
-          'export{validateFoo,isFoo};',
+          + 'const validateUser:v.Validator=(value,ctx,pointer)=>{'
+          + 'ctx||={};'
+          + 'pointer||="";'
+          + 'let b,d;'
+          + 'if(c.o(value,ctx,pointer)){'
+          + 'c.s(value.email,ctx,pointer+"/email");'
+          + 'b=value.friends;'
+          + 'd=pointer+"/friends";'
+          + 'if(c.a(b,ctx,d)){'
+          + 'for(let a=0;a<b.length;a++){'
+          + 'validateUser(b[a],ctx,d+"/"+a);'
+          + '}'
+          + '}'
+          + 'b=value.name;'
+          + 'd=pointer+"/name";'
+          + 'if(b!==undefined){'
+          + 'c.s(b,ctx,d);'
+          + '}'
+          + 'b=value.age;'
+          + 'd=pointer+"/age";'
+          + 'if(b!==undefined){'
+          + 'c.i(b,ctx,d);'
+          + '}'
+          + '}'
+          + 'return ctx.errors;'
+          + '};'
+
+          + 'const isUser=(value:unknown):value is IUser=>!validateUser(value,{lazy:true});'
+
+          + 'export{validateUser,isUser};',
     });
   });
 });

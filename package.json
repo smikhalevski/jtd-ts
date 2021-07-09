@@ -13,9 +13,9 @@
     "README.md"
   ],
   "scripts": {
-    "build": "set -e; tsc  --module commonjs; ",
-    "rollup": "for p in ./lib/index.js ./lib/validator/runtime.js; do rollup --external json-pointer --exports auto --input $p --file ${p%.js}-cjs.js --format cjs --plugin @rollup/plugin-node-resolve --plugin @rollup/plugin-commonjs; done",
-    "terser": "for p in ./lib/index-cjs.js ./lib/validator/runtime-cjs.js; do terser --compress --mangle toplevel --output $p -- $p; done",
+    "build": "set -e; tsc; npm run rollup; npm run terser",
+    "rollup": "for p in ./lib/jtdc-bin.js ./lib/validator/runtime.js ./lib/checker/runtime.js; do rollup --external json-pointer --exports auto --input $p --file $p --format cjs --plugin @rollup/plugin-node-resolve --plugin @rollup/plugin-commonjs; done",
+    "terser": "for p in ./lib/jtdc-bin.js ./lib/validator/runtime.js ./lib/checker/runtime.js; do terser --compress --mangle toplevel --output $p -- $p; done",
     "clean": "rm -rf ./lib ./docs",
     "test": "jest --detectOpenHandles",
     "docs": "typedoc ./src/main/index.ts",

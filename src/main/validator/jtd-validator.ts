@@ -243,6 +243,8 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
       return '';
     }
 
+    propertyPending = false;
+
     index++;
 
     const valueVar = valueVars[index] ||= nextVar();
@@ -338,7 +340,8 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
       }
 
       const indexVar = nextVar();
-      src += `if(${compileChecker(node, checkerOptions, options)}){`
+      src += compileVars()
+          + `if(${compileChecker(node, checkerOptions, options)}){`
           + `for(let ${indexVar}=0;${indexVar}<${valueSrc}.length;${indexVar}++){`;
       enterPropertyByVar(indexVar, false);
       next();
@@ -353,7 +356,8 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
       }
 
       const keyVar = nextVar();
-      src += `if(${compileChecker(node, checkerOptions, options)}){`
+      src += compileVars()
+          + `if(${compileChecker(node, checkerOptions, options)}){`
           + `for(const ${keyVar} in ${valueSrc}){`;
       enterPropertyByVar(keyVar, true);
       next();
@@ -390,8 +394,8 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
         return;
       }
       enterPropertyByKey(propKey);
-      src += compileVars()
-          + `if(${valueSrc}!==undefined){`;
+      src += compileVars();
+      src += `if(${valueSrc}!==undefined){`;
       next();
       src += '}';
       exitProperty();
