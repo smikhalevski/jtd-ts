@@ -13,9 +13,10 @@
     "README.md"
   ],
   "scripts": {
-    "build": "set -e; tsc; npm run rollup; npm run terser; npm run rollup-bin",
-    "rollup-bin": "rollup --external commander,json-pointer --exports named --input ./lib/jtdc-bin.js --file ./lib/jtdc-bin.js --format cjs --banner '#!/usr/bin/env node' --plugin @rollup/plugin-node-resolve --plugin @rollup/plugin-commonjs",
-    "rollup": "for p in ./lib/validator/runtime.js ./lib/checker/runtime.js; do rollup --external json-pointer --exports named --input $p --file $p --format cjs --plugin @rollup/plugin-node-resolve --plugin @rollup/plugin-commonjs; done",
+    "build": "set -e; tsc; npm run rollup; npm run rollup-bin; npm run rollup-runtime; npm run terser",
+    "rollup": "rollup --external commander,json-pointer --exports named --input ./lib/index.js --file ./lib/index-cjs.js --format cjs --plugin @rollup/plugin-node-resolve",
+    "rollup-bin": "rollup --external commander,json-pointer --exports named --input ./lib/jtdc-bin.js --file ./lib/jtdc-bin.js --format cjs --banner '#!/usr/bin/env node' --plugin @rollup/plugin-node-resolve",
+    "rollup-runtime": "for p in ./lib/validator/runtime.js ./lib/checker/runtime.js; do rollup --external json-pointer --exports named --input $p --file $p --format cjs --plugin @rollup/plugin-node-resolve --plugin @rollup/plugin-commonjs; done",
     "terser": "for p in ./lib/validator/runtime.js ./lib/checker/runtime.js; do terser --compress --mangle toplevel --output $p -- $p; done",
     "clean": "rm -rf ./lib ./docs",
     "test": "jest --detectOpenHandles",
