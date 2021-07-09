@@ -156,7 +156,7 @@ export function compileValidators<M>(definitions: Record<string, JtdNode<M>>, op
     const name = renameValidator(ref, node);
     exportedNames.push(name);
 
-    src += `const ${name}:${validatorRuntimeVar}.Validator=`
+    src += `const ${name}:Validator=`
         + `(${ARG_VALUE},${ARG_CONTEXT},${ARG_POINTER})=>{`
         + `${ARG_CONTEXT}||={};`
         + `${ARG_POINTER}||="";`

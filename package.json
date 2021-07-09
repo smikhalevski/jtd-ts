@@ -1,5 +1,5 @@
 {
-  "name": "jtd-ts",
+  "name": "jtdc",
   "version": "1.0.0",
   "description": "JSON Type Definition to TypeScript compiler.",
   "main": "./lib/index-cjs.js",
@@ -13,9 +13,10 @@
     "README.md"
   ],
   "scripts": {
-    "build": "set -e; tsc; npm run rollup; npm run terser",
-    "rollup": "for p in ./lib/jtdc-bin.js ./lib/validator/runtime.js ./lib/checker/runtime.js; do rollup --external json-pointer --exports auto --input $p --file $p --format cjs --plugin @rollup/plugin-node-resolve --plugin @rollup/plugin-commonjs; done",
-    "terser": "for p in ./lib/jtdc-bin.js ./lib/validator/runtime.js ./lib/checker/runtime.js; do terser --compress --mangle toplevel --output $p -- $p; done",
+    "build": "set -e; tsc; npm run rollup; npm run terser; npm run rollup-bin",
+    "rollup-bin": "rollup --external commander,json-pointer --exports named --input ./lib/jtdc-bin.js --file ./lib/jtdc-bin.js --format cjs --banner '#!/usr/bin/env node' --plugin @rollup/plugin-node-resolve --plugin @rollup/plugin-commonjs",
+    "rollup": "for p in ./lib/validator/runtime.js ./lib/checker/runtime.js; do rollup --external json-pointer --exports named --input $p --file $p --format cjs --plugin @rollup/plugin-node-resolve --plugin @rollup/plugin-commonjs; done",
+    "terser": "for p in ./lib/validator/runtime.js ./lib/checker/runtime.js; do terser --compress --mangle toplevel --output $p -- $p; done",
     "clean": "rm -rf ./lib ./docs",
     "test": "jest --detectOpenHandles",
     "docs": "typedoc ./src/main/index.ts",
@@ -24,14 +25,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/smikhalevski/jtd-ts.git"
+    "url": "git+https://github.com/smikhalevski/jtdc.git"
   },
   "author": "Savva Mikhalevski <smikhalevski@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/smikhalevski/jtd-ts/issues"
+    "url": "https://github.com/smikhalevski/jtdc/issues"
   },
-  "homepage": "https://github.com/smikhalevski/jtd-ts#readme",
+  "homepage": "https://github.com/smikhalevski/jtdc#readme",
   "jest": {
     "preset": "ts-jest"
   },

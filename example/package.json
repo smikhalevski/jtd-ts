@@ -1,0 +1,10 @@
+{
+  "name": "jtdc-example",
+  "private": true,
+  "scripts": {
+    "jtdc": "rm -rf ./gen; jtdc --rootDir ./src --files ./src/*.json --outDir ./gen --validators --checkers",
+    "test": "exit 1"
+  },
+  "author": "Savva Mikhalevski <smikhalevski@gmail.com>",
+  "license": "MIT"
+}

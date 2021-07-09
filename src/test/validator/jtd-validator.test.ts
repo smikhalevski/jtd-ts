@@ -16,7 +16,7 @@ describe('compileValidators', () => {
 
   test('compiles string type validator', () => {
     expect(compileValidators(parseJtdRoot('foo', {type: 'string'}))).toBe(
-        'const validateFoo:v.Validator=(value,ctx,pointer)=>{'
+        'const validateFoo:Validator=(value,ctx,pointer)=>{'
         + 'ctx||={};'
         + 'pointer||="";'
         + 'c.s(value,ctx,pointer);'
@@ -31,7 +31,7 @@ describe('compileValidators', () => {
       resolveRef: () => 'Foo',
       emitsTypeNarrowing: true,
     })).toBe(
-        'const validateFoo:v.Validator=(value,ctx,pointer)=>{'
+        'const validateFoo:Validator=(value,ctx,pointer)=>{'
         + 'ctx||={};'
         + 'pointer||="";'
         + 'c.s(value,ctx,pointer);'
@@ -44,7 +44,7 @@ describe('compileValidators', () => {
 
   test('compiles nullable type checker', () => {
     expect(compileValidators(parseJtdRoot('foo', {type: 'string', nullable: true}))).toBe(
-        'const validateFoo:v.Validator=(value,ctx,pointer)=>{'
+        'const validateFoo:Validator=(value,ctx,pointer)=>{'
         + 'ctx||={};'
         + 'pointer||="";'
         + 'if(value!==null){'
@@ -60,7 +60,7 @@ describe('compileValidators', () => {
     expect(compileValidators(parseJtdRoot('foo', {ref: 'bar'}), {
       resolveRef: () => 'Bar',
     })).toBe(
-        'const validateFoo:v.Validator=(value,ctx,pointer)=>{'
+        'const validateFoo:Validator=(value,ctx,pointer)=>{'
         + 'ctx||={};'
         + 'pointer||="";'
         + 'validateBar(value,ctx,pointer);'
@@ -72,7 +72,7 @@ describe('compileValidators', () => {
 
   test('compiles enum checker', () => {
     expect(compileValidators(parseJtdRoot('foo', {enum: ['AAA', 'BBB']}))).toBe(
-        'const validateFoo:v.Validator=(value,ctx,pointer)=>{'
+        'const validateFoo:Validator=(value,ctx,pointer)=>{'
         + 'ctx||={};'
         + 'pointer||="";'
         + 'let a=validateFoo.c||={};'
@@ -85,7 +85,7 @@ describe('compileValidators', () => {
 
   test('compiles elements checker', () => {
     expect(compileValidators(parseJtdRoot('foo', {elements: {type: 'string'}}))).toBe(
-        'const validateFoo:v.Validator=(value,ctx,pointer)=>{'
+        'const validateFoo:Validator=(value,ctx,pointer)=>{'
         + 'ctx||={};'
         + 'pointer||="";'
         + 'if(c.a(value,ctx,pointer)){'
@@ -101,7 +101,7 @@ describe('compileValidators', () => {
 
   test('compiles any elements checker', () => {
     expect(compileValidators(parseJtdRoot('foo', {elements: {}}))).toBe(
-        'const validateFoo:v.Validator=(value,ctx,pointer)=>{'
+        'const validateFoo:Validator=(value,ctx,pointer)=>{'
         + 'ctx||={};'
         + 'pointer||="";'
         + 'c.a(value,ctx,pointer);'
@@ -113,7 +113,7 @@ describe('compileValidators', () => {
 
   test('compiles values checker', () => {
     expect(compileValidators(parseJtdRoot('foo', {values: {type: 'string'}}))).toBe(
-        'const validateFoo:v.Validator=(value,ctx,pointer)=>{'
+        'const validateFoo:Validator=(value,ctx,pointer)=>{'
         + 'ctx||={};'
         + 'pointer||="";'
         + 'if(c.o(value,ctx,pointer)){'
@@ -129,7 +129,7 @@ describe('compileValidators', () => {
 
   test('compiles any values checker', () => {
     expect(compileValidators(parseJtdRoot('foo', {values: {}}))).toBe(
-        'const validateFoo:v.Validator=(value,ctx,pointer)=>{'
+        'const validateFoo:Validator=(value,ctx,pointer)=>{'
         + 'ctx||={};'
         + 'pointer||="";'
         + 'c.o(value,ctx,pointer);'
@@ -148,7 +148,7 @@ describe('compileValidators', () => {
         bar: {type: JtdType.FLOAT32},
       },
     }))).toBe(
-        'const validateFoo:v.Validator=(value,ctx,pointer)=>{'
+        'const validateFoo:Validator=(value,ctx,pointer)=>{'
         + 'ctx||={};'
         + 'pointer||="";'
         + 'let a,b;'
@@ -173,7 +173,7 @@ describe('compileValidators', () => {
         bar: {type: JtdType.FLOAT32},
       },
     }))).toBe(
-        'const validateFoo:v.Validator=(value,ctx,pointer)=>{'
+        'const validateFoo:Validator=(value,ctx,pointer)=>{'
         + 'ctx||={};'
         + 'pointer||="";'
 
@@ -217,7 +217,7 @@ describe('compileValidators', () => {
         },
       },
     }))).toBe(
-        'const validateFoo:v.Validator=(value,ctx,pointer)=>{'
+        'const validateFoo:Validator=(value,ctx,pointer)=>{'
         + 'ctx||={};'
         + 'pointer||="";'
         + 'if(c.o(value,ctx,pointer)){'
@@ -245,13 +245,13 @@ describe('compileValidators', () => {
       },
       ref: 'bar',
     }))).toBe(
-        'const validateBar:v.Validator=(value,ctx,pointer)=>{'
+        'const validateBar:Validator=(value,ctx,pointer)=>{'
         + 'ctx||={};'
         + 'pointer||="";'
         + 'c.s(value,ctx,pointer);'
         + 'return ctx.errors;'
         + '};'
-        + 'const validateFoo:v.Validator=(value,ctx,pointer)=>{'
+        + 'const validateFoo:Validator=(value,ctx,pointer)=>{'
         + 'ctx||={};'
         + 'pointer||="";'
         + 'validateBar(value,ctx,pointer);'
@@ -273,7 +273,7 @@ describe('compileValidators', () => {
         },
       },
     }))).toBe(
-        'const validateFoo:v.Validator=(value,ctx,pointer)=>{'
+        'const validateFoo:Validator=(value,ctx,pointer)=>{'
         + 'ctx||={};'
         + 'pointer||="";'
         + 'let a,b;'
@@ -303,7 +303,7 @@ describe('compileValidators', () => {
         },
       },
     }))).toBe(
-        'const validateFoo:v.Validator=(value,ctx,pointer)=>{'
+        'const validateFoo:Validator=(value,ctx,pointer)=>{'
         + 'ctx||={};'
         + 'pointer||="";'
         + 'let b,d;'

@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "moduleResolution": "Node",
+    "strict": true,
+    "target": "ES5",
+    "module": "ES6",
+    "rootDir": "./gen",
+    "noEmit": true
+  },
+  "include": [
+    "./gen/**/*"
+  ]
+}

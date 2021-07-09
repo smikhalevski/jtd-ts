@@ -60,8 +60,8 @@ describe('compileJtdTsModules', () => {
 
     expect(modules).toEqual({
       './account.ts':
-          'import c from "../checker/runtime";'
-          + 'import v,{Validator} from "../validator/runtime";'
+          'import c from "jtdc/lib/checker/runtime";'
+          + 'import v,{Validator} from "jtdc/lib/validator/runtime";'
           + 'import {IUser,validateUser} from "./user.ts";'
 
           + 'export interface IAccount{'
@@ -80,7 +80,7 @@ describe('compileJtdTsModules', () => {
           + 'enum Role{ADMIN="admin",GUEST="guest",}'
           + 'export{Role};'
 
-          + 'const validateAccount:v.Validator=(value,ctx,pointer)=>{'
+          + 'const validateAccount:Validator=(value,ctx,pointer)=>{'
           + 'ctx||={};'
           + 'pointer||="";'
           + 'let a,b;'
@@ -106,7 +106,7 @@ describe('compileJtdTsModules', () => {
 
           + 'const isAccount=(value:unknown):value is IAccount=>!validateAccount(value,{lazy:true});'
 
-          + 'const validateRole:v.Validator=(value,ctx,pointer)=>{'
+          + 'const validateRole:Validator=(value,ctx,pointer)=>{'
           + 'ctx||={};'
           + 'pointer||="";'
           + 'let a=validateRole.c||={};'
@@ -119,15 +119,15 @@ describe('compileJtdTsModules', () => {
           + 'export{validateAccount,isAccount,validateRole,isRole};',
 
       './user.ts':
-          'import c from "../checker/runtime";'
-          + 'import v,{Validator} from "../validator/runtime";'
+          'import c from "jtdc/lib/checker/runtime";'
+          + 'import v,{Validator} from "jtdc/lib/validator/runtime";'
 
           + 'export interface IUser{email:string;friends:Array<IUser>;'
           + 'name?:string;'
           + 'age?:number;'
           + '}'
 
-          + 'const validateUser:v.Validator=(value,ctx,pointer)=>{'
+          + 'const validateUser:Validator=(value,ctx,pointer)=>{'
           + 'ctx||={};'
           + 'pointer||="";'
           + 'let b,d;'
