@@ -70,6 +70,8 @@ export interface IValidatorCompilerOptions<M> {
 
   /**
    * The compiler that describes how checkers are invoked by validators.
+   *
+   * @default {@link jtdCheckerCompiler}
    */
   checkerCompiler?: ICheckerCompiler<M>;
 

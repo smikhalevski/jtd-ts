@@ -1,3 +1,3 @@
-import compileChecker from './jtd-checker';
+import jtdCheckerCompiler from './jtd-checker';
 
-export default compileChecker;
+export default jtdCheckerCompiler;

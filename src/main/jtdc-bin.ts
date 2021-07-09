@@ -16,8 +16,8 @@ program.requiredOption('--files <paths...>', 'file paths of type definitions');
 program.requiredOption('--outDir <dir>', 'an output folder for all emitted files');
 program.option('--config <path>', 'config path', CONFIG_PATH);
 program.option('--rootDir <dir>', 'the root folder within your source files', '.');
-program.option('--validators', 'emit type validators');
-program.option('--checkers', 'emit type checkers');
+program.option('--validators', 'emit type validators functions');
+program.option('--narrowing', 'emit type narrowing functions');
 
 const opts = program.parse(process.argv).opts();
 
@@ -37,7 +37,7 @@ if (fs.existsSync(configPath)) {
 }
 
 config.emitsValidators ||= opts.validators;
-config.emitsTypeNarrowing ||= opts.checkers;
+config.emitsTypeNarrowing ||= opts.narrowing;
 
 if (!filePaths.length) {
   console.log('error: No files to compile');
