@@ -7,6 +7,8 @@ JSON Type Definition to TypeScript compiler.
 - Compiles type narrowing functions;
 - CLI and programmatic support;
 
+[API documentation is available here.](https://smikhalevski.github.io/jtdc/)
+
 ```shell
 npm install --save-prod jtdc 
 ```
