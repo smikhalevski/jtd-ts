@@ -1,7 +1,6 @@
+import {compilePropertyAccessor, createVarNameProvider, pascalCase} from '@smikhalevski/ts-codegen-utils';
 import {visitJtdNode} from '../jtd-visitor';
 import {JtdRefResolver} from '../jtd-ts';
-import {compilePropertyAccessor, createVarProvider} from '../compiler-utils';
-import {pascalCase} from '../rename-utils';
 import jtdCheckerCompiler from '../checker';
 import {IJtdEnumNode, IJtdObjectNode, IJtdUnionNode, JtdNode, JtdNodeType} from '../jtd-ast-types';
 import {ValidatorRuntimeKey} from './runtime';
@@ -196,7 +195,7 @@ export function compileValidatorBody<M>(ref: string, node: JtdNode<M>, options: 
 
   const declaredVars = new Set<string>();
 
-  const nextVar = createVarProvider([
+  const nextVar = createVarNameProvider([
     ARG_VALUE,
     ARG_CONTEXT,
     ARG_POINTER,

@@ -203,7 +203,7 @@ describe('compileTsFromJtdDefinitions', () => {
       metadata: {comment: 'Okay'},
     }));
 
-    expect(src).toBe('\n/**\n * Okay\n */\nexport type Foo=any;');
+    expect(src).toBe('/**\n * Okay\n */export type Foo=any;');
   });
 
   test('adds comments to interfaces', () => {
@@ -212,7 +212,7 @@ describe('compileTsFromJtdDefinitions', () => {
       properties: {},
     }));
 
-    expect(src).toBe(`\n/**\n * Okay\n */\nexport interface IFoo{}`);
+    expect(src).toBe('/**\n * Okay\n */export interface IFoo{}');
   });
 
   test('adds comments to object properties', () => {
@@ -224,7 +224,7 @@ describe('compileTsFromJtdDefinitions', () => {
       },
     }));
 
-    expect(src).toBe(`export interface IFoo{\n/**\n * Okay\n */\nbar:any;}`);
+    expect(src).toBe(`export interface IFoo{/**\n * Okay\n */bar:any;}`);
   });
 
   test('throws on unknown type', () => {

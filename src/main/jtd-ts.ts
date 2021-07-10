@@ -1,8 +1,7 @@
 import {IJtdEnumNode, IJtdObjectNode, IJtdTypeNode, IJtdUnionNode, JtdNode, JtdNodeType} from './jtd-ast-types';
 import {visitJtdNode} from './jtd-visitor';
 import {JtdType} from './jtd-types';
-import {compileDocComment, compilePropertyName} from './compiler-utils';
-import {pascalCase, upperSnakeCase} from './rename-utils';
+import {compileDocComment, compilePropertyName, constCase, pascalCase} from '@smikhalevski/ts-codegen-utils';
 
 export interface IJtdTsRefRenameOptions<M> {
 
@@ -346,10 +345,10 @@ export const jtdTsOptions: Required<IJtdTsOptions<any>> = {
   },
 
   renameEnum: pascalCase,
-  renameEnumKey: upperSnakeCase,
+  renameEnumKey: constCase,
   rewriteEnumValue: (value) => value,
   renameUnionEnum: (ref, node) => pascalCase(ref) + pascalCase(node.discriminator),
-  renameUnionEnumKey: (mappingKey) => upperSnakeCase(mappingKey),
+  renameUnionEnumKey: constCase,
   renameDiscriminatorKey: (node) => node.discriminator,
   rewriteMappingKey: (mappingKey) => mappingKey,
   renameMappingInterface: (mappingKey, mappingNode, unionRef) => 'I' + pascalCase(unionRef) + pascalCase(mappingKey),

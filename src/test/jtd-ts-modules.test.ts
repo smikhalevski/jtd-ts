@@ -69,11 +69,9 @@ describe('compileJtdTsModules', () => {
           + 'stats:{'
           + 'visitCount:number;'
           + '};'
-          + '\n'
           + '/**\n'
           + ' * Default role is guest\n'
           + ' */'
-          + '\n'
           + 'roles?:Array<Role>;'
           + '}'
 
