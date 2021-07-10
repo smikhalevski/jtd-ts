@@ -1,3 +1,6 @@
+/**
+ * JTD standard data types.
+ */
 export const enum JtdType {
   BOOLEAN = 'boolean',
   STRING = 'string',

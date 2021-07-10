@@ -2,6 +2,7 @@ import {JtdNode, JtdNodeType} from '../jtd-ast-types';
 import {ICheckerCompiler, ICheckerCompilerOptions, IValidatorCompilerOptions} from '../validator';
 import {JtdType} from '../jtd-types';
 import {CheckerRuntimeKey} from './runtime';
+import {die} from '../misc';
 
 const jtdCheckerCompiler: ICheckerCompiler<any> = {
   runtimeModulePath: 'jtdc/lib/checker/runtime',
@@ -87,6 +88,6 @@ function compileChecker<M>(node: JtdNode<M>, checkerOptions: ICheckerCompilerOpt
           return checkerHost + CheckerRuntimeKey.INTEGER + checkerArgs;
       }
 
-      throw new Error('Unexpected type: ' + node.type);
+      die('Unexpected type: ' + node.type);
   }
 }

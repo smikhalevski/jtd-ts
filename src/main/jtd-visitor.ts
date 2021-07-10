@@ -12,6 +12,9 @@ import {
   JtdNodeType,
 } from './jtd-ast-types';
 
+/**
+ * Defines set of callbacks that {@link visitJtdNode} can invoke.
+ */
 export interface IJtdNodeVisitor<M> {
   any?: (node: IJtdAnyNode<M>) => void;
   ref?: (node: IJtdRefNode<M>) => void;

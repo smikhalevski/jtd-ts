@@ -1,15 +1,15 @@
 import {IJtdRoot, JtdType} from './jtd-types';
 
 export const enum JtdNodeType {
-  ANY = 'ANY',
-  REF = 'REF',
-  NULLABLE = 'NULLABLE',
-  TYPE = 'TYPE',
-  ENUM = 'ENUM',
-  ELEMENTS = 'ELEMENTS',
-  VALUES = 'VALUES',
-  OBJECT = 'OBJECT',
-  UNION = 'UNION',
+  ANY,
+  REF,
+  NULLABLE,
+  TYPE,
+  ENUM,
+  ELEMENTS,
+  VALUES,
+  OBJECT,
+  UNION,
 }
 
 export type JtdNode<M> =

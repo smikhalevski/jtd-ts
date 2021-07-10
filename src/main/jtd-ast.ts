@@ -8,12 +8,15 @@ import {
   JtdNode,
   JtdNodeType,
 } from './jtd-ast-types';
+import {createMap, die} from './misc';
 
 /**
  * Converts JTD and its dependencies to a map of nodes where key is `ref` and value is a parsed node.
  *
  * @param ref The ref of the root JTD.
  * @param jtdRoot The JTD to parse.
+ *
+ * @returns The map from ref to a parsed node.
  */
 export function parseJtdRoot<M>(ref: string, jtdRoot: IJtdRoot<M>): Record<string, JtdNode<M>> {
   const nodes = jtdRoot.definitions ? parseJtdDefinitions(jtdRoot.definitions) : createMap();
@@ -25,6 +28,8 @@ export function parseJtdRoot<M>(ref: string, jtdRoot: IJtdRoot<M>): Record<strin
  * Converts JTD dependencies to a map of nodes where key is `ref` and value is a parsed node.
  *
  * @param definitions The dictionary of ref-JTD pairs.
+ *
+ * @returns The map from ref to a parsed node.
  */
 export function parseJtdDefinitions<M>(definitions: Record<string, IJtd<M>>): Record<string, JtdNode<M>> {
   const nodes: Record<string, JtdNode<M>> = createMap();
@@ -39,6 +44,8 @@ export function parseJtdDefinitions<M>(definitions: Record<string, IJtd<M>>): Re
  * Converts JTD to a corresponding node.
  *
  * @param jtd The JTD to parse.
+ *
+ * @returns A parsed node.
  *
  * @see https://tools.ietf.org/html/rfc8927 RFC8927
  * @see https://jsontypedef.com/docs/jtd-in-5-minutes JTD in 5 minutes
@@ -138,7 +145,7 @@ export function parseJtd<M>(jtd: IJtd<M>): JtdNode<M> {
       for (const [propKey, propJtd] of Object.entries(jtdOptionalProperties)) {
 
         if (propKey in objectNode.properties) {
-          throw new Error('Duplicated property: ' + propKey);
+          die('Duplicated property: ' + propKey);
         }
         const propNode = objectNode.optionalProperties[propKey] = parseJtd(propJtd);
         propNode.parentNode = objectNode;
@@ -150,7 +157,7 @@ export function parseJtd<M>(jtd: IJtd<M>): JtdNode<M> {
   if (jtdDiscriminator || jtdMapping) {
 
     if (!jtdDiscriminator || !jtdMapping) {
-      throw new Error('Malformed discriminated union');
+      die('Malformed discriminated union');
     }
 
     const unionNode: IJtdUnionNode<M> = {
@@ -165,7 +172,7 @@ export function parseJtd<M>(jtd: IJtd<M>): JtdNode<M> {
       const objectNode = parseJtd(mappingJtd);
 
       if (objectNode.nodeType !== JtdNodeType.OBJECT) {
-        throw new Error('Mappings must be object definitions: ' + mappingKey);
+        die('Mappings must be object definitions: ' + mappingKey);
       }
       unionNode.mapping[mappingKey] = objectNode;
       objectNode.parentNode = unionNode;
@@ -178,8 +185,4 @@ export function parseJtd<M>(jtd: IJtd<M>): JtdNode<M> {
     parentNode: null,
     jtd,
   };
-}
-
-function createMap() {
-  return Object.create(null);
 }

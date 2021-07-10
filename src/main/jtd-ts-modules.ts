@@ -1,10 +1,12 @@
-import {compileTsFromJtdDefinitions, IJtdTsOptions, IJtdTsRefRenameOptions, jtdTsOptions, renameRef} from './jtd-ts';
+import {compileTsDefinitions, ITsDefinitionsCompilerOptions, tsDefinitionsCompilerOptions} from './jtd-ts-compiler';
 import {parseJtdDefinitions} from './jtd-ast';
 import {JtdNode} from './jtd-ast-types';
 import {compileValidators, IValidatorCompilerOptions, jtdValidatorOptions} from './validator';
 import {IJtd} from './jtd-types';
+import {createMap} from './misc';
+import {ITypeDeclarationRenamer, renameTsType} from './jtd-ref';
 
-export interface IJtdTsModulesOptions<M> extends IJtdTsOptions<M>, IValidatorCompilerOptions<M> {
+export interface IJtdTsModulesOptions<M> extends ITsDefinitionsCompilerOptions<M>, IValidatorCompilerOptions<M> {
 
   /**
    * If set to `true` then validator functions are emitted along with type.
@@ -14,14 +16,14 @@ export interface IJtdTsModulesOptions<M> extends IJtdTsOptions<M>, IValidatorCom
   emitsValidators?: boolean;
 
   /**
-   * Callback that additionally modifies the generated TS source. Use this to prepend checker imports or add licence
-   * info to each file.
+   * Callback that additionally modifies the generated TypeScript source. Use this to prepend checker imports or add
+   * licence info to each file.
    */
   alterSource?: (source: string, uri: string) => string;
 }
 
 export function compileJtdTsModules<M>(modules: Record<string, Record<string, IJtd<M>>>, options?: IJtdTsModulesOptions<M>): Record<string, string> {
-  const tsModules: Record<string, string> = Object.create(null);
+  const tsModules: Record<string, string> = createMap();
 
   interface IParsedModule<M> {
     uri: string;
@@ -31,7 +33,7 @@ export function compileJtdTsModules<M>(modules: Record<string, Record<string, IJ
 
   const parsedModules: Array<IParsedModule<M>> = [];
 
-  const opts = Object.assign({}, jtdValidatorOptions, jtdTsOptions, options);
+  const opts = Object.assign({}, jtdValidatorOptions, tsDefinitionsCompilerOptions, options);
 
   const {
     checkerRuntimeVar,
@@ -56,7 +58,7 @@ export function compileJtdTsModules<M>(modules: Record<string, Record<string, IJ
 
   for (const {uri, definitions, tsExports} of parsedModules) {
 
-    const tsImports: Record<string, Record<string, ITsExport<M>>> = Object.create(null);
+    const tsImports: Record<string, Record<string, ITsExport<M>>> = createMap();
 
     // Cross-module ref resolver
     opts.resolveRef = (ref, node) => {
@@ -83,7 +85,7 @@ export function compileJtdTsModules<M>(modules: Record<string, Record<string, IJ
     }
 
     // Module types
-    const typeSource = compileTsFromJtdDefinitions(definitions, opts);
+    const typeSource = compileTsDefinitions(definitions, opts);
 
     // Cross-module type an validator imports
     for (const [uri, tsImport] of Object.entries(tsImports)) {
@@ -121,7 +123,7 @@ export function compileJtdTsModules<M>(modules: Record<string, Record<string, IJ
 interface ITsExport<M> {
 
   /**
-   * The TS type name.
+   * The TypeScript type name.
    */
   name: string;
 
@@ -132,14 +134,14 @@ interface ITsExport<M> {
 }
 
 /**
- * Returns map from ref to a TS type name.
+ * Returns map from ref to a TypeScript type name.
  */
-function getTsExports<M>(definitions: Record<string, JtdNode<M>>, options: Required<IJtdTsRefRenameOptions<M>>): Record<string, ITsExport<M>> {
-  const exports: Record<string, ITsExport<M>> = Object.create(null);
+function getTsExports<M>(definitions: Record<string, JtdNode<M>>, options: Required<ITypeDeclarationRenamer<M>>): Record<string, ITsExport<M>> {
+  const exports: Record<string, ITsExport<M>> = createMap();
 
   for (const [ref, node] of Object.entries(definitions)) {
     exports[ref] = {
-      name: renameRef(ref, node, options),
+      name: renameTsType(ref, node, options),
       node,
     };
   }

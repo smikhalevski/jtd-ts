@@ -1,10 +1,11 @@
 import {compilePropertyAccessor, createVarNameProvider, pascalCase} from '@smikhalevski/ts-codegen-utils';
 import {visitJtdNode} from '../jtd-visitor';
-import {JtdRefResolver} from '../jtd-ts';
+import {JtdRefResolver} from '../jtd-ts-compiler';
 import jtdCheckerCompiler from '../checker';
 import {IJtdEnumNode, IJtdObjectNode, IJtdUnionNode, JtdNode, JtdNodeType} from '../jtd-ast-types';
 import {ValidatorRuntimeKey} from './runtime';
 import JsonPointer from 'json-pointer';
+import {die} from '../misc';
 
 const ARG_VALUE = 'value';
 const ARG_CONTEXT = 'ctx';
@@ -448,8 +449,6 @@ export const jtdValidatorOptions: Required<IValidatorCompilerOptions<any>> = {
   rewriteMappingKey: (mappingKey) => mappingKey,
   emitsTypeNarrowing: false,
   renameTypeNarrowing: (ref) => 'is' + pascalCase(ref),
-  resolveRef: (ref) => {
-    throw new Error('Unresolved reference: ' + ref);
-  },
+  resolveRef: (ref) => die('Unresolved reference: ' + ref),
   traversesUnconstrained: false,
 };
