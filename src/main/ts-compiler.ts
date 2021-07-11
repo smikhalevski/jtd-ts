@@ -1,7 +1,7 @@
 import {IJtdEnumNode, IJtdObjectNode, IJtdRefNode, IJtdTypeNode, IJtdUnionNode, JtdNode} from './jtd-ast-types';
 import {visitJtdNode} from './jtd-visitor';
 import {JtdType} from './jtd-types';
-import {compileDocComment, compilePropertyName, constCase, pascalCase} from '@smikhalevski/ts-codegen-utils';
+import {compileDocComment, compilePropertyName, constCase, pascalCase} from '@smikhalevski/codegen';
 import {die} from './misc';
 
 export interface ITsDefinitionsCompilerOptions<M> {

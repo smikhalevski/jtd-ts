@@ -1,4 +1,4 @@
-import {compileJtdTsModules} from '../main/jtd-ts-modules';
+import {compileJtdTsModules} from '../main/ts-modules';
 
 describe('compileJtdTsModules', () => {
 

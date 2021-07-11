@@ -1,5 +1,5 @@
 import {program} from 'commander';
-import {compileJtdTsModules, IJtdTsModulesOptions} from './jtd-ts-modules';
+import {compileJtdTsModules, IJtdTsModulesOptions} from './ts-modules';
 import fs from 'fs';
 import path from 'path';
 import {IJtd} from './jtd-types';

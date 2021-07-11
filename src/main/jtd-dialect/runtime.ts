@@ -1,5 +1,17 @@
 import JsonPointer from 'json-pointer';
 
+export {
+  escapeJsonPointer as p,
+  raiseInvalid as r,
+  checkObject as o,
+  checkArray as a,
+  checkEnum as e,
+  checkBoolean as b,
+  checkString as s,
+  checkNumber as n,
+  checkInteger as i,
+};
+
 /**
  * The context object that is passed to validators and checkers so they can act accordingly.
  */
@@ -60,19 +72,8 @@ export interface Validator {
   /**
    * The cache object populated by the validator during execution.
    */
-  [ValidatorRuntimeKey.VALIDATOR_CACHE]?: Record<string, any>;
+  cache?: Record<string, any>;
 }
-
-export const enum ValidatorRuntimeKey {
-  ESCAPE_JSON_POINTER = 'p',
-  RAISE_INVALID = 'r',
-  VALIDATOR_CACHE = 'c',
-}
-
-export default {
-  [ValidatorRuntimeKey.ESCAPE_JSON_POINTER]: escapeJsonPointer,
-  [ValidatorRuntimeKey.RAISE_INVALID]: raiseInvalid,
-};
 
 /**
  * Returns `true` if further checker invocations must be prevented.
@@ -97,4 +98,42 @@ export function raiseIllegalType(ctx: IValidationContext, pointer: string): fals
 
 export function raiseInvalid(ctx: IValidationContext, pointer: string): false {
   return raiseValidationError(ValidationErrorCode.INVALID, ctx, pointer);
+}
+
+export function excludeValue(value: unknown, ctx: IValidationContext): true {
+  ctx.excludedValues ||= new Set();
+  ctx.excludedValues.add(value);
+  return true;
+}
+
+export function checkRequired(value: unknown, ctx: IValidationContext, pointer: string): value is {} {
+  return !isValidationCompleted(ctx) && (value != null || raiseValidationError(ValidationErrorCode.REQUIRED, ctx, pointer));
+}
+
+export function checkArray(value: unknown, ctx: IValidationContext, pointer: string): value is Array<unknown> {
+  return checkRequired(value, ctx, pointer) && (Array.isArray(value) && excludeValue(value, ctx) || raiseIllegalType(ctx, pointer));
+}
+
+export function checkObject(value: unknown, ctx: IValidationContext, pointer: string): value is Record<string, unknown> {
+  return checkRequired(value, ctx, pointer) && (typeof value === 'object' && excludeValue(value, ctx) || raiseIllegalType(ctx, pointer));
+}
+
+export function checkString(value: unknown, ctx: IValidationContext, pointer: string): value is string {
+  return checkRequired(value, ctx, pointer) && (typeof value === 'string' || raiseIllegalType(ctx, pointer));
+}
+
+export function checkNumber(value: unknown, ctx: IValidationContext, pointer: string): value is number {
+  return checkRequired(value, ctx, pointer) && (Number.isFinite(value) || raiseIllegalType(ctx, pointer));
+}
+
+export function checkInteger(value: unknown, ctx: IValidationContext, pointer: string): value is number {
+  return checkNumber(value, ctx, pointer) && (Number.isInteger(value) || raiseInvalid(ctx, pointer));
+}
+
+export function checkBoolean(value: unknown, ctx: IValidationContext, pointer: string): value is boolean {
+  return checkRequired(value, ctx, pointer) && (typeof value === 'boolean' || raiseIllegalType(ctx, pointer));
+}
+
+export function checkEnum(value: unknown, values: Array<string>, ctx: IValidationContext, pointer: string): value is string {
+  return checkString(value, ctx, pointer) && (values.includes(value) || raiseInvalid(ctx, pointer));
 }

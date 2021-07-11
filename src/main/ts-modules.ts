@@ -1,12 +1,11 @@
-import {compileTsDefinitions, ITsDefinitionsCompilerOptions, tsDefinitionsCompilerOptions} from './jtd-ts-compiler';
+import {compileTsDefinitions, ITsDefinitionsCompilerOptions, tsDefinitionsCompilerOptions} from './ts-compiler';
 import {parseJtdDefinitions} from './jtd-ast';
 import {JtdNode} from './jtd-ast-types';
-import {compileValidators, IValidatorCompilerOptions, jtdValidatorOptions} from './validator';
 import {IJtd} from './jtd-types';
 import {createMap} from './misc';
-import {ITypeDeclarationRenamer, renameTsType} from './jtd-ref';
+import {IValidatorCompilerOptions, validatorCompilerOptions} from './validator-compiler';
 
-export interface IJtdTsModulesOptions<M> extends ITsDefinitionsCompilerOptions<M>, IValidatorCompilerOptions<M> {
+export interface IJtdTsModulesOptions<M, C> extends ITsDefinitionsCompilerOptions<M>, IValidatorCompilerOptions<M, C> {
 
   /**
    * If set to `true` then validator functions are emitted along with type.
@@ -22,7 +21,7 @@ export interface IJtdTsModulesOptions<M> extends ITsDefinitionsCompilerOptions<M
   alterSource?: (source: string, uri: string) => string;
 }
 
-export function compileJtdTsModules<M>(modules: Record<string, Record<string, IJtd<M>>>, options?: IJtdTsModulesOptions<M>): Record<string, string> {
+export function compileJtdTsModules<M, C>(modules: Record<string, Record<string, IJtd<M>>>, options?: IJtdTsModulesOptions<M, C>): Record<string, string> {
   const tsModules: Record<string, string> = createMap();
 
   interface IParsedModule<M> {
@@ -33,16 +32,11 @@ export function compileJtdTsModules<M>(modules: Record<string, Record<string, IJ
 
   const parsedModules: Array<IParsedModule<M>> = [];
 
-  const opts = Object.assign({}, jtdValidatorOptions, tsDefinitionsCompilerOptions, options);
+  const opts = Object.assign({}, validatorCompilerOptions, tsDefinitionsCompilerOptions, options);
 
   const {
-    checkerRuntimeVar,
-    validatorRuntimeVar,
-    checkerCompiler: {runtimeModulePath},
-    resolveRef,
     emitsValidators,
     alterSource,
-    renameValidator,
   } = opts;
 
   // Parse AST and extract exports
@@ -61,7 +55,7 @@ export function compileJtdTsModules<M>(modules: Record<string, Record<string, IJ
     const tsImports: Record<string, Record<string, ITsExport<M>>> = createMap();
 
     // Cross-module ref resolver
-    opts.resolveRef = (ref, node) => {
+    opts.resolveExternalRef = (node) => {
       for (const {uri, tsExports} of parsedModules) {
         if (ref in tsExports) {
 
