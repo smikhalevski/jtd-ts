@@ -1,18 +1,18 @@
-import {compileTsDefinitions} from '../main/ts-compiler';
+import {compileTsTypes} from '../main/ts-types-compiler';
 import {parseJtdRoot} from '../main/jtd-ast';
 import {JtdNodeType} from '../main/jtd-ast-types';
 import {JtdType} from '../main/jtd-types';
 
-describe('compileTsFromJtdDefinitions', () => {
+describe('compileTsTypes', () => {
 
   test('compiles any type alias', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {}));
+    const src = compileTsTypes(parseJtdRoot('foo', {}));
 
     expect(src).toBe('export type Foo=any;');
   });
 
   test('compiles type definition', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       type: JtdType.STRING,
     }));
 
@@ -20,7 +20,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('compiles nullable type definition', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       type: JtdType.STRING,
       nullable: true,
     }));
@@ -29,7 +29,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('compiles enum type', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       properties: {
         bar: {enum: ['aaa', 'bbb']},
       },
@@ -39,7 +39,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('compiles enum definition', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       enum: ['foo', 'bar'],
     }));
 
@@ -47,7 +47,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('compiles array type', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       properties: {
         bar: {
           elements: {type: JtdType.STRING},
@@ -59,7 +59,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('compiles array alias declaration', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       elements: {type: JtdType.STRING},
     }));
 
@@ -67,7 +67,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('compiles record type', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       properties: {
         bar: {values: {type: JtdType.STRING}},
       },
@@ -77,7 +77,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('compiles record alias declaration', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       values: {type: JtdType.STRING},
     }));
 
@@ -85,7 +85,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('compiles object type', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       properties: {
         baz: {
           properties: {
@@ -102,7 +102,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('compiles interface definition', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       properties: {
         bar: {type: JtdType.STRING},
       },
@@ -115,7 +115,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('compiles discriminated union definition', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       discriminator: 'type',
       mapping: {
         AAA: {
@@ -140,7 +140,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('compiles never for discriminated union declaration with an empty mapping', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       discriminator: 'type',
       mapping: {},
     }));
@@ -149,7 +149,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('compiles discriminated union type', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       properties: {
         baz: {
           discriminator: 'type',
@@ -178,7 +178,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('compiles never for discriminated union type with an empty mapping', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       properties: {
         baz: {
           discriminator: 'type',
@@ -191,7 +191,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('adds quotes to illegal property names', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       properties: {'@#$%': {}},
     }));
 
@@ -199,7 +199,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('adds comments to types', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       metadata: {comment: 'Okay'},
     }));
 
@@ -207,7 +207,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('adds comments to interfaces', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       metadata: {comment: 'Okay'},
       properties: {},
     }));
@@ -216,7 +216,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('adds comments to object properties', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       properties: {
         bar: {
           metadata: {comment: 'Okay'},
@@ -228,7 +228,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('throws on unknown type', () => {
-    expect(() => compileTsDefinitions(parseJtdRoot('foo', {
+    expect(() => compileTsTypes(parseJtdRoot('foo', {
       properties: {
         bar: {type: 'wow'},
       },
@@ -236,7 +236,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('throws on unknown external refs', () => {
-    expect(() => compileTsDefinitions(parseJtdRoot('foo', {
+    expect(() => compileTsTypes(parseJtdRoot('foo', {
       ref: 'wow',
     }))).toThrow();
   });
@@ -244,7 +244,7 @@ describe('compileTsFromJtdDefinitions', () => {
   test('resolves external refs with resolveRef', () => {
     const resolveExternalRefMock = jest.fn();
 
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       ref: 'wow',
     }), {resolveExternalRef: resolveExternalRefMock});
 
@@ -253,7 +253,7 @@ describe('compileTsFromJtdDefinitions', () => {
   });
 
   test('resolves refs to local definitions', () => {
-    const src = compileTsDefinitions(parseJtdRoot('foo', {
+    const src = compileTsTypes(parseJtdRoot('foo', {
       definitions: {
         wow: {type: JtdType.STRING},
       },

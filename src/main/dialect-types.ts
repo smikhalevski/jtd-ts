@@ -12,11 +12,67 @@ import {
 } from './jtd-ast-types';
 
 /**
- * The validator compilation dialect that describes how validators and type narrowing functions are generated.
+ * Options provided to all validator dialect factories.
+ */
+export interface IJtdcDialectOptions<M> {
+
+  /**
+   * Returns the name of the emitted validator function.
+   */
+  renameValidator?: (ref: string, node: JtdNode<M>) => string;
+
+  /**
+   * Returns the name of an object property.
+   */
+  renamePropertyKey?: (propKey: string, propNode: JtdNode<M>, objectNode: IJtdObjectNode<M>) => string;
+
+  /**
+   * Returns the name of the union discriminator property.
+   */
+  renameDiscriminatorKey?: (node: IJtdUnionNode<M>) => string;
+
+  /**
+   * Returns the contents of the enum value.
+   */
+  rewriteEnumValue?: (value: string, node: IJtdEnumNode<M>) => string | number | undefined;
+
+  /**
+   * Returns the string value that would be used as a value of discriminator property in united interfaces.
+   */
+  rewriteMappingKey?: (mappingKey: string, mappingNode: IJtdObjectNode<M>, unionRef: string | undefined, unionNode: IJtdUnionNode<M>) => string | number | undefined;
+
+  /**
+   * Returns the name of the type guard function.
+   */
+  renameTypeGuard?: (ref: string, node: JtdNode<M>) => string;
+
+  /**
+   * Returns a TypeScript type name described by `node`.
+   *
+   * @param ref The ref of the renamed type.
+   * @param node The node that describes the renamed type.
+   */
+  renameType?: (ref: string, node: JtdNode<M>) => string;
+}
+
+/**
+ * The validator dialect that describes how validators and type narrowing functions are generated.
  */
 export interface IJtdcDialect<M, C> {
+
+  /**
+   * Returns a dialect runtime import statement source code.
+   */
   import: () => IFragmentCgNode;
-  typeNarrowing: (ref: string, node: JtdNode<M>) => IFragmentCgNode;
+
+  /**
+   * Returns a type guard function source code.
+   */
+  typeGuard: (ref: string, node: JtdNode<M>) => IFragmentCgNode;
+
+  /**
+   * Returns the validator function source code.
+   */
   validator: (ref: string, node: JtdNode<M>, next: (ctx: C) => IFragmentCgNode) => IFragmentCgNode;
   ref: (node: IJtdRefNode<M>, ctx: C) => IFragmentCgNode;
   nullable: (node: IJtdNullableNode<M>, ctx: C, next: (ctx: C) => IFragmentCgNode) => IFragmentCgNode;

@@ -1,4 +1,6 @@
-import JsonPointer from 'json-pointer';
+import {IValidationContext, ValidationErrorCode} from './runtime-types';
+
+export * from './runtime-types';
 
 export {
   escapeJsonPointer as p,
@@ -13,80 +15,17 @@ export {
 };
 
 /**
- * The context object that is passed to validators and checkers so they can act accordingly.
- */
-export interface IValidationContext {
-
-  /**
-   * The list of errors collected during validation or `undefined` if no errors were captured.
-   */
-  errors?: Array<IValidationError>;
-
-  /**
-   * The list of values excluded from validation. This list gets populated when any object or array was validated so no
-   * cyclic validation would occur. You can pre-populate this list to avoid excessive validation.
-   */
-  excludedValues?: Set<unknown>;
-
-  /**
-   * If set to `true` then validators and checkers should not check a passed value if there are any errors in the
-   * context already. This would cause only the first error to be captured.
-   */
-  lazy?: boolean;
-}
-
-export const enum ValidationErrorCode {
-  REQUIRED = 'required',
-  ILLEGAL_TYPE = 'illegal_type',
-  INVALID = 'invalid',
-}
-
-export interface IValidationError {
-
-  /**
-   * JSON pointer of the field that caused an error.
-   */
-  pointer: string;
-
-  /**
-   * The code of the detected error.
-   */
-  code: ValidationErrorCode | string | number;
-}
-
-/**
- * The validator is the function that ensures that that `value` is conforms the JTD. It returns the list errors of
- * errors or `undefined` if there were no errors.
- */
-export interface Validator {
-
-  /**
-   * Validate the value.
-   *
-   * @param value The validated value.
-   * @param context The context that holds errors and may be populated during validation.
-   * @param pointer JSON pointer of the validated value.
-   */
-  (value: unknown, context?: IValidationContext, pointer?: string): Array<IValidationError> | undefined;
-
-  /**
-   * The cache object populated by the validator during execution.
-   */
-  cache?: Record<string, any>;
-}
-
-/**
- * Returns `true` if further checker invocations must be prevented.
+ * Returns `true` if further validation must be prevented.
  */
 export function isValidationCompleted(ctx: IValidationContext): boolean {
-  return !(!ctx.lazy || !ctx.errors || ctx.errors.length === 0);
+  return !(!ctx.shallow || !ctx.errors || ctx.errors.length === 0);
 }
 
-export function escapeJsonPointer(key: string | number): string {
-  return JsonPointer.escape(key.toString());
+export function escapeJsonPointer(str: string | number): string {
+  return str.toString().replace(/~/g, '~0').replace(/\//g, '~1');
 }
 
-export function raiseValidationError(code: string, ctx: IValidationContext, pointer: string): false {
+export function raiseValidationError(code: string | number, ctx: IValidationContext, pointer: string): false {
   ctx.errors ||= [];
   ctx.errors.push({pointer, code});
   return false;
@@ -100,9 +39,16 @@ export function raiseInvalid(ctx: IValidationContext, pointer: string): false {
   return raiseValidationError(ValidationErrorCode.INVALID, ctx, pointer);
 }
 
-export function excludeValue(value: unknown, ctx: IValidationContext): true {
-  ctx.excludedValues ||= new Set();
-  ctx.excludedValues.add(value);
+/**
+ * Returns `false` if value is excluded from validation.
+ */
+export function rejectExcluded(value: unknown, ctx: IValidationContext): boolean {
+  const excluded = ctx.excluded ||= new Set();
+
+  if (excluded.has(value)) {
+    return false;
+  }
+  excluded.add(value);
   return true;
 }
 
@@ -111,11 +57,11 @@ export function checkRequired(value: unknown, ctx: IValidationContext, pointer: 
 }
 
 export function checkArray(value: unknown, ctx: IValidationContext, pointer: string): value is Array<unknown> {
-  return checkRequired(value, ctx, pointer) && (Array.isArray(value) && excludeValue(value, ctx) || raiseIllegalType(ctx, pointer));
+  return checkRequired(value, ctx, pointer) && (Array.isArray(value) || raiseIllegalType(ctx, pointer)) && rejectExcluded(value, ctx);
 }
 
 export function checkObject(value: unknown, ctx: IValidationContext, pointer: string): value is Record<string, unknown> {
-  return checkRequired(value, ctx, pointer) && (typeof value === 'object' && excludeValue(value, ctx) || raiseIllegalType(ctx, pointer));
+  return checkRequired(value, ctx, pointer) && (typeof value === 'object' || raiseIllegalType(ctx, pointer)) && rejectExcluded(value, ctx);
 }
 
 export function checkString(value: unknown, ctx: IValidationContext, pointer: string): value is string {

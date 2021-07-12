@@ -1,4 +1,4 @@
-export function createMap() {
+export function createMap<T = any>(): Record<string, T> {
   return Object.create(null);
 }
 

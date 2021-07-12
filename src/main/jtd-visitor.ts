@@ -31,7 +31,7 @@ export interface IJtdNodeVisitor<M> {
 }
 
 /**
- * Invokes callbacks from `visitor` for a node tree under `node`.
+ * Invokes callbacks from `visitor` for each node tree under `node`.
  *
  * @param node The root of the JTD node tree.
  * @param visitor Callbacks that must be invoked for nodes under `node`.

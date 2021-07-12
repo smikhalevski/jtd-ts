@@ -27,14 +27,14 @@ export function parseJtdRoot<M>(ref: string, jtdRoot: IJtdRoot<M>): Record<strin
 /**
  * Converts JTD dependencies to a map of nodes where key is `ref` and value is a parsed node.
  *
- * @param definitions The dictionary of ref-JTD pairs.
+ * @param jtdDefinitions The dictionary of ref-JTD pairs.
  *
  * @returns The map from ref to a parsed node.
  */
-export function parseJtdDefinitions<M>(definitions: Record<string, IJtd<M>>): Record<string, JtdNode<M>> {
-  const nodes: Record<string, JtdNode<M>> = createMap();
+export function parseJtdDefinitions<M>(jtdDefinitions: Record<string, IJtd<M>>): Record<string, JtdNode<M>> {
+  const nodes = createMap<JtdNode<M>>();
 
-  for (const [ref, jtd] of Object.entries(definitions)) {
+  for (const [ref, jtd] of Object.entries(jtdDefinitions)) {
     nodes[ref] = parseJtd(jtd);
   }
   return nodes;
@@ -68,7 +68,7 @@ export function parseJtd<M>(jtd: IJtd<M>): JtdNode<M> {
   if (jtdNullable) {
     const node: IJtdNullableNode<M> = {
       nodeType: JtdNodeType.NULLABLE,
-      valueNode: parseJtd(Object.assign({}, jtd, {nullable: undefined})),
+      valueNode: parseJtd({...jtd, nullable: undefined}),
       parentNode: null,
       jtd,
     };

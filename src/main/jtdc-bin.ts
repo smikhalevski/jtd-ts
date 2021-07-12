@@ -1,8 +1,9 @@
 import {program} from 'commander';
-import {compileJtdTsModules, IJtdTsModulesOptions} from './ts-modules';
+import {compileTsModules, ITsModulesCompilerOptions} from './ts-modules-compiler';
 import fs from 'fs';
 import path from 'path';
-import {IJtd} from './jtd-types';
+import glob from 'glob';
+import {createMap} from './misc';
 
 const CONFIG_PATH = 'jtdc.config.js';
 
@@ -12,22 +13,22 @@ program.name('jtdc');
 program.version(packageJson.version);
 program.description(packageJson.description);
 
-program.requiredOption('--files <paths...>', 'file paths of type definitions');
-program.requiredOption('--outDir <dir>', 'an output folder for all emitted files');
-program.option('--config <path>', 'config path', CONFIG_PATH);
-program.option('--rootDir <dir>', 'the root folder within your source files', '.');
-program.option('--validators', 'emit type validators functions');
-program.option('--narrowing', 'emit type narrowing functions');
+program.requiredOption('-i, --includes <path...>', 'file paths of type definitions');
+program.requiredOption('-o, --outDir <dir>', 'an output folder for all emitted files');
+program.option('-c, --config <path>', 'config path', CONFIG_PATH);
+program.option('-d, --rootDir <dir>', 'the root folder within your source files', '.');
+program.option('-v, --validators', 'render validators');
+program.option('-g, --typeGuards', 'render validators and type guards');
 
 const opts = program.parse(process.argv).opts();
 
 const cwd = process.cwd();
+
 const outDir = path.resolve(cwd, opts.outDir);
 const rootDir = path.resolve(cwd, opts.rootDir);
 const configPath = path.join(cwd, opts.config);
-const filePaths: Array<string> = opts.files;
 
-let config: IJtdTsModulesOptions<any> = {};
+let config: ITsModulesCompilerOptions<any, any> = {};
 
 if (fs.existsSync(configPath)) {
   config = require(configPath);
@@ -36,39 +37,33 @@ if (fs.existsSync(configPath)) {
   process.exit(1);
 }
 
-config.emitsValidators ||= opts.validators;
-config.emitsTypeNarrowing ||= opts.narrowing;
+config.validatorsRendered ||= opts.validators || opts.typeGuards;
+config.typeGuardsRendered ||= opts.typeGuards;
+
+const filePaths = new Array<string>().concat(...opts.includes.map((include: string) => glob.sync(include, {cwd: rootDir})));
 
 if (!filePaths.length) {
   console.log('error: No files to compile');
   process.exit(1);
 }
 
-const modules = filePaths.reduce<Record<string, Record<string, IJtd<any>>>>((modules, filePath) => {
-  filePath = path.resolve(cwd, filePath);
+const jtdModules = createMap();
 
-  if (!filePath.startsWith(rootDir)) {
-    console.log('error: Modules must be under ' + rootDir);
-    process.exit(1);
-  }
-
-  const uri = '.' + path.sep + path.join(path.dirname(filePath).substr(rootDir.length), path.basename(filePath).replace(/\.[^.]*$/, ''));
-  modules[uri] = require(filePath);
-
-  return modules;
-}, {});
+for (const filePath of filePaths) {
+  jtdModules['.' + path.sep + filePath.replace(/\.[^.]*$/, '')] = require(path.resolve(rootDir, filePath));
+}
 
 let tsModules;
 try {
-  tsModules = compileJtdTsModules(modules, config);
+  tsModules = compileTsModules(jtdModules, config);
 } catch (error) {
   console.log('error: ' + error.message);
   process.exit(1);
 }
 
-for (const [uri, source] of Object.entries(tsModules)) {
+for (const [uri, src] of Object.entries(tsModules)) {
   const filePath = path.resolve(outDir, uri + '.ts');
 
   fs.mkdirSync(path.dirname(filePath), {recursive: true});
-  fs.writeFileSync(filePath, source + '\n', {encoding: 'utf8'});
+  fs.writeFileSync(filePath, src + '\n', {encoding: 'utf8'});
 }

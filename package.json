@@ -14,10 +14,10 @@
   ],
   "scripts": {
     "build": "set -e; tsc; npm run rollup; npm run rollup-bin; npm run rollup-runtime; npm run terser",
-    "rollup": "rollup --external commander,json-pointer --exports named --input ./lib/index.js --file ./lib/index-cjs.js --format cjs --plugin @rollup/plugin-node-resolve",
-    "rollup-bin": "rollup --external commander,json-pointer --exports named --input ./lib/jtdc-bin.js --file ./lib/jtdc-bin.js --format cjs --banner '#!/usr/bin/env node' --plugin @rollup/plugin-node-resolve",
-    "rollup-runtime": "for p in ./lib/validator/runtime.js ./lib/checker/runtime.js; do rollup --external json-pointer --exports named --input $p --file $p --format cjs --plugin @rollup/plugin-node-resolve --plugin @rollup/plugin-commonjs; done",
-    "terser": "for p in ./lib/validator/runtime.js ./lib/checker/runtime.js; do terser --compress --mangle toplevel --output $p -- $p; done",
+    "rollup": "rollup --exports named --input ./lib/index.js --file ./lib/index-cjs.js --format cjs --plugin @rollup/plugin-node-resolve",
+    "rollup-bin": "rollup --external commander,glob --exports named --input ./lib/jtdc-bin.js --file ./lib/jtdc-bin.js --format cjs --banner '#!/usr/bin/env node' --plugin @rollup/plugin-node-resolve",
+    "rollup-runtime": "rollup --exports named --input ./lib/jtd-dialect/runtime.js --file ./lib/jtd-dialect/runtime.js --format cjs --plugin @rollup/plugin-node-resolve",
+    "terser": "terser --compress --mangle toplevel --output ./lib/jtd-dialect/runtime.js -- ./lib/jtd-dialect/runtime.js",
     "clean": "rm -rf ./lib ./docs",
     "test": "jest --detectOpenHandles",
     "docs": "typedoc ./src/main/index.ts",
@@ -38,10 +38,9 @@
     "preset": "ts-jest"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^19.0.0",
     "@rollup/plugin-node-resolve": "^13.0.0",
+    "@types/glob": "^7.1.4",
     "@types/jest": "^26.0.23",
-    "@types/json-pointer": "^1.0.31",
     "jest": "^27.0.2",
     "rollup": "^2.50.5",
     "terser": "^5.7.0",
@@ -51,6 +50,6 @@
   },
   "dependencies": {
     "commander": "^8.0.0",
-    "json-pointer": "^0.6.1"
+    "glob": "^7.1.7"
   }
 }

@@ -4,12 +4,10 @@ import {JtdType} from './jtd-types';
 import {compileDocComment, compilePropertyName, constCase, pascalCase} from '@smikhalevski/codegen';
 import {die} from './misc';
 
-export interface ITsDefinitionsCompilerOptions<M> {
+export interface ITsTypesCompilerOptions<M> {
 
   /**
-   * Returns a TypeScript type name referenced by `refNode`.
-   *
-   * @param refNode The node that describes the renamed type.
+   * Returns a TypeScript type name referenced by `node`.
    */
   resolveExternalRef?: (node: IJtdRefNode<M>) => string;
 
@@ -18,14 +16,12 @@ export interface ITsDefinitionsCompilerOptions<M> {
    *
    * @param ref The ref of the renamed type.
    * @param node The node that describes the renamed type.
-   *
-   * @default pascalCase
    */
-  renameTypeDeclaration?: (ref: string, node: JtdNode<M>) => string;
+  renameType?: (ref: string, node: JtdNode<M>) => string;
 
   /**
-   * Returns a TypeScript type name of a JTD primitive type. By default, a {@link jtdTsTypeMap} is used to resolve the
-   * name.
+   * Returns a TypeScript type name of a JTD primitive type. By default, a {@link jtdTsPrimitiveTypeMap} is used to
+   * resolve the name.
    *
    * @example
    * (node) => node.type === 'int64' ? 'bigint' : 'string'
@@ -88,15 +84,22 @@ export interface ITsDefinitionsCompilerOptions<M> {
  *
  * @returns The TypeScript source code with type, interface and enum definitions.
  */
-export function compileTsDefinitions<M>(definitions: Record<string, JtdNode<M>>, options?: ITsDefinitionsCompilerOptions<M>): string {
-  const opts = Object.assign({}, tsDefinitionsCompilerOptions, options);
+export function compileTsTypes<M>(definitions: Record<string, JtdNode<M>>, options?: ITsTypesCompilerOptions<M>): string {
+  const opts = {...tsTypesCompilerOptions, ...options};
 
-  return Object.keys(definitions).reduce((src, ref) => src + compileTsStatement(ref, definitions, opts), '');
+  return Object.keys(definitions).reduce((src, ref) => src + compileTsTypeStatement(ref, definitions, opts), '');
 }
 
-function compileTsStatement<M>(ref: string, definitions: Record<string, JtdNode<M>>, options: Required<ITsDefinitionsCompilerOptions<M>>): string {
+/**
+ * Returns the TypeScript type statement that describes the node.
+ *
+ * @param ref The ref of the node in `definitions`.
+ * @param definitions Known definitions that are used for ref resolution.
+ * @param options Compiler options.
+ */
+function compileTsTypeStatement<M>(ref: string, definitions: Record<string, JtdNode<M>>, options: Required<ITsTypesCompilerOptions<M>>): string {
   const {
-    renameTypeDeclaration,
+    renameType,
     renamePropertyKey,
     renameEnumKey,
     rewriteEnumValue,
@@ -112,7 +115,7 @@ function compileTsStatement<M>(ref: string, definitions: Record<string, JtdNode<
 
   const compileTypeStatement = (node: JtdNode<M>): void => {
     src += compileDocComment(getDocComment(node))
-        + `export type ${renameTypeDeclaration(ref, node)}=${compileTsExpression(node, definitions, options)};`;
+        + `export type ${renameType(ref, node)}=${compileTsTypeExpression(node, definitions, options)};`;
   };
 
   visitJtdNode(definitions[ref], {
@@ -125,7 +128,7 @@ function compileTsStatement<M>(ref: string, definitions: Record<string, JtdNode<
     values: compileTypeStatement,
 
     enum(node) {
-      const name = renameTypeDeclaration(ref, node);
+      const name = renameType(ref, node);
 
       src += compileDocComment(getDocComment(node))
           + `enum ${name}{`;
@@ -143,7 +146,7 @@ function compileTsStatement<M>(ref: string, definitions: Record<string, JtdNode<
 
     object(node, next) {
       src += compileDocComment(getDocComment(node))
-          + `export interface ${renameTypeDeclaration(ref, node)}{`;
+          + `export interface ${renameType(ref, node)}{`;
       next();
       src += '}';
     },
@@ -152,7 +155,7 @@ function compileTsStatement<M>(ref: string, definitions: Record<string, JtdNode<
       src += compileDocComment(getDocComment(propNode))
           + compilePropertyName(renamePropertyKey(propKey, propNode, objectNode))
           + ':'
-          + compileTsExpression(propNode, definitions, options)
+          + compileTsTypeExpression(propNode, definitions, options)
           + ';';
     },
 
@@ -160,12 +163,12 @@ function compileTsStatement<M>(ref: string, definitions: Record<string, JtdNode<
       src += compileDocComment(getDocComment(propNode))
           + compilePropertyName(renamePropertyKey(propKey, propNode, objectNode))
           + '?:'
-          + compileTsExpression(propNode, definitions, options)
+          + compileTsTypeExpression(propNode, definitions, options)
           + ';';
     },
 
     union(node, next) {
-      const unionName = renameTypeDeclaration(ref, node);
+      const unionName = renameType(ref, node);
       const mappingEntries = Object.entries(node.mapping);
 
       if (mappingEntries.length === 0) {
@@ -215,12 +218,12 @@ function compileTsStatement<M>(ref: string, definitions: Record<string, JtdNode<
  *
  * @param node The JTD node for which TypeScript expression must be compiled.
  * @param definitions Known definitions that are used for ref resolution.
- * @param options Other options.
+ * @param options Compiler options.
  */
-function compileTsExpression<M>(node: JtdNode<M>, definitions: Record<string, JtdNode<M>>, options: Required<ITsDefinitionsCompilerOptions<M>>): string {
+function compileTsTypeExpression<M>(node: JtdNode<M>, definitions: Record<string, JtdNode<M>>, options: Required<ITsTypesCompilerOptions<M>>): string {
   const {
     resolveExternalRef,
-    renameTypeDeclaration,
+    renameType,
     rewritePrimitiveType,
     rewriteEnumValue,
     rewriteMappingKey,
@@ -235,7 +238,7 @@ function compileTsExpression<M>(node: JtdNode<M>, definitions: Record<string, Jt
       src += 'any';
     },
     ref(node) {
-      src += definitions[node.ref] ? renameTypeDeclaration(node.ref, definitions[node.ref]) : resolveExternalRef(node);
+      src += definitions[node.ref] ? renameType(node.ref, definitions[node.ref]) : resolveExternalRef(node);
     },
     nullable(node, next) {
       next();
@@ -298,13 +301,13 @@ function compileTsExpression<M>(node: JtdNode<M>, definitions: Record<string, Jt
 }
 
 /**
- * Global default options used by {@link compileTsDefinitions}.
+ * Global default options used by {@link compileTsTypes}.
  */
-export const tsDefinitionsCompilerOptions: Required<ITsDefinitionsCompilerOptions<any>> = {
+export const tsTypesCompilerOptions: Required<ITsTypesCompilerOptions<any>> = {
   resolveExternalRef: (node) => die('Unresolved reference: ' + node.ref),
-  renameTypeDeclaration: (ref) => pascalCase(ref),
+  renameType: (ref) => pascalCase(ref),
   renamePropertyKey: (propKey) => propKey,
-  rewritePrimitiveType: (node) => jtdTsTypeMap[node.type] || die('Unexpected type: ' + node.type),
+  rewritePrimitiveType: (node) => jtdTsPrimitiveTypeMap[node.type] || die('Unknown type: ' + node.type),
   renameEnumKey: (ref) => constCase(ref),
   rewriteEnumValue: (value) => value,
   renameUnionEnum: (ref, node) => pascalCase(ref) + pascalCase(node.discriminator),
@@ -316,9 +319,9 @@ export const tsDefinitionsCompilerOptions: Required<ITsDefinitionsCompilerOption
 };
 
 /**
- * Mapping from the JTD standard data types to TypeScript types.
+ * Mapping from the JTD standard data types to TypeScript primitive types.
  */
-export const jtdTsTypeMap: Record<string, string> = {
+export const jtdTsPrimitiveTypeMap: Record<string, string> = {
   [JtdType.BOOLEAN]: 'boolean',
   [JtdType.STRING]: 'string',
   [JtdType.TIMESTAMP]: 'number',
