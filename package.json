@@ -14,7 +14,7 @@
   ],
   "scripts": {
     "build": "set -e; tsc; npm run rollup; npm run rollup-bin; npm run rollup-runtime; npm run terser",
-    "rollup": "rollup --exports named --input ./lib/index.js --file ./lib/index-cjs.js --format cjs --plugin @rollup/plugin-node-resolve",
+    "rollup": "rollup --external @smikhalevski/codegen --exports named --input ./lib/index.js --file ./lib/index-cjs.js --format cjs --plugin @rollup/plugin-node-resolve",
     "rollup-bin": "rollup --external commander,glob --exports named --input ./lib/jtdc-bin.js --file ./lib/jtdc-bin.js --format cjs --banner '#!/usr/bin/env node' --plugin @rollup/plugin-node-resolve",
     "rollup-runtime": "rollup --exports named --input ./lib/jtd-dialect/runtime.js --file ./lib/jtd-dialect/runtime.js --format cjs --plugin @rollup/plugin-node-resolve",
     "terser": "terser --compress --mangle toplevel --output ./lib/jtd-dialect/runtime.js -- ./lib/jtd-dialect/runtime.js",
@@ -49,6 +49,7 @@
     "typescript": "^4.3.2"
   },
   "dependencies": {
+    "@smikhalevski/codegen": "^1.0.0",
     "commander": "^8.0.0",
     "glob": "^7.1.7"
   }
