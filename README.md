@@ -4,8 +4,10 @@ JSON Type Definition to TypeScript compiler.
 
 - Compiles enums, interface and types;
 - Compiles validator functions that produce an array of detected validation errors;
+- Validators support recursive structures and shallow checks;
 - Compiles [type narrowing functions](https://www.typescriptlang.org/docs/handbook/2/narrowing.html) aka type guards;
-- You can modify naming of enums, enum keys and values, interfaces, types, properties and any other rendered entities;
+- Modify naming of enums, enum keys and values, interfaces, types, properties and any other rendered entities;
+- Create custom validator dialect and have explicit control over every aspect of code generation;
 - CLI and programmatic usage;
 
 [Full API documentation.](https://smikhalevski.github.io/jtdc/)
@@ -19,7 +21,7 @@ npm install --save-prod jtdc
 Let's assume you have user and account type definitions in separate files:
 
 ```json5
-// ./user.json
+// ./src/user.json
 
 {
   "user": {
@@ -38,7 +40,7 @@ Let's assume you have user and account type definitions in separate files:
 ```
 
 ```json5
-// ./account.json
+// ./src/account.json
 
 {
   "account": {
@@ -68,16 +70,16 @@ Let's assume you have user and account type definitions in separate files:
 To compile these definitions to TypeScript use this command:
 
 ```sh
-npx jtdc --rootDir . --includes '*.json' --outDir ./gen --typeGuards
+npx jtdc --rootDir ./src --includes '*.json' --outDir ./gen --typeGuards
 ```
 
 The result would be output to `./gen` folder.
 
-Compiled files would look like this (manually formatted):
+<details>
+<summary><code>./gen/user.ts</code></summary>
+<p>
 
 ```ts
-// ./gen/user.ts
-
 import * as _r from 'jtdc/lib/jtd-dialect/runtime';
 
 export interface User {
@@ -117,9 +119,14 @@ const isUser = (value: unknown): value is User => !validateUser(value, {shallow:
 export {isUser};
 ```
 
-```ts
-// ./gen/account.ts
+</p>
+</details>
 
+<details>
+<summary><code>./gen/account.ts</code></summary>
+<p>
+
+```ts
 import * as _r from 'jtdc/lib/jtd-dialect/runtime';
 import {User, validateUser} from './user';
 
@@ -179,6 +186,9 @@ export {validateRole};
 const isRole = (value: unknown): value is Role => !validateRole(value, {shallow: true});
 export {isRole};
 ```
+
+</p>
+</details>
 
 ## Programmatic usage
 
