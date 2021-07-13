@@ -3,16 +3,34 @@ import {IValidationContext, ValidationErrorCode} from './runtime-types';
 export * from './runtime-types';
 
 export {
-  escapeJsonPointer as p,
-  raiseInvalid as r,
-  checkObject as o,
-  checkArray as a,
-  checkEnum as e,
-  checkBoolean as b,
-  checkString as s,
-  checkNumber as n,
-  checkInteger as i,
+  JSON_POINTER_SEPARATOR as _S,
+  toJsonPointer as _P,
+  getObjectKeys as _K,
+  raiseInvalid as _R,
+  checkObject as _o,
+  checkArray as _a,
+  checkEnum as _e,
+  checkBoolean as _b,
+  checkString as _s,
+  checkNumber as _n,
+  checkInteger as _i,
+  rejectNullable as _N,
+  rejectOptional as _O,
 };
+
+export const JSON_POINTER_SEPARATOR = '/';
+
+export function rejectNullable(value: unknown): boolean {
+  return value !== null;
+}
+
+export function rejectOptional(value: unknown): boolean {
+  return value !== undefined;
+}
+
+export function getObjectKeys(value: object): Array<string> {
+  return Object.keys(value);
+}
 
 /**
  * Returns `true` if further validation must be prevented.
@@ -21,8 +39,8 @@ export function isValidationCompleted(ctx: IValidationContext): boolean {
   return !(!ctx.shallow || !ctx.errors || ctx.errors.length === 0);
 }
 
-export function escapeJsonPointer(str: string | number): string {
-  return str.toString().replace(/~/g, '~0').replace(/\//g, '~1');
+export function toJsonPointer(str: string | number): string {
+  return JSON_POINTER_SEPARATOR + str.toString().replace(/~/g, '~0').replace(/\//g, '~1');
 }
 
 export function raiseValidationError(code: string | number, ctx: IValidationContext, pointer: string): false {

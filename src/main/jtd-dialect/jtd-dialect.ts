@@ -12,10 +12,8 @@ import {JtdNode, JtdNodeType} from '../jtd-ast-types';
 import {JtdType} from '../jtd-types';
 import {die} from '../misc';
 import * as runtime from './runtime';
-import {escapeJsonPointer} from './runtime';
+import {toJsonPointer} from './runtime';
 import {IJtdcDialect, IJtdcDialectOptions} from '../dialect-types';
-
-const RUNTIME_VAR = '_r';
 
 /**
  * Context used by the dialect during validator compilation.
@@ -50,7 +48,7 @@ export default function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): I
   return {
 
     import() {
-      return cg`import*as ${RUNTIME_VAR} from"jtdc/lib/jtd-dialect/runtime";`;
+      return cg`import{_S,_P,_K,_R,_o,_a,_e,_b,_s,_n,_i,_N,_O,Validator as _Validator}from"jtdc/lib/jtd-dialect/runtime";`;
     },
 
     typeGuard(ref, node) {
@@ -89,7 +87,7 @@ export default function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): I
       const undeclaredVars = collectVarRefs(bodyFrag, [valueVar, ctxVar, pointerVar]);
 
       return cg(
-          cg.block`const ${name}:${RUNTIME_VAR}.Validator=(${valueVar},${ctxVar},${pointerVar})=>{${cg(
+          cg.block`const ${name}:_Validator=(${valueVar},${ctxVar},${pointerVar})=>{${cg(
               undeclaredVars.length !== 0 && cg`let ${cg.join(undeclaredVars, ',')};`,
               bodyFrag,
           )}};`,
@@ -105,36 +103,36 @@ export default function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): I
       if (isUnconstrainedNode(node.valueNode)) {
         return cg``;
       }
-      return cg.block`if(${ctx.valueVar}!==null){${
+      return cg.block`if(_N(${ctx.valueVar})){${
           next(ctx)
       }}`;
     },
 
     type(node, ctx) {
       const typeCheckerName = jtdTypeCheckerMap[node.type] || die('Unknown type: ' + node.type);
-      return cg`${RUNTIME_VAR}.${typeCheckerName}(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
+      return cg`${typeCheckerName}(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
     },
 
     enum(node, ctx) {
       const valuesFrag = ctx.warpCache(cg`[${
           cg.join(node.values.map((value) => JSON.stringify(rewriteEnumValue(value, node))), ',')
       }]`);
-      return cg`${RUNTIME_VAR}.e(${ctx.valueVar},${valuesFrag},${ctx.ctxVar},${ctx.pointerVar});`;
+      return cg`_e(${ctx.valueVar},${valuesFrag},${ctx.ctxVar},${ctx.pointerVar});`;
     },
 
     elements(node, ctx, next) {
       if (isUnconstrainedNode(node.elementNode)) {
-        return cg`${RUNTIME_VAR}.a(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
+        return cg`_a(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
       }
 
       const indexVar = cg.var();
       const valueVar = cg.var();
       const pointerVar = cg.var();
 
-      return cg.block`if(${RUNTIME_VAR}.a(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${
+      return cg.block`if(_a(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${
           cg.block`for(${indexVar}=0;${indexVar}<${ctx.valueVar}.length;${indexVar}++){${cg(
               cg.let(valueVar, cg`${ctx.valueVar}[${indexVar}]`),
-              cg.let(pointerVar, cg`${ctx.pointerVar}+${indexVar}`),
+              cg.let(pointerVar, cg`${ctx.pointerVar}+_S+${indexVar}`),
 
               next({...ctx, pointerVar, valueVar}),
           )}}`
@@ -143,17 +141,18 @@ export default function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): I
 
     values(node, ctx, next) {
       if (isUnconstrainedNode(node.valueNode)) {
-        return cg`${RUNTIME_VAR}.o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
+        return cg`_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
       }
 
-      const keyVar = cg.var();
+      const indexVar = cg.var();
+      const keysVar = cg.var();
       const valueVar = cg.var();
       const pointerVar = cg.var();
 
-      return cg.block`if(${RUNTIME_VAR}.o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${
-          cg.block`for(${keyVar} in ${ctx.valueVar}){${cg(
-              cg.let(valueVar, cg`${ctx.valueVar}[${keyVar}]`),
-              cg.let(pointerVar, cg`${ctx.pointerVar}+${RUNTIME_VAR}.p(${keyVar})`),
+      return cg.block`if(_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${
+          cg.block`for(${indexVar}=0,${keysVar}=_K(${ctx.valueVar});${indexVar}<${keysVar}.length;${indexVar}++){${cg(
+              cg.let(valueVar, cg`${ctx.valueVar}[${keysVar}[${indexVar}]]`),
+              cg.let(pointerVar, cg`${ctx.pointerVar}+_P(${keysVar}[${indexVar}])`),
 
               next({...ctx, valueVar, pointerVar}),
           )}}`
@@ -162,10 +161,10 @@ export default function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): I
 
     object(node, ctx, next) {
       if (Object.values(node.properties).every(isUnconstrainedNode) && Object.values(node.optionalProperties).every(isUnconstrainedNode)) {
-        return cg`${RUNTIME_VAR}.o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})`;
+        return cg`_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})`;
       }
 
-      return cg.block`if(${RUNTIME_VAR}.o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${
+      return cg.block`if(_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${
           next(ctx)
       }}`;
     },
@@ -175,15 +174,14 @@ export default function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): I
         return cg``;
       }
 
+      propKey = renamePropertyKey(propKey, propNode, objectNode);
+
       const valueVar = cg.var();
       const pointerVar = cg.var();
-
-      propKey = renamePropertyKey(propKey, propNode, objectNode);
 
       return cg.block(
           cg.let(valueVar, cg`${ctx.valueVar}${compilePropertyAccessor(propKey)}`),
           cg.let(pointerVar, cg`${ctx.pointerVar}+${compileJsonPointer(propKey)}`),
-
           next({...ctx, valueVar, pointerVar}),
       );
     },
@@ -193,17 +191,15 @@ export default function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): I
         return cg``;
       }
 
+      propKey = renamePropertyKey(propKey, propNode, objectNode);
+
       const valueVar = cg.var();
       const pointerVar = cg.var();
 
-      propKey = renamePropertyKey(propKey, propNode, objectNode);
-
       return cg.block(
           cg.let(valueVar, cg`${ctx.valueVar}${compilePropertyAccessor(propKey)}`),
-
-          cg.block`if(${valueVar}!==undefined){${cg(
+          cg.block`if(_O(${valueVar})){${cg(
               cg.let(pointerVar, cg`${ctx.pointerVar}+${compileJsonPointer(propKey)}`),
-
               next({...ctx, valueVar, pointerVar}),
           )}}`,
       );
@@ -212,12 +208,10 @@ export default function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): I
     union(node, ctx, next) {
       const discriminatorKey = renameDiscriminatorKey(node);
 
-      return cg.block`if(${RUNTIME_VAR}.o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${cg(
+      return cg.block`if(_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${cg(
           cg`switch(${ctx.valueVar}${compilePropertyAccessor(discriminatorKey)}){${cg(
               next(ctx),
-
-              cg`default:${RUNTIME_VAR}.r(${ctx.ctxVar},${ctx.pointerVar}+${compileJsonPointer(discriminatorKey)})`,
-          )}}`,
+          )}}_R(${ctx.ctxVar},${ctx.pointerVar}+${compileJsonPointer(discriminatorKey)})`,
       )}}`;
     },
 
@@ -232,7 +226,7 @@ export default function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): I
 }
 
 function compileJsonPointer(key: string): string {
-  return JSON.stringify('/' + escapeJsonPointer(key));
+  return JSON.stringify(toJsonPointer(key));
 }
 
 function isUnconstrainedNode<M>(node: JtdNode<M>): boolean {
@@ -240,17 +234,17 @@ function isUnconstrainedNode<M>(node: JtdNode<M>): boolean {
 }
 
 const jtdTypeCheckerMap: Record<string, keyof typeof runtime> = {
-  [JtdType.BOOLEAN]: 'b',
-  [JtdType.STRING]: 's',
-  [JtdType.TIMESTAMP]: 's',
-  [JtdType.FLOAT32]: 'n',
-  [JtdType.FLOAT64]: 'n',
-  [JtdType.INT8]: 'i',
-  [JtdType.UINT8]: 'i',
-  [JtdType.INT16]: 'i',
-  [JtdType.UINT16]: 'i',
-  [JtdType.INT32]: 'i',
-  [JtdType.UINT32]: 'i',
+  [JtdType.BOOLEAN]: '_b',
+  [JtdType.STRING]: '_s',
+  [JtdType.TIMESTAMP]: '_s',
+  [JtdType.FLOAT32]: '_n',
+  [JtdType.FLOAT64]: '_n',
+  [JtdType.INT8]: '_i',
+  [JtdType.UINT8]: '_i',
+  [JtdType.INT16]: '_i',
+  [JtdType.UINT16]: '_i',
+  [JtdType.INT32]: '_i',
+  [JtdType.UINT32]: '_i',
 };
 
 /**

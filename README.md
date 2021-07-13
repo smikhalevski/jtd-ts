@@ -1,12 +1,12 @@
 # jtdc
 
-JSON Type Definition to TypeScript compiler.
+[JSON Type Definition (RFC8927)](https://jsontypedef.com/) to TypeScript compiler.
 
-- Compiles enums, interface and types;
-- Compiles validator functions that produce an array of detected validation errors;
-- Validators support recursive structures and shallow checks;
-- Compiles [type narrowing functions](https://www.typescriptlang.org/docs/handbook/2/narrowing.html) aka type guards;
+- Compile enums, interface and types;
 - Modify naming of enums, enum keys and values, interfaces, types, properties and any other rendered entities;
+- Compile validator functions that produce an array of detected validation errors;
+- Validators support recursive structures and shallow checks;
+- Compile [type narrowing functions](https://www.typescriptlang.org/docs/handbook/2/narrowing.html) aka type guards;
 - Create custom validator dialect and have explicit control over every aspect of code generation;
 - CLI and programmatic usage;
 
@@ -18,7 +18,7 @@ npm install --save-prod jtdc
 
 ## CLI usage
 
-Let's assume you have user and account type definitions in separate files:
+Let's assume you have user and account type definitions in separate files under `./src` folder:
 
 ```json5
 // ./src/user.json
@@ -73,7 +73,7 @@ To compile these definitions to TypeScript use this command:
 npx jtdc --rootDir ./src --includes '*.json' --outDir ./gen --typeGuards
 ```
 
-The result would be output to `./gen` folder.
+The result would be output to `./gen` folder:
 
 <details>
 <summary><code>./gen/user.ts</code></summary>

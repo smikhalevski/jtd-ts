@@ -1,0 +1,48 @@
+{
+  "user": {
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "email": {
+        "type": "string"
+      },
+      "friendsById": {
+        "values": {
+          "ref": "user"
+        }
+      },
+      "lastAction": {
+        "nullable": true,
+        "ref": "action"
+      }
+    },
+    "optionalProperties": {
+      "name": {
+        "type": "string"
+      },
+      "age": {
+        "type": "int8"
+      }
+    }
+  },
+  "action": {
+    "discriminator": "type",
+    "mapping": {
+      "like": {
+        "properties": {
+          "articleId": {
+            "type": "string"
+          }
+        }
+      },
+      "subscribe": {
+        "properties": {
+          "userId": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
