@@ -1,12 +1,12 @@
-import {
-  cg,
+import _, {
   collectVarRefs,
   compilePropertyAccessor,
   encodeLetters,
   IFragmentCgNode,
   IVarRefCgNode,
-  optimizeChildren,
+  inlineVarAssignments,
   pascalCase,
+  joinFragmentChildren,
 } from '@smikhalevski/codegen';
 import {JtdNode, JtdNodeType} from '../jtd-ast-types';
 import {JtdType} from '../jtd-types';
@@ -48,91 +48,91 @@ export default function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): I
   return {
 
     import() {
-      return cg`import{_S,_P,_K,_R,_o,_a,_e,_b,_s,_n,_i,_N,_O,Validator as _Validator}from"jtdc/lib/jtd-dialect/runtime";`;
+      return _`import{_S,_P,_K,_R,_o,_a,_e,_b,_s,_n,_i,_N,_O,Validator as _Validator}from"jtdc/lib/jtd-dialect/runtime";`;
     },
 
     typeGuard(ref, node) {
       const name = renameTypeGuard(ref, node);
 
-      return cg(
-          cg`const ${name}=(value:unknown):value is ${renameType(ref, node)}=>!${renameValidator(ref, node)}(value,{shallow:true});`,
-          cg`export{${name}};`,
+      return _(
+          _`const ${name}=(value:unknown):value is ${renameType(ref, node)}=>!${renameValidator(ref, node)}(value,{shallow:true});`,
+          _`export{${name}};`,
       );
     },
 
     validator(ref, node, next) {
-      const valueVar = cg.var();
-      const ctxVar = cg.var();
-      const pointerVar = cg.var();
-      const cacheVar = cg.var();
+      const valueVar = _.var();
+      const ctxVar = _.var();
+      const pointerVar = _.var();
+      const cacheVar = _.var();
       const name = renameValidator(ref, node);
 
       let cacheSize = 0;
 
-      const bodyFrag = cg(
-          cg.let(ctxVar, cg`${ctxVar}||{}`, true),
-          cg.let(pointerVar, cg`${pointerVar}||""`),
-          cg.let(cacheVar, cg`(${name}.cache||={})`),
+      const bodyFrag = _(
+          _.assignment(ctxVar, _`${ctxVar}||{}`, true),
+          _.assignment(pointerVar, _`${pointerVar}||""`),
+          _.assignment(cacheVar, _`(${name}.cache||={})`),
           next({
-            warpCache: (frag: IFragmentCgNode) => cg`${cacheVar}.${encodeLetters(cacheSize++)}||=${frag}`,
+            warpCache: (frag: IFragmentCgNode) => _`${cacheVar}.${encodeLetters(cacheSize++)}||=${frag}`,
             valueVar,
             ctxVar,
             pointerVar,
           }),
-          cg`return ${ctxVar}.errors;`,
+          _`return ${ctxVar}.errors;`,
       );
 
-      optimizeChildren(bodyFrag.children);
+      inlineVarAssignments(bodyFrag);
 
       const undeclaredVars = collectVarRefs(bodyFrag, [valueVar, ctxVar, pointerVar]);
 
-      return cg(
-          cg.block`const ${name}:_Validator=(${valueVar},${ctxVar},${pointerVar})=>{${cg(
-              undeclaredVars.length !== 0 && cg`let ${cg.join(undeclaredVars, ',')};`,
+      return _(
+          _.block`const ${name}:_Validator=(${valueVar},${ctxVar},${pointerVar})=>{${_(
+              undeclaredVars.length !== 0 && _`let ${joinFragmentChildren(undeclaredVars, ',')};`,
               bodyFrag,
           )}};`,
-          cg`export{${name}};`,
+          _`export{${name}};`,
       );
     },
 
     ref(node, ctx) {
-      return cg`${renameValidator(node.ref, node)}(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
+      return _`${renameValidator(node.ref, node)}(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
     },
 
     nullable(node, ctx, next) {
       if (isUnconstrainedNode(node.valueNode)) {
-        return cg``;
+        return _``;
       }
-      return cg.block`if(_N(${ctx.valueVar})){${
+      return _.block`if(_N(${ctx.valueVar})){${
           next(ctx)
       }}`;
     },
 
     type(node, ctx) {
       const typeCheckerName = jtdTypeCheckerMap[node.type] || die('Unknown type: ' + node.type);
-      return cg`${typeCheckerName}(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
+      return _`${typeCheckerName}(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
     },
 
     enum(node, ctx) {
-      const valuesFrag = ctx.warpCache(cg`[${
-          cg.join(node.values.map((value) => JSON.stringify(rewriteEnumValue(value, node))), ',')
+      const valuesFrag = ctx.warpCache(_`[${
+          joinFragmentChildren(node.values.map((value) => JSON.stringify(rewriteEnumValue(value, node))), ',')
       }]`);
-      return cg`_e(${ctx.valueVar},${valuesFrag},${ctx.ctxVar},${ctx.pointerVar});`;
+      return _`_e(${ctx.valueVar},${valuesFrag},${ctx.ctxVar},${ctx.pointerVar});`;
     },
 
     elements(node, ctx, next) {
       if (isUnconstrainedNode(node.elementNode)) {
-        return cg`_a(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
+        return _`_a(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
       }
 
-      const indexVar = cg.var();
-      const valueVar = cg.var();
-      const pointerVar = cg.var();
+      const indexVar = _.var();
+      const valueVar = _.var();
+      const pointerVar = _.var();
 
-      return cg.block`if(_a(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${
-          cg.block`for(${indexVar}=0;${indexVar}<${ctx.valueVar}.length;${indexVar}++){${cg(
-              cg.let(valueVar, cg`${ctx.valueVar}[${indexVar}]`),
-              cg.let(pointerVar, cg`${ctx.pointerVar}+_S+${indexVar}`),
+      return _.block`if(_a(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${
+          _.block`for(${indexVar}=0;${indexVar}<${ctx.valueVar}.length;${indexVar}++){${_(
+              _.assignment(valueVar, _`${ctx.valueVar}[${indexVar}]`),
+              _.assignment(pointerVar, _`${ctx.pointerVar}+_S+${indexVar}`),
 
               next({...ctx, pointerVar, valueVar}),
           )}}`
@@ -141,18 +141,18 @@ export default function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): I
 
     values(node, ctx, next) {
       if (isUnconstrainedNode(node.valueNode)) {
-        return cg`_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
+        return _`_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
       }
 
-      const indexVar = cg.var();
-      const keysVar = cg.var();
-      const valueVar = cg.var();
-      const pointerVar = cg.var();
+      const indexVar = _.var();
+      const keysVar = _.var();
+      const valueVar = _.var();
+      const pointerVar = _.var();
 
-      return cg.block`if(_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${
-          cg.block`for(${indexVar}=0,${keysVar}=_K(${ctx.valueVar});${indexVar}<${keysVar}.length;${indexVar}++){${cg(
-              cg.let(valueVar, cg`${ctx.valueVar}[${keysVar}[${indexVar}]]`),
-              cg.let(pointerVar, cg`${ctx.pointerVar}+_P(${keysVar}[${indexVar}])`),
+      return _.block`if(_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${
+          _.block`for(${indexVar}=0,${keysVar}=_K(${ctx.valueVar});${indexVar}<${keysVar}.length;${indexVar}++){${_(
+              _.assignment(valueVar, _`${ctx.valueVar}[${keysVar}[${indexVar}]]`),
+              _.assignment(pointerVar, _`${ctx.pointerVar}+_P(${keysVar}[${indexVar}])`),
 
               next({...ctx, valueVar, pointerVar}),
           )}}`
@@ -161,45 +161,45 @@ export default function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): I
 
     object(node, ctx, next) {
       if (Object.values(node.properties).every(isUnconstrainedNode) && Object.values(node.optionalProperties).every(isUnconstrainedNode)) {
-        return cg`_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})`;
+        return _`_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})`;
       }
 
-      return cg.block`if(_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${
+      return _.block`if(_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${
           next(ctx)
       }}`;
     },
 
     property(propKey, propNode, objectNode, ctx, next) {
       if (isUnconstrainedNode(propNode)) {
-        return cg``;
+        return _``;
       }
 
       propKey = renamePropertyKey(propKey, propNode, objectNode);
 
-      const valueVar = cg.var();
-      const pointerVar = cg.var();
+      const valueVar = _.var();
+      const pointerVar = _.var();
 
-      return cg.block(
-          cg.let(valueVar, cg`${ctx.valueVar}${compilePropertyAccessor(propKey)}`),
-          cg.let(pointerVar, cg`${ctx.pointerVar}+${compileJsonPointer(propKey)}`),
+      return _.block(
+          _.assignment(valueVar, _`${ctx.valueVar}${compilePropertyAccessor(propKey)}`),
+          _.assignment(pointerVar, _`${ctx.pointerVar}+${compileJsonPointer(propKey)}`),
           next({...ctx, valueVar, pointerVar}),
       );
     },
 
     optionalProperty(propKey, propNode, objectNode, ctx, next) {
       if (isUnconstrainedNode(propNode)) {
-        return cg``;
+        return _``;
       }
 
       propKey = renamePropertyKey(propKey, propNode, objectNode);
 
-      const valueVar = cg.var();
-      const pointerVar = cg.var();
+      const valueVar = _.var();
+      const pointerVar = _.var();
 
-      return cg.block(
-          cg.let(valueVar, cg`${ctx.valueVar}${compilePropertyAccessor(propKey)}`),
-          cg.block`if(_O(${valueVar})){${cg(
-              cg.let(pointerVar, cg`${ctx.pointerVar}+${compileJsonPointer(propKey)}`),
+      return _.block(
+          _.assignment(valueVar, _`${ctx.valueVar}${compilePropertyAccessor(propKey)}`),
+          _.block`if(_O(${valueVar})){${_(
+              _.assignment(pointerVar, _`${ctx.pointerVar}+${compileJsonPointer(propKey)}`),
               next({...ctx, valueVar, pointerVar}),
           )}}`,
       );
@@ -208,16 +208,16 @@ export default function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): I
     union(node, ctx, next) {
       const discriminatorKey = renameDiscriminatorKey(node);
 
-      return cg.block`if(_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${cg(
-          cg`switch(${ctx.valueVar}${compilePropertyAccessor(discriminatorKey)}){${cg(
+      return _.block`if(_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${_(
+          _`switch(${ctx.valueVar}${compilePropertyAccessor(discriminatorKey)}){${_(
               next(ctx),
           )}}_R(${ctx.ctxVar},${ctx.pointerVar}+${compileJsonPointer(discriminatorKey)})`,
       )}}`;
     },
 
     mapping(mappingKey, mappingNode, unionNode, ctx, next) {
-      return cg.block(
-          cg`case ${JSON.stringify(rewriteMappingKey(mappingKey, mappingNode, undefined, unionNode))}:`,
+      return _.block(
+          _`case ${JSON.stringify(rewriteMappingKey(mappingKey, mappingNode, undefined, unionNode))}:`,
           next(ctx),
           'break;',
       );

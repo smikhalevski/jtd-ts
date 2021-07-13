@@ -1,7 +1,7 @@
 import {JtdNode} from './jtd-ast-types';
 import {IJtdcDialect} from './dialect-types';
 import {visitJtdNode} from './jtd-visitor';
-import {cg, compileTsSource, IFragmentCgNode} from '@smikhalevski/codegen';
+import _, {compileTsSource, IFragmentCgNode} from '@smikhalevski/codegen';
 import createJtdDialect from './jtd-dialect';
 
 export interface IValidatorCompilerOptions<M, C> {
@@ -53,7 +53,7 @@ function compileValidatorBody<M, C>(node: JtdNode<M>, ctx: C, dialect: IJtdcDial
     ctx = nextCtx;
     next();
 
-    const nextFrag = cg(frags);
+    const nextFrag = _(frags);
 
     frags = prevFrags;
     ctx = prevCtx;
@@ -97,7 +97,7 @@ function compileValidatorBody<M, C>(node: JtdNode<M>, ctx: C, dialect: IJtdcDial
     },
   });
 
-  return cg(frags);
+  return _(frags);
 }
 
 export const validatorCompilerOptions: Required<IValidatorCompilerOptions<any, any>> = {
