@@ -55,10 +55,10 @@
 					<a href="../modules.html">jtdc - v1.0.0</a>
 				</li>
 				<li>
-					<a href="ivalidatorcompileroptions.html">IValidatorCompilerOptions</a>
+					<a href="IValidatorCompilerOptions.html">IValidatorCompilerOptions</a>
 				</li>
 			</ul>
-			<h1>Interface IValidatorCompilerOptions&lt;M&gt;</h1>
+			<h1>Interface IValidatorCompilerOptions&lt;M, C&gt;</h1>
 		</div>
 	</div>
 </header>
@@ -71,6 +71,9 @@
 					<li>
 						<h4>M</h4>
 					</li>
+					<li>
+						<h4>C</h4>
+					</li>
 				</ul>
 			</section>
 			<section class="tsd-panel tsd-hierarchy">
@@ -78,11 +81,6 @@
 				<ul class="tsd-hierarchy">
 					<li>
 						<span class="target">IValidatorCompilerOptions</span>
-						<ul class="tsd-hierarchy">
-							<li>
-								<a href="ijtdtsmodulesoptions.html" class="tsd-signature-type" data-tsd-kind="Interface">IJtdTsModulesOptions</a>
-							</li>
-						</ul>
 					</li>
 				</ul>
 			</section>
@@ -93,18 +91,8 @@
 						<section class="tsd-index-section ">
 							<h3>Properties</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="ivalidatorcompileroptions.html#checkercompiler" class="tsd-kind-icon">checker<wbr>Compiler</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="ivalidatorcompileroptions.html#checkerruntimevar" class="tsd-kind-icon">checker<wbr>Runtime<wbr>Var</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="ivalidatorcompileroptions.html#emitstypenarrowing" class="tsd-kind-icon">emits<wbr>Type<wbr>Narrowing</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="ivalidatorcompileroptions.html#renamediscriminatorkey" class="tsd-kind-icon">rename<wbr>Discriminator<wbr>Key</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="ivalidatorcompileroptions.html#renamepropertykey" class="tsd-kind-icon">rename<wbr>Property<wbr>Key</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="ivalidatorcompileroptions.html#renametypenarrowing" class="tsd-kind-icon">rename<wbr>Type<wbr>Narrowing</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="ivalidatorcompileroptions.html#renamevalidator" class="tsd-kind-icon">rename<wbr>Validator</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="ivalidatorcompileroptions.html#resolveref" class="tsd-kind-icon">resolve<wbr>Ref</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="ivalidatorcompileroptions.html#rewriteenumvalue" class="tsd-kind-icon">rewrite<wbr>Enum<wbr>Value</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="ivalidatorcompileroptions.html#rewritemappingkey" class="tsd-kind-icon">rewrite<wbr>Mapping<wbr>Key</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="ivalidatorcompileroptions.html#traversesunconstrained" class="tsd-kind-icon">traverses<wbr>Unconstrained</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="ivalidatorcompileroptions.html#validatorruntimevar" class="tsd-kind-icon">validator<wbr>Runtime<wbr>Var</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="IValidatorCompilerOptions.html#dialect" class="tsd-kind-icon">dialect</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="IValidatorCompilerOptions.html#typeGuardsRendered" class="tsd-kind-icon">type<wbr>Guards<wbr>Rendered</a></li>
 							</ul>
 						</section>
 					</div>
@@ -113,349 +101,38 @@
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Properties</h2>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="checkercompiler" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> checker<wbr>Compiler</h3>
-					<div class="tsd-signature tsd-kind-icon">checker<wbr>Compiler<span class="tsd-signature-symbol">:</span> <a href="icheckercompiler.html" class="tsd-signature-type" data-tsd-kind="Interface">ICheckerCompiler</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span></div>
+					<a name="dialect" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> dialect</h3>
+					<div class="tsd-signature tsd-kind-icon">dialect<span class="tsd-signature-symbol">:</span> <a href="IJtdcDialect.html" class="tsd-signature-type" data-tsd-kind="Interface">IJtdcDialect</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">C</span><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/smikhalevski/jtdc/blob/98b95a5/src/main/validator/jtd-validator.ts#L76">validator/jtd-validator.ts:76</a></li>
+							<li>Defined in <a href="https://github.com/smikhalevski/jtdc/blob/1c704d7/src/main/validators-compiler.ts#L19">validators-compiler.ts:19</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>The compiler that describes how checkers are invoked by validators.</p>
-						</div>
-						<dl class="tsd-comment-tags">
-							<dt>default</dt>
-							<dd><p><a href="../modules.html#jtdcheckercompiler">jtdCheckerCompiler</a></p>
-							</dd>
-						</dl>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="checkerruntimevar" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> checker<wbr>Runtime<wbr>Var</h3>
-					<div class="tsd-signature tsd-kind-icon">checker<wbr>Runtime<wbr>Var<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/smikhalevski/jtdc/blob/98b95a5/src/main/validator/jtd-validator.ts#L81">validator/jtd-validator.ts:81</a></li>
-						</ul>
-					</aside>
-					<div class="tsd-comment tsd-typography">
-						<div class="lead">
-							<p>The name of the variable that holds the checker runtime.</p>
+							<p>The validator compilation dialect that describes how validators and type guards are compiled.</p>
 						</div>
 					</div>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="emitstypenarrowing" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> emits<wbr>Type<wbr>Narrowing</h3>
-					<div class="tsd-signature tsd-kind-icon">emits<wbr>Type<wbr>Narrowing<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
+					<a name="typeGuardsRendered" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> type<wbr>Guards<wbr>Rendered</h3>
+					<div class="tsd-signature tsd-kind-icon">type<wbr>Guards<wbr>Rendered<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/smikhalevski/jtdc/blob/98b95a5/src/main/validator/jtd-validator.ts#L118">validator/jtd-validator.ts:118</a></li>
+							<li>Defined in <a href="https://github.com/smikhalevski/jtdc/blob/1c704d7/src/main/validators-compiler.ts#L14">validators-compiler.ts:14</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>If set to <code>true</code> then type narrowing functions are emitted along with validators.</p>
+							<p>If set to <code>true</code> then type guards are rendered along with validators.</p>
 						</div>
 						<dl class="tsd-comment-tags">
 							<dt>see</dt>
 							<dd><p><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html" class="external">TypeScript Narrowing</a></p>
 							</dd>
 						</dl>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="renamediscriminatorkey" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> rename<wbr>Discriminator<wbr>Key</h3>
-					<div class="tsd-signature tsd-kind-icon">rename<wbr>Discriminator<wbr>Key<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>node<span class="tsd-signature-symbol">: </span><a href="ijtdunionnode.html" class="tsd-signature-type" data-tsd-kind="Interface">IJtdUnionNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">string</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/smikhalevski/jtdc/blob/98b95a5/src/main/validator/jtd-validator.ts#L101">validator/jtd-validator.ts:101</a></li>
-						</ul>
-					</aside>
-					<div class="tsd-type-declaration">
-						<h4>Type declaration</h4>
-						<ul class="tsd-parameters">
-							<li class="tsd-parameter-signature">
-								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-interface">
-									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>node<span class="tsd-signature-symbol">: </span><a href="ijtdunionnode.html" class="tsd-signature-type" data-tsd-kind="Interface">IJtdUnionNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></li>
-								</ul>
-								<ul class="tsd-descriptions">
-									<li class="tsd-description">
-										<div class="tsd-comment tsd-typography">
-											<div class="lead">
-												<p>Returns the name of the union discriminator property.</p>
-											</div>
-										</div>
-										<h4 class="tsd-parameters-title">Parameters</h4>
-										<ul class="tsd-parameters">
-											<li>
-												<h5>node: <a href="ijtdunionnode.html" class="tsd-signature-type" data-tsd-kind="Interface">IJtdUnionNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span></h5>
-											</li>
-										</ul>
-										<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
-									</li>
-								</ul>
-							</li>
-						</ul>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="renamepropertykey" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> rename<wbr>Property<wbr>Key</h3>
-					<div class="tsd-signature tsd-kind-icon">rename<wbr>Property<wbr>Key<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>propKey<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, propNode<span class="tsd-signature-symbol">: </span><a href="../modules.html#jtdnode" class="tsd-signature-type" data-tsd-kind="Type alias">JtdNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span>, objectNode<span class="tsd-signature-symbol">: </span><a href="ijtdobjectnode.html" class="tsd-signature-type" data-tsd-kind="Interface">IJtdObjectNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">string</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/smikhalevski/jtdc/blob/98b95a5/src/main/validator/jtd-validator.ts#L96">validator/jtd-validator.ts:96</a></li>
-						</ul>
-					</aside>
-					<div class="tsd-type-declaration">
-						<h4>Type declaration</h4>
-						<ul class="tsd-parameters">
-							<li class="tsd-parameter-signature">
-								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-interface">
-									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>propKey<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, propNode<span class="tsd-signature-symbol">: </span><a href="../modules.html#jtdnode" class="tsd-signature-type" data-tsd-kind="Type alias">JtdNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span>, objectNode<span class="tsd-signature-symbol">: </span><a href="ijtdobjectnode.html" class="tsd-signature-type" data-tsd-kind="Interface">IJtdObjectNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></li>
-								</ul>
-								<ul class="tsd-descriptions">
-									<li class="tsd-description">
-										<div class="tsd-comment tsd-typography">
-											<div class="lead">
-												<p>Returns the name of an object property.</p>
-											</div>
-										</div>
-										<h4 class="tsd-parameters-title">Parameters</h4>
-										<ul class="tsd-parameters">
-											<li>
-												<h5>propKey: <span class="tsd-signature-type">string</span></h5>
-											</li>
-											<li>
-												<h5>propNode: <a href="../modules.html#jtdnode" class="tsd-signature-type" data-tsd-kind="Type alias">JtdNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span></h5>
-											</li>
-											<li>
-												<h5>objectNode: <a href="ijtdobjectnode.html" class="tsd-signature-type" data-tsd-kind="Interface">IJtdObjectNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span></h5>
-											</li>
-										</ul>
-										<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
-									</li>
-								</ul>
-							</li>
-						</ul>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="renametypenarrowing" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> rename<wbr>Type<wbr>Narrowing</h3>
-					<div class="tsd-signature tsd-kind-icon">rename<wbr>Type<wbr>Narrowing<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>ref<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, node<span class="tsd-signature-symbol">: </span><a href="../modules.html#jtdnode" class="tsd-signature-type" data-tsd-kind="Type alias">JtdNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">string</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/smikhalevski/jtdc/blob/98b95a5/src/main/validator/jtd-validator.ts#L123">validator/jtd-validator.ts:123</a></li>
-						</ul>
-					</aside>
-					<div class="tsd-type-declaration">
-						<h4>Type declaration</h4>
-						<ul class="tsd-parameters">
-							<li class="tsd-parameter-signature">
-								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-interface">
-									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>ref<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, node<span class="tsd-signature-symbol">: </span><a href="../modules.html#jtdnode" class="tsd-signature-type" data-tsd-kind="Type alias">JtdNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></li>
-								</ul>
-								<ul class="tsd-descriptions">
-									<li class="tsd-description">
-										<div class="tsd-comment tsd-typography">
-											<div class="lead">
-												<p>Returns the name of the type narrowing function. This is used if <a href="ivalidatorcompileroptions.html#emitstypenarrowing">emitsTypeNarrowing</a> is enabled.</p>
-											</div>
-										</div>
-										<h4 class="tsd-parameters-title">Parameters</h4>
-										<ul class="tsd-parameters">
-											<li>
-												<h5>ref: <span class="tsd-signature-type">string</span></h5>
-											</li>
-											<li>
-												<h5>node: <a href="../modules.html#jtdnode" class="tsd-signature-type" data-tsd-kind="Type alias">JtdNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span></h5>
-											</li>
-										</ul>
-										<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
-									</li>
-								</ul>
-							</li>
-						</ul>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="renamevalidator" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> rename<wbr>Validator</h3>
-					<div class="tsd-signature tsd-kind-icon">rename<wbr>Validator<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>ref<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, node<span class="tsd-signature-symbol">: </span><a href="../modules.html#jtdnode" class="tsd-signature-type" data-tsd-kind="Type alias">JtdNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">string</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/smikhalevski/jtdc/blob/98b95a5/src/main/validator/jtd-validator.ts#L91">validator/jtd-validator.ts:91</a></li>
-						</ul>
-					</aside>
-					<div class="tsd-type-declaration">
-						<h4>Type declaration</h4>
-						<ul class="tsd-parameters">
-							<li class="tsd-parameter-signature">
-								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-interface">
-									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>ref<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, node<span class="tsd-signature-symbol">: </span><a href="../modules.html#jtdnode" class="tsd-signature-type" data-tsd-kind="Type alias">JtdNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></li>
-								</ul>
-								<ul class="tsd-descriptions">
-									<li class="tsd-description">
-										<div class="tsd-comment tsd-typography">
-											<div class="lead">
-												<p>Returns the name of the emitted validator function.</p>
-											</div>
-										</div>
-										<h4 class="tsd-parameters-title">Parameters</h4>
-										<ul class="tsd-parameters">
-											<li>
-												<h5>ref: <span class="tsd-signature-type">string</span></h5>
-											</li>
-											<li>
-												<h5>node: <a href="../modules.html#jtdnode" class="tsd-signature-type" data-tsd-kind="Type alias">JtdNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span></h5>
-											</li>
-										</ul>
-										<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
-									</li>
-								</ul>
-							</li>
-						</ul>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="resolveref" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> resolve<wbr>Ref</h3>
-					<div class="tsd-signature tsd-kind-icon">resolve<wbr>Ref<span class="tsd-signature-symbol">:</span> <a href="../modules.html#jtdrefresolver" class="tsd-signature-type" data-tsd-kind="Type alias">JtdRefResolver</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/smikhalevski/jtdc/blob/98b95a5/src/main/validator/jtd-validator.ts#L129">validator/jtd-validator.ts:129</a></li>
-						</ul>
-					</aside>
-					<div class="tsd-comment tsd-typography">
-						<div class="lead">
-							<p>If <a href="ivalidatorcompileroptions.html#emitstypenarrowing">emitsTypeNarrowing</a> is enabled then this callback is used to resolve a type name that
-							corresponds to the ref. If omitted then type narrowing functions would be emitted with <code>as unknown</code>.</p>
-						</div>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="rewriteenumvalue" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> rewrite<wbr>Enum<wbr>Value</h3>
-					<div class="tsd-signature tsd-kind-icon">rewrite<wbr>Enum<wbr>Value<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>value<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, node<span class="tsd-signature-symbol">: </span><a href="ijtdenumnode.html" class="tsd-signature-type" data-tsd-kind="Interface">IJtdEnumNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/smikhalevski/jtdc/blob/98b95a5/src/main/validator/jtd-validator.ts#L106">validator/jtd-validator.ts:106</a></li>
-						</ul>
-					</aside>
-					<div class="tsd-type-declaration">
-						<h4>Type declaration</h4>
-						<ul class="tsd-parameters">
-							<li class="tsd-parameter-signature">
-								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-interface">
-									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>value<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, node<span class="tsd-signature-symbol">: </span><a href="ijtdenumnode.html" class="tsd-signature-type" data-tsd-kind="Interface">IJtdEnumNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></li>
-								</ul>
-								<ul class="tsd-descriptions">
-									<li class="tsd-description">
-										<div class="tsd-comment tsd-typography">
-											<div class="lead">
-												<p>Returns the contents of the enum value.</p>
-											</div>
-										</div>
-										<h4 class="tsd-parameters-title">Parameters</h4>
-										<ul class="tsd-parameters">
-											<li>
-												<h5>value: <span class="tsd-signature-type">string</span></h5>
-											</li>
-											<li>
-												<h5>node: <a href="ijtdenumnode.html" class="tsd-signature-type" data-tsd-kind="Interface">IJtdEnumNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span></h5>
-											</li>
-										</ul>
-										<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h4>
-									</li>
-								</ul>
-							</li>
-						</ul>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="rewritemappingkey" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> rewrite<wbr>Mapping<wbr>Key</h3>
-					<div class="tsd-signature tsd-kind-icon">rewrite<wbr>Mapping<wbr>Key<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>mappingKey<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, mappingNode<span class="tsd-signature-symbol">: </span><a href="ijtdobjectnode.html" class="tsd-signature-type" data-tsd-kind="Interface">IJtdObjectNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span>, unionRef<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span>, unionNode<span class="tsd-signature-symbol">: </span><a href="ijtdunionnode.html" class="tsd-signature-type" data-tsd-kind="Interface">IJtdUnionNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/smikhalevski/jtdc/blob/98b95a5/src/main/validator/jtd-validator.ts#L111">validator/jtd-validator.ts:111</a></li>
-						</ul>
-					</aside>
-					<div class="tsd-type-declaration">
-						<h4>Type declaration</h4>
-						<ul class="tsd-parameters">
-							<li class="tsd-parameter-signature">
-								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-interface">
-									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>mappingKey<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, mappingNode<span class="tsd-signature-symbol">: </span><a href="ijtdobjectnode.html" class="tsd-signature-type" data-tsd-kind="Interface">IJtdObjectNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span>, unionRef<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span>, unionNode<span class="tsd-signature-symbol">: </span><a href="ijtdunionnode.html" class="tsd-signature-type" data-tsd-kind="Interface">IJtdUnionNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></li>
-								</ul>
-								<ul class="tsd-descriptions">
-									<li class="tsd-description">
-										<div class="tsd-comment tsd-typography">
-											<div class="lead">
-												<p>Returns the string value that would be used as a value of discriminator property in united interfaces.</p>
-											</div>
-										</div>
-										<h4 class="tsd-parameters-title">Parameters</h4>
-										<ul class="tsd-parameters">
-											<li>
-												<h5>mappingKey: <span class="tsd-signature-type">string</span></h5>
-											</li>
-											<li>
-												<h5>mappingNode: <a href="ijtdobjectnode.html" class="tsd-signature-type" data-tsd-kind="Interface">IJtdObjectNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span></h5>
-											</li>
-											<li>
-												<h5>unionRef: <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span></h5>
-											</li>
-											<li>
-												<h5>unionNode: <a href="ijtdunionnode.html" class="tsd-signature-type" data-tsd-kind="Interface">IJtdUnionNode</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">M</span><span class="tsd-signature-symbol">&gt;</span></h5>
-											</li>
-										</ul>
-										<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h4>
-									</li>
-								</ul>
-							</li>
-						</ul>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="traversesunconstrained" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> traverses<wbr>Unconstrained</h3>
-					<div class="tsd-signature tsd-kind-icon">traverses<wbr>Unconstrained<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/smikhalevski/jtdc/blob/98b95a5/src/main/validator/jtd-validator.ts#L136">validator/jtd-validator.ts:136</a></li>
-						</ul>
-					</aside>
-					<div class="tsd-comment tsd-typography">
-						<div class="lead">
-							<p>If set to <code>true</code> then validator would traverse nodes that don&#39;t enforce any constraints.</p>
-						</div>
-						<dl class="tsd-comment-tags">
-							<dt>default</dt>
-							<dd><p>false</p>
-							</dd>
-						</dl>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="validatorruntimevar" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> validator<wbr>Runtime<wbr>Var</h3>
-					<div class="tsd-signature tsd-kind-icon">validator<wbr>Runtime<wbr>Var<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/smikhalevski/jtdc/blob/98b95a5/src/main/validator/jtd-validator.ts#L86">validator/jtd-validator.ts:86</a></li>
-						</ul>
-					</aside>
-					<div class="tsd-comment tsd-typography">
-						<div class="lead">
-							<p>The name of the variable that holds the validator runtime.</p>
-						</div>
 					</div>
 				</section>
 			</section>
@@ -471,154 +148,115 @@
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
 					<li class=" tsd-kind-enum">
-						<a href="../enums/jtdnodetype.html" class="tsd-kind-icon">Jtd<wbr>Node<wbr>Type</a>
+						<a href="../enums/JtdNodeType.html" class="tsd-kind-icon">Jtd<wbr>Node<wbr>Type</a>
 					</li>
 					<li class=" tsd-kind-enum">
-						<a href="../enums/jtdtype.html" class="tsd-kind-icon">Jtd<wbr>Type</a>
+						<a href="../enums/JtdType.html" class="tsd-kind-icon">Jtd<wbr>Type</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="icheckercompiler.html" class="tsd-kind-icon">IChecker<wbr>Compiler</a>
+						<a href="IJtd.html" class="tsd-kind-icon">IJtd</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="icheckercompileroptions.html" class="tsd-kind-icon">IChecker<wbr>Compiler<wbr>Options</a>
+						<a href="IJtdAnyNode.html" class="tsd-kind-icon">IJtd<wbr>Any<wbr>Node</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="IJtdDialectContext.html" class="tsd-kind-icon">IJtd<wbr>Dialect<wbr>Context</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="ijtd.html" class="tsd-kind-icon">IJtd</a>
+						<a href="IJtdElementsNode.html" class="tsd-kind-icon">IJtd<wbr>Elements<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="ijtdanynode.html" class="tsd-kind-icon">IJtd<wbr>Any<wbr>Node</a>
+						<a href="IJtdEnumNode.html" class="tsd-kind-icon">IJtd<wbr>Enum<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="ijtdelementsnode.html" class="tsd-kind-icon">IJtd<wbr>Elements<wbr>Node</a>
+						<a href="IJtdNode.html" class="tsd-kind-icon">IJtd<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="ijtdenumnode.html" class="tsd-kind-icon">IJtd<wbr>Enum<wbr>Node</a>
+						<a href="IJtdNodeVisitor.html" class="tsd-kind-icon">IJtd<wbr>Node<wbr>Visitor</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="ijtdnode.html" class="tsd-kind-icon">IJtd<wbr>Node</a>
+						<a href="IJtdNullableNode.html" class="tsd-kind-icon">IJtd<wbr>Nullable<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="ijtdnodevisitor.html" class="tsd-kind-icon">IJtd<wbr>Node<wbr>Visitor</a>
+						<a href="IJtdObjectNode.html" class="tsd-kind-icon">IJtd<wbr>Object<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="ijtdnullablenode.html" class="tsd-kind-icon">IJtd<wbr>Nullable<wbr>Node</a>
+						<a href="IJtdRefNode.html" class="tsd-kind-icon">IJtd<wbr>Ref<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="ijtdobjectnode.html" class="tsd-kind-icon">IJtd<wbr>Object<wbr>Node</a>
+						<a href="IJtdRoot.html" class="tsd-kind-icon">IJtd<wbr>Root</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="ijtdrefnode.html" class="tsd-kind-icon">IJtd<wbr>Ref<wbr>Node</a>
+						<a href="IJtdTypeNode.html" class="tsd-kind-icon">IJtd<wbr>Type<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="ijtdroot.html" class="tsd-kind-icon">IJtd<wbr>Root</a>
+						<a href="IJtdUnionNode.html" class="tsd-kind-icon">IJtd<wbr>Union<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="ijtdtsmodulesoptions.html" class="tsd-kind-icon">IJtd<wbr>TsModules<wbr>Options</a>
+						<a href="IJtdValuesNode.html" class="tsd-kind-icon">IJtd<wbr>Values<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="ijtdtsoptions.html" class="tsd-kind-icon">IJtd<wbr>TsOptions</a>
+						<a href="IJtdcDialect.html" class="tsd-kind-icon">IJtdc<wbr>Dialect</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="ijtdtsrefrenameoptions.html" class="tsd-kind-icon">IJtd<wbr>TsRef<wbr>Rename<wbr>Options</a>
+						<a href="IJtdcDialectOptions.html" class="tsd-kind-icon">IJtdc<wbr>Dialect<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="ijtdtypenode.html" class="tsd-kind-icon">IJtd<wbr>Type<wbr>Node</a>
+						<a href="ITsModulesCompilerOptions.html" class="tsd-kind-icon">ITs<wbr>Modules<wbr>Compiler<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="ijtdunionnode.html" class="tsd-kind-icon">IJtd<wbr>Union<wbr>Node</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="ijtdvaluesnode.html" class="tsd-kind-icon">IJtd<wbr>Values<wbr>Node</a>
+						<a href="ITsTypesCompilerOptions.html" class="tsd-kind-icon">ITs<wbr>Types<wbr>Compiler<wbr>Options</a>
 					</li>
 				</ul>
 				<ul class="current">
 					<li class="current tsd-kind-interface tsd-has-type-parameter">
-						<a href="ivalidatorcompileroptions.html" class="tsd-kind-icon">IValidator<wbr>Compiler<wbr>Options</a>
+						<a href="IValidatorCompilerOptions.html" class="tsd-kind-icon">IValidator<wbr>Compiler<wbr>Options</a>
 						<ul>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="ivalidatorcompileroptions.html#checkercompiler" class="tsd-kind-icon">checker<wbr>Compiler</a>
+								<a href="IValidatorCompilerOptions.html#dialect" class="tsd-kind-icon">dialect</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="ivalidatorcompileroptions.html#checkerruntimevar" class="tsd-kind-icon">checker<wbr>Runtime<wbr>Var</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="ivalidatorcompileroptions.html#emitstypenarrowing" class="tsd-kind-icon">emits<wbr>Type<wbr>Narrowing</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="ivalidatorcompileroptions.html#renamediscriminatorkey" class="tsd-kind-icon">rename<wbr>Discriminator<wbr>Key</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="ivalidatorcompileroptions.html#renamepropertykey" class="tsd-kind-icon">rename<wbr>Property<wbr>Key</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="ivalidatorcompileroptions.html#renametypenarrowing" class="tsd-kind-icon">rename<wbr>Type<wbr>Narrowing</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="ivalidatorcompileroptions.html#renamevalidator" class="tsd-kind-icon">rename<wbr>Validator</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="ivalidatorcompileroptions.html#resolveref" class="tsd-kind-icon">resolve<wbr>Ref</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="ivalidatorcompileroptions.html#rewriteenumvalue" class="tsd-kind-icon">rewrite<wbr>Enum<wbr>Value</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="ivalidatorcompileroptions.html#rewritemappingkey" class="tsd-kind-icon">rewrite<wbr>Mapping<wbr>Key</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="ivalidatorcompileroptions.html#traversesunconstrained" class="tsd-kind-icon">traverses<wbr>Unconstrained</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="ivalidatorcompileroptions.html#validatorruntimevar" class="tsd-kind-icon">validator<wbr>Runtime<wbr>Var</a>
+								<a href="IValidatorCompilerOptions.html#typeGuardsRendered" class="tsd-kind-icon">type<wbr>Guards<wbr>Rendered</a>
 							</li>
 						</ul>
 					</li>
 				</ul>
 				<ul class="after-current">
 					<li class=" tsd-kind-type-alias tsd-has-type-parameter">
-						<a href="../modules.html#jtdnode" class="tsd-kind-icon">Jtd<wbr>Node</a>
-					</li>
-					<li class=" tsd-kind-type-alias tsd-has-type-parameter">
-						<a href="../modules.html#jtdrefresolver" class="tsd-kind-icon">Jtd<wbr>Ref<wbr>Resolver</a>
+						<a href="../modules.html#JtdNode" class="tsd-kind-icon">Jtd<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-variable">
-						<a href="../modules.html#jtdcheckercompiler" class="tsd-kind-icon">jtd<wbr>Checker<wbr>Compiler</a>
+						<a href="../modules.html#jtdDialectOptions" class="tsd-kind-icon">jtd<wbr>Dialect<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-variable">
-						<a href="../modules.html#jtdtsoptions" class="tsd-kind-icon">jtd<wbr>TsOptions</a>
+						<a href="../modules.html#jtdTsPrimitiveTypeMap" class="tsd-kind-icon">jtd<wbr>TsPrimitive<wbr>Type<wbr>Map</a>
 					</li>
 					<li class=" tsd-kind-variable">
-						<a href="../modules.html#jtdtstypemap" class="tsd-kind-icon">jtd<wbr>TsType<wbr>Map</a>
+						<a href="../modules.html#tsTypesCompilerOptions" class="tsd-kind-icon">ts<wbr>Types<wbr>Compiler<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-variable">
-						<a href="../modules.html#jtdvalidatoroptions" class="tsd-kind-icon">jtd<wbr>Validator<wbr>Options</a>
+						<a href="../modules.html#validatorCompilerOptions" class="tsd-kind-icon">validator<wbr>Compiler<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-function tsd-has-type-parameter">
-						<a href="../modules.html#compilejtdtsmodules" class="tsd-kind-icon">compile<wbr>Jtd<wbr>TsModules</a>
+						<a href="../modules.html#compileTsModules" class="tsd-kind-icon">compile<wbr>TsModules</a>
 					</li>
 					<li class=" tsd-kind-function tsd-has-type-parameter">
-						<a href="../modules.html#compiletsfromjtddefinitions" class="tsd-kind-icon">compile<wbr>TsFrom<wbr>Jtd<wbr>Definitions</a>
+						<a href="../modules.html#compileTsTypes" class="tsd-kind-icon">compile<wbr>TsTypes</a>
 					</li>
 					<li class=" tsd-kind-function tsd-has-type-parameter">
-						<a href="../modules.html#compilevalidatorbody" class="tsd-kind-icon">compile<wbr>Validator<wbr>Body</a>
+						<a href="../modules.html#compileValidators" class="tsd-kind-icon">compile<wbr>Validators</a>
 					</li>
 					<li class=" tsd-kind-function tsd-has-type-parameter">
-						<a href="../modules.html#compilevalidators" class="tsd-kind-icon">compile<wbr>Validators</a>
+						<a href="../modules.html#parseJtd" class="tsd-kind-icon">parse<wbr>Jtd</a>
 					</li>
 					<li class=" tsd-kind-function tsd-has-type-parameter">
-						<a href="../modules.html#parsejtd" class="tsd-kind-icon">parse<wbr>Jtd</a>
+						<a href="../modules.html#parseJtdDefinitions" class="tsd-kind-icon">parse<wbr>Jtd<wbr>Definitions</a>
 					</li>
 					<li class=" tsd-kind-function tsd-has-type-parameter">
-						<a href="../modules.html#parsejtddefinitions" class="tsd-kind-icon">parse<wbr>Jtd<wbr>Definitions</a>
+						<a href="../modules.html#parseJtdRoot" class="tsd-kind-icon">parse<wbr>Jtd<wbr>Root</a>
 					</li>
 					<li class=" tsd-kind-function tsd-has-type-parameter">
-						<a href="../modules.html#parsejtdroot" class="tsd-kind-icon">parse<wbr>Jtd<wbr>Root</a>
-					</li>
-					<li class=" tsd-kind-function tsd-has-type-parameter">
-						<a href="../modules.html#renameref" class="tsd-kind-icon">rename<wbr>Ref</a>
-					</li>
-					<li class=" tsd-kind-function tsd-has-type-parameter">
-						<a href="../modules.html#visitjtdnode" class="tsd-kind-icon">visit<wbr>Jtd<wbr>Node</a>
+						<a href="../modules.html#visitJtdNode" class="tsd-kind-icon">visit<wbr>Jtd<wbr>Node</a>
 					</li>
 				</ul>
 			</nav>
@@ -631,6 +269,7 @@
 		<div class="tsd-legend-group">
 			<ul class="tsd-legend">
 				<li class="tsd-kind-property tsd-parent-kind-interface"><span class="tsd-kind-icon">Property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-interface"><span class="tsd-kind-icon">Method</span></li>
 			</ul>
 		</div>
 	</div>

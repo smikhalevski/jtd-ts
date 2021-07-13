@@ -61,114 +61,120 @@
 				<a href="#jtdc" id="jtdc" style="color: inherit; text-decoration: none;">
 					<h1>jtdc</h1>
 				</a>
-				<p>JSON Type Definition to TypeScript compiler.</p>
+				<p><a href="https://jsontypedef.com/">JSON Type Definition (RFC8927)</a> to TypeScript compiler.</p>
 				<ul>
-					<li>Compiles typings;</li>
-					<li>Compiles validator functions;</li>
-					<li>Compiles type narrowing functions;</li>
-					<li>CLI and programmatic support;</li>
+					<li>Compile enums, interface and types;</li>
+					<li>Modify naming of enums, enum keys and values, interfaces, types, properties and any other rendered entities;</li>
+					<li>Compile validator functions that produce an array of detected validation errors;</li>
+					<li>Validators support recursive structures and shallow checks;</li>
+					<li>Compile <a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html">type narrowing functions</a> aka type guards;</li>
+					<li>Create custom validator dialect and have explicit control over every aspect of code generation;</li>
+					<li>CLI and programmatic usage;</li>
 				</ul>
-				<p><a href="https://smikhalevski.github.io/jtdc/">API documentation is available here.</a></p>
-				<pre><code class="language-shell"><span style="color: #000000">npm install --save-prod jtdc </span>
+				<p><a href="https://smikhalevski.github.io/jtdc/">Full API documentation.</a></p>
+				<pre><code class="language-shell"><span style="color: #000000">npm install --save-prod jtdc</span>
 </code></pre>
 				<a href="#cli-usage" id="cli-usage" style="color: inherit; text-decoration: none;">
 					<h2>CLI usage</h2>
 				</a>
-				<p>Let&#39;s assume you want to compile these files to TypeScript:</p>
-				<pre><code class="language-json"><span style="color: #008000">// ./src/user.json</span>
-<span style="color: #000000">{</span>
-<span style="color: #000000">  </span><span style="color: #0451A5">&quot;user&quot;</span><span style="color: #000000">: {</span>
-<span style="color: #000000">    </span><span style="color: #0451A5">&quot;properties&quot;</span><span style="color: #000000">: {</span>
-<span style="color: #000000">      </span><span style="color: #0451A5">&quot;email&quot;</span><span style="color: #000000">: {</span><span style="color: #0451A5">&quot;type&quot;</span><span style="color: #000000">: </span><span style="color: #A31515">&quot;string&quot;</span><span style="color: #000000">},</span>
-<span style="color: #000000">      </span><span style="color: #0451A5">&quot;friends&quot;</span><span style="color: #000000">: {</span>
-<span style="color: #000000">        </span><span style="color: #0451A5">&quot;elements&quot;</span><span style="color: #000000">: {</span><span style="color: #0451A5">&quot;ref&quot;</span><span style="color: #000000">: </span><span style="color: #A31515">&quot;user&quot;</span><span style="color: #000000">}</span>
-<span style="color: #000000">      }</span>
-<span style="color: #000000">    },</span>
-<span style="color: #000000">    </span><span style="color: #0451A5">&quot;optionalProperties&quot;</span><span style="color: #000000">: {</span>
-<span style="color: #000000">      </span><span style="color: #0451A5">&quot;name&quot;</span><span style="color: #000000">: {</span><span style="color: #0451A5">&quot;type&quot;</span><span style="color: #000000">: </span><span style="color: #A31515">&quot;string&quot;</span><span style="color: #000000">},</span>
-<span style="color: #000000">      </span><span style="color: #0451A5">&quot;age&quot;</span><span style="color: #000000">: {</span><span style="color: #0451A5">&quot;type&quot;</span><span style="color: #000000">: </span><span style="color: #A31515">&quot;int8&quot;</span><span style="color: #000000">}</span>
-<span style="color: #000000">    }</span>
-<span style="color: #000000">  }</span>
-<span style="color: #000000">}</span>
-</code></pre>
-				<pre><code class="language-json"><span style="color: #008000">// ./src/account.json</span>
-<span style="color: #000000">{</span>
-<span style="color: #000000">  </span><span style="color: #0451A5">&quot;account&quot;</span><span style="color: #000000">: {</span>
-<span style="color: #000000">    </span><span style="color: #0451A5">&quot;properties&quot;</span><span style="color: #000000">: {</span>
-<span style="color: #000000">      </span><span style="color: #0451A5">&quot;user&quot;</span><span style="color: #000000">: {</span><span style="color: #0451A5">&quot;ref&quot;</span><span style="color: #000000">: </span><span style="color: #A31515">&quot;user&quot;</span><span style="color: #000000">},</span>
-<span style="color: #000000">      </span><span style="color: #0451A5">&quot;stats&quot;</span><span style="color: #000000">: {</span>
-<span style="color: #000000">        </span><span style="color: #0451A5">&quot;properties&quot;</span><span style="color: #000000">: {</span>
-<span style="color: #000000">          </span><span style="color: #0451A5">&quot;visitCount&quot;</span><span style="color: #000000">: {</span><span style="color: #0451A5">&quot;type&quot;</span><span style="color: #000000">: </span><span style="color: #A31515">&quot;int32&quot;</span><span style="color: #000000">}</span>
-<span style="color: #000000">        }</span>
-<span style="color: #000000">      }</span>
-<span style="color: #000000">    },</span>
-<span style="color: #000000">    </span><span style="color: #0451A5">&quot;optionalProperties&quot;</span><span style="color: #000000">: {</span>
-<span style="color: #000000">      </span><span style="color: #0451A5">&quot;roles&quot;</span><span style="color: #000000">: {</span>
-<span style="color: #000000">        </span><span style="color: #0451A5">&quot;metadata&quot;</span><span style="color: #000000">: {</span>
-<span style="color: #000000">          </span><span style="color: #0451A5">&quot;comment&quot;</span><span style="color: #000000">: </span><span style="color: #A31515">&quot;Default role is guest&quot;</span>
-<span style="color: #000000">        },</span>
-<span style="color: #000000">        </span><span style="color: #0451A5">&quot;elements&quot;</span><span style="color: #000000">: {</span><span style="color: #0451A5">&quot;ref&quot;</span><span style="color: #000000">: </span><span style="color: #A31515">&quot;role&quot;</span><span style="color: #000000">}</span>
-<span style="color: #000000">      }</span>
-<span style="color: #000000">    }</span>
-<span style="color: #000000">  },</span>
-<span style="color: #000000">  </span><span style="color: #0451A5">&quot;role&quot;</span><span style="color: #000000">: {</span>
-<span style="color: #000000">    </span><span style="color: #0451A5">&quot;enum&quot;</span><span style="color: #000000">: [</span><span style="color: #A31515">&quot;admin&quot;</span><span style="color: #000000">, </span><span style="color: #A31515">&quot;guest&quot;</span><span style="color: #000000">]</span>
-<span style="color: #000000">  }</span>
-<span style="color: #000000">}</span>
-</code></pre>
-				<p>Compile these type definitions to TypeScript:</p>
-				<pre><code class="language-sh"><span style="color: #000000">jtdc --rootDir ./src --files ./src/*.json --outDir ./gen --validators --narrowing</span>
-</code></pre>
-				<p>The result would be emitted to <code>./gen</code> folder. The outputted files are presented below (formatted for convenience).</p>
-				<pre><code class="language-ts"><span style="color: #008000">// ./gen/user.ts</span>
-<span style="color: #AF00DB">import</span><span style="color: #000000"> </span><span style="color: #001080">c</span><span style="color: #000000"> </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;jtdc/lib/checker/runtime&#039;</span><span style="color: #000000">;</span>
-<span style="color: #AF00DB">import</span><span style="color: #000000"> {</span><span style="color: #001080">Validator</span><span style="color: #000000">} </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;jtdc/lib/validator/runtime&#039;</span><span style="color: #000000">;</span>
+				<p>Let&#39;s assume you have user and account type definitions in separate files under <code>./src</code> folder:</p>
+				<pre><code class="language-json5">// ./src/user.json
 
-<span style="color: #AF00DB">export</span><span style="color: #000000"> </span><span style="color: #0000FF">interface</span><span style="color: #000000"> </span><span style="color: #267F99">IUser</span><span style="color: #000000"> {</span>
+{
+  &quot;user&quot;: {
+    &quot;properties&quot;: {
+      &quot;email&quot;: {&quot;type&quot;: &quot;string&quot;},
+      &quot;friends&quot;: {
+        &quot;elements&quot;: {&quot;ref&quot;: &quot;user&quot;}
+      }
+    },
+    &quot;optionalProperties&quot;: {
+      &quot;name&quot;: {&quot;type&quot;: &quot;string&quot;},
+      &quot;age&quot;: {&quot;type&quot;: &quot;int8&quot;}
+    }
+  }
+}
+</code></pre>
+				<pre><code class="language-json5">// ./src/account.json
+
+{
+  &quot;account&quot;: {
+    &quot;properties&quot;: {
+      &quot;user&quot;: {&quot;ref&quot;: &quot;user&quot;},
+      &quot;stats&quot;: {
+        &quot;properties&quot;: {
+          &quot;visitCount&quot;: {&quot;type&quot;: &quot;int32&quot;}
+        }
+      }
+    },
+    &quot;optionalProperties&quot;: {
+      &quot;roles&quot;: {
+        &quot;metadata&quot;: {
+          &quot;comment&quot;: &quot;Default role is guest&quot;
+        },
+        &quot;elements&quot;: {&quot;ref&quot;: &quot;role&quot;}
+      }
+    }
+  },
+  &quot;role&quot;: {
+    &quot;enum&quot;: [&quot;admin&quot;, &quot;guest&quot;]
+  }
+}
+</code></pre>
+				<p>To compile these definitions to TypeScript use this command:</p>
+				<pre><code class="language-sh"><span style="color: #000000">npx jtdc --rootDir ./src --includes </span><span style="color: #A31515">&#039;*.json&#039;</span><span style="color: #000000"> --outDir ./gen --typeGuards</span>
+</code></pre>
+				<p>The result would be output to <code>./gen</code> folder:</p>
+				<details>
+					<summary><code>./gen/user.ts</code></summary>
+					<p>
+						<pre><code class="language-ts"><span style="color: #AF00DB">import</span><span style="color: #000000"> {</span><span style="color: #001080">_a</span><span style="color: #000000">, </span><span style="color: #001080">_i</span><span style="color: #000000">, </span><span style="color: #001080">_o</span><span style="color: #000000">, </span><span style="color: #001080">_O</span><span style="color: #000000">, </span><span style="color: #001080">_S</span><span style="color: #000000">, </span><span style="color: #001080">_s</span><span style="color: #000000">, </span><span style="color: #001080">Validator</span><span style="color: #000000"> </span><span style="color: #AF00DB">as</span><span style="color: #000000"> </span><span style="color: #001080">_Validator</span><span style="color: #000000">} </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;jtdc/lib/jtd-dialect/runtime&#039;</span><span style="color: #000000">;</span>
+
+<span style="color: #AF00DB">export</span><span style="color: #000000"> </span><span style="color: #0000FF">interface</span><span style="color: #000000"> </span><span style="color: #267F99">User</span><span style="color: #000000"> {</span>
 <span style="color: #000000">  </span><span style="color: #001080">email</span><span style="color: #000000">: </span><span style="color: #267F99">string</span><span style="color: #000000">;</span>
-<span style="color: #000000">  </span><span style="color: #001080">friends</span><span style="color: #000000">: </span><span style="color: #267F99">Array</span><span style="color: #000000">&lt;</span><span style="color: #267F99">IUser</span><span style="color: #000000">&gt;;</span>
+<span style="color: #000000">  </span><span style="color: #001080">friends</span><span style="color: #000000">: </span><span style="color: #267F99">Array</span><span style="color: #000000">&lt;</span><span style="color: #267F99">User</span><span style="color: #000000">&gt;;</span>
 <span style="color: #000000">  </span><span style="color: #001080">name</span><span style="color: #000000">?: </span><span style="color: #267F99">string</span><span style="color: #000000">;</span>
 <span style="color: #000000">  </span><span style="color: #001080">age</span><span style="color: #000000">?: </span><span style="color: #267F99">number</span><span style="color: #000000">;</span>
 <span style="color: #000000">}</span>
 
-<span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #795E26">validateUser</span><span style="color: #000000">: </span><span style="color: #267F99">Validator</span><span style="color: #000000"> = (</span><span style="color: #001080">value</span><span style="color: #000000">, </span><span style="color: #001080">ctx</span><span style="color: #000000">, </span><span style="color: #001080">pointer</span><span style="color: #000000">) </span><span style="color: #0000FF">=&gt;</span><span style="color: #000000"> {</span>
-<span style="color: #000000">  </span><span style="color: #001080">ctx</span><span style="color: #000000"> ||= {};</span>
-<span style="color: #000000">  </span><span style="color: #001080">pointer</span><span style="color: #000000"> ||= </span><span style="color: #A31515">&#039;&#039;</span><span style="color: #000000">;</span>
-<span style="color: #000000">  </span><span style="color: #0000FF">let</span><span style="color: #000000"> </span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">d</span><span style="color: #000000">;</span>
-<span style="color: #000000">  </span><span style="color: #AF00DB">if</span><span style="color: #000000"> (</span><span style="color: #001080">c</span><span style="color: #000000">.</span><span style="color: #795E26">o</span><span style="color: #000000">(</span><span style="color: #001080">value</span><span style="color: #000000">, </span><span style="color: #001080">ctx</span><span style="color: #000000">, </span><span style="color: #001080">pointer</span><span style="color: #000000">)) {</span>
-<span style="color: #000000">    </span><span style="color: #001080">c</span><span style="color: #000000">.</span><span style="color: #795E26">s</span><span style="color: #000000">(</span><span style="color: #001080">value</span><span style="color: #000000">.</span><span style="color: #001080">email</span><span style="color: #000000">, </span><span style="color: #001080">ctx</span><span style="color: #000000">, </span><span style="color: #001080">pointer</span><span style="color: #000000"> + </span><span style="color: #A31515">&#039;/email&#039;</span><span style="color: #000000">);</span>
-<span style="color: #000000">    </span><span style="color: #001080">b</span><span style="color: #000000"> = </span><span style="color: #001080">value</span><span style="color: #000000">.</span><span style="color: #001080">friends</span><span style="color: #000000">;</span>
-<span style="color: #000000">    </span><span style="color: #001080">d</span><span style="color: #000000"> = </span><span style="color: #001080">pointer</span><span style="color: #000000"> + </span><span style="color: #A31515">&#039;/friends&#039;</span><span style="color: #000000">;</span>
-<span style="color: #000000">    </span><span style="color: #AF00DB">if</span><span style="color: #000000"> (</span><span style="color: #001080">c</span><span style="color: #000000">.</span><span style="color: #795E26">a</span><span style="color: #000000">(</span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">ctx</span><span style="color: #000000">, </span><span style="color: #001080">d</span><span style="color: #000000">)) {</span>
-<span style="color: #000000">      </span><span style="color: #AF00DB">for</span><span style="color: #000000"> (</span><span style="color: #0000FF">let</span><span style="color: #000000"> </span><span style="color: #001080">a</span><span style="color: #000000"> = </span><span style="color: #098658">0</span><span style="color: #000000">; </span><span style="color: #001080">a</span><span style="color: #000000"> &lt; </span><span style="color: #001080">b</span><span style="color: #000000">.</span><span style="color: #001080">length</span><span style="color: #000000">; </span><span style="color: #001080">a</span><span style="color: #000000">++) {</span>
-<span style="color: #000000">        </span><span style="color: #795E26">validateUser</span><span style="color: #000000">(</span><span style="color: #001080">b</span><span style="color: #000000">[</span><span style="color: #001080">a</span><span style="color: #000000">], </span><span style="color: #001080">ctx</span><span style="color: #000000">, </span><span style="color: #001080">d</span><span style="color: #000000"> + </span><span style="color: #A31515">&#039;/&#039;</span><span style="color: #000000"> + </span><span style="color: #001080">a</span><span style="color: #000000">);</span>
+<span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #795E26">validateUser</span><span style="color: #000000">: </span><span style="color: #267F99">_Validator</span><span style="color: #000000"> = (</span><span style="color: #001080">a</span><span style="color: #000000">, </span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">c</span><span style="color: #000000">) </span><span style="color: #0000FF">=&gt;</span><span style="color: #000000"> {</span>
+<span style="color: #000000">  </span><span style="color: #0000FF">let</span><span style="color: #000000"> </span><span style="color: #001080">d</span><span style="color: #000000">, </span><span style="color: #001080">e</span><span style="color: #000000">, </span><span style="color: #001080">f</span><span style="color: #000000">, </span><span style="color: #001080">g</span><span style="color: #000000">, </span><span style="color: #001080">h</span><span style="color: #000000">;</span>
+<span style="color: #000000">  </span><span style="color: #001080">b</span><span style="color: #000000"> = </span><span style="color: #001080">b</span><span style="color: #000000"> || {};</span>
+<span style="color: #000000">  </span><span style="color: #001080">c</span><span style="color: #000000"> = </span><span style="color: #001080">c</span><span style="color: #000000"> || </span><span style="color: #A31515">&#039;&#039;</span><span style="color: #000000">;</span>
+<span style="color: #000000">  </span><span style="color: #AF00DB">if</span><span style="color: #000000"> (</span><span style="color: #795E26">_o</span><span style="color: #000000">(</span><span style="color: #001080">a</span><span style="color: #000000">, </span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">c</span><span style="color: #000000">)) {</span>
+<span style="color: #000000">    </span><span style="color: #795E26">_s</span><span style="color: #000000">(</span><span style="color: #001080">a</span><span style="color: #000000">.</span><span style="color: #001080">email</span><span style="color: #000000">, </span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">c</span><span style="color: #000000"> + </span><span style="color: #A31515">&#039;/email&#039;</span><span style="color: #000000">);</span>
+<span style="color: #000000">    </span><span style="color: #001080">d</span><span style="color: #000000"> = </span><span style="color: #001080">a</span><span style="color: #000000">.</span><span style="color: #001080">friends</span><span style="color: #000000">;</span>
+<span style="color: #000000">    </span><span style="color: #001080">e</span><span style="color: #000000"> = </span><span style="color: #001080">c</span><span style="color: #000000"> + </span><span style="color: #A31515">&#039;/friends&#039;</span><span style="color: #000000">;</span>
+<span style="color: #000000">    </span><span style="color: #AF00DB">if</span><span style="color: #000000"> (</span><span style="color: #795E26">_a</span><span style="color: #000000">(</span><span style="color: #001080">d</span><span style="color: #000000">, </span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">e</span><span style="color: #000000">)) {</span>
+<span style="color: #000000">      </span><span style="color: #AF00DB">for</span><span style="color: #000000"> (</span><span style="color: #001080">f</span><span style="color: #000000"> = </span><span style="color: #098658">0</span><span style="color: #000000">; </span><span style="color: #001080">f</span><span style="color: #000000"> &lt; </span><span style="color: #001080">d</span><span style="color: #000000">.</span><span style="color: #001080">length</span><span style="color: #000000">; </span><span style="color: #001080">f</span><span style="color: #000000">++) {</span>
+<span style="color: #000000">        </span><span style="color: #795E26">validateUser</span><span style="color: #000000">(</span><span style="color: #001080">d</span><span style="color: #000000">[</span><span style="color: #001080">f</span><span style="color: #000000">], </span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">e</span><span style="color: #000000"> + </span><span style="color: #001080">_S</span><span style="color: #000000"> + </span><span style="color: #001080">f</span><span style="color: #000000">);</span>
 <span style="color: #000000">      }</span>
 <span style="color: #000000">    }</span>
-<span style="color: #000000">    </span><span style="color: #001080">b</span><span style="color: #000000"> = </span><span style="color: #001080">value</span><span style="color: #000000">.</span><span style="color: #001080">name</span><span style="color: #000000">;</span>
-<span style="color: #000000">    </span><span style="color: #001080">d</span><span style="color: #000000"> = </span><span style="color: #001080">pointer</span><span style="color: #000000"> + </span><span style="color: #A31515">&#039;/name&#039;</span><span style="color: #000000">;</span>
-<span style="color: #000000">    </span><span style="color: #AF00DB">if</span><span style="color: #000000"> (</span><span style="color: #001080">b</span><span style="color: #000000"> !== </span><span style="color: #0000FF">undefined</span><span style="color: #000000">) {</span>
-<span style="color: #000000">      </span><span style="color: #001080">c</span><span style="color: #000000">.</span><span style="color: #795E26">s</span><span style="color: #000000">(</span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">ctx</span><span style="color: #000000">, </span><span style="color: #001080">d</span><span style="color: #000000">);</span>
+<span style="color: #000000">    </span><span style="color: #001080">g</span><span style="color: #000000"> = </span><span style="color: #001080">a</span><span style="color: #000000">.</span><span style="color: #001080">name</span><span style="color: #000000">;</span>
+<span style="color: #000000">    </span><span style="color: #AF00DB">if</span><span style="color: #000000"> (</span><span style="color: #795E26">_O</span><span style="color: #000000">(</span><span style="color: #001080">g</span><span style="color: #000000">)) {</span>
+<span style="color: #000000">      </span><span style="color: #795E26">_s</span><span style="color: #000000">(</span><span style="color: #001080">g</span><span style="color: #000000">, </span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">c</span><span style="color: #000000"> + </span><span style="color: #A31515">&#039;/name&#039;</span><span style="color: #000000">);</span>
 <span style="color: #000000">    }</span>
-<span style="color: #000000">    </span><span style="color: #001080">b</span><span style="color: #000000"> = </span><span style="color: #001080">value</span><span style="color: #000000">.</span><span style="color: #001080">age</span><span style="color: #000000">;</span>
-<span style="color: #000000">    </span><span style="color: #001080">d</span><span style="color: #000000"> = </span><span style="color: #001080">pointer</span><span style="color: #000000"> + </span><span style="color: #A31515">&#039;/age&#039;</span><span style="color: #000000">;</span>
-<span style="color: #000000">    </span><span style="color: #AF00DB">if</span><span style="color: #000000"> (</span><span style="color: #001080">b</span><span style="color: #000000"> !== </span><span style="color: #0000FF">undefined</span><span style="color: #000000">) {</span>
-<span style="color: #000000">      </span><span style="color: #001080">c</span><span style="color: #000000">.</span><span style="color: #795E26">i</span><span style="color: #000000">(</span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">ctx</span><span style="color: #000000">, </span><span style="color: #001080">d</span><span style="color: #000000">);</span>
+<span style="color: #000000">    </span><span style="color: #001080">h</span><span style="color: #000000"> = </span><span style="color: #001080">a</span><span style="color: #000000">.</span><span style="color: #001080">age</span><span style="color: #000000">;</span>
+<span style="color: #000000">    </span><span style="color: #AF00DB">if</span><span style="color: #000000"> (</span><span style="color: #795E26">_O</span><span style="color: #000000">(</span><span style="color: #001080">h</span><span style="color: #000000">)) {</span>
+<span style="color: #000000">      </span><span style="color: #795E26">_i</span><span style="color: #000000">(</span><span style="color: #001080">h</span><span style="color: #000000">, </span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">c</span><span style="color: #000000"> + </span><span style="color: #A31515">&#039;/age&#039;</span><span style="color: #000000">);</span>
 <span style="color: #000000">    }</span>
 <span style="color: #000000">  }</span>
-<span style="color: #000000">  </span><span style="color: #AF00DB">return</span><span style="color: #000000"> </span><span style="color: #001080">ctx</span><span style="color: #000000">.</span><span style="color: #001080">errors</span><span style="color: #000000">;</span>
+<span style="color: #000000">  </span><span style="color: #AF00DB">return</span><span style="color: #000000"> </span><span style="color: #001080">b</span><span style="color: #000000">.</span><span style="color: #001080">errors</span><span style="color: #000000">;</span>
 <span style="color: #000000">};</span>
-
-<span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #795E26">isUser</span><span style="color: #000000"> = (</span><span style="color: #001080">value</span><span style="color: #000000">: </span><span style="color: #267F99">unknown</span><span style="color: #000000">): </span><span style="color: #001080">value</span><span style="color: #000000"> </span><span style="color: #0000FF">is</span><span style="color: #000000"> </span><span style="color: #267F99">IUser</span><span style="color: #000000"> </span><span style="color: #0000FF">=&gt;</span><span style="color: #000000"> !</span><span style="color: #795E26">validateUser</span><span style="color: #000000">(</span><span style="color: #001080">value</span><span style="color: #000000">, {</span><span style="color: #001080">lazy:</span><span style="color: #000000"> </span><span style="color: #0000FF">true</span><span style="color: #000000">});</span>
-
-<span style="color: #AF00DB">export</span><span style="color: #000000"> {</span><span style="color: #001080">validateUser</span><span style="color: #000000">, </span><span style="color: #001080">isUser</span><span style="color: #000000">};</span>
+<span style="color: #AF00DB">export</span><span style="color: #000000"> {</span><span style="color: #001080">validateUser</span><span style="color: #000000">};</span>
+<span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #795E26">isUser</span><span style="color: #000000"> = (</span><span style="color: #001080">value</span><span style="color: #000000">: </span><span style="color: #267F99">unknown</span><span style="color: #000000">): </span><span style="color: #001080">value</span><span style="color: #000000"> </span><span style="color: #0000FF">is</span><span style="color: #000000"> </span><span style="color: #267F99">User</span><span style="color: #000000"> </span><span style="color: #0000FF">=&gt;</span><span style="color: #000000"> !</span><span style="color: #795E26">validateUser</span><span style="color: #000000">(</span><span style="color: #001080">value</span><span style="color: #000000">, {</span><span style="color: #001080">shallow:</span><span style="color: #000000"> </span><span style="color: #0000FF">true</span><span style="color: #000000">});</span>
+<span style="color: #AF00DB">export</span><span style="color: #000000"> {</span><span style="color: #001080">isUser</span><span style="color: #000000">};</span>
 </code></pre>
-				<pre><code class="language-ts"><span style="color: #008000">// ./gen/account.ts</span>
-<span style="color: #AF00DB">import</span><span style="color: #000000"> </span><span style="color: #001080">c</span><span style="color: #000000"> </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;jtdc/lib/checker/runtime&#039;</span><span style="color: #000000">;</span>
-<span style="color: #AF00DB">import</span><span style="color: #000000"> {</span><span style="color: #001080">Validator</span><span style="color: #000000">} </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;jtdc/lib/validator/runtime&#039;</span><span style="color: #000000">;</span>
-<span style="color: #AF00DB">import</span><span style="color: #000000"> {</span><span style="color: #001080">IUser</span><span style="color: #000000">, </span><span style="color: #001080">validateUser</span><span style="color: #000000">} </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;./user&#039;</span><span style="color: #000000">;</span>
+					</p>
+				</details>
+				<details>
+					<summary><code>./gen/account.ts</code></summary>
+					<p>
+						<pre><code class="language-ts"><span style="color: #AF00DB">import</span><span style="color: #000000"> {</span><span style="color: #001080">_a</span><span style="color: #000000">, </span><span style="color: #001080">_e</span><span style="color: #000000">, </span><span style="color: #001080">_i</span><span style="color: #000000">, </span><span style="color: #001080">_o</span><span style="color: #000000">, </span><span style="color: #001080">_O</span><span style="color: #000000">, </span><span style="color: #001080">_S</span><span style="color: #000000">, </span><span style="color: #001080">Validator</span><span style="color: #000000"> </span><span style="color: #AF00DB">as</span><span style="color: #000000"> </span><span style="color: #001080">_Validator</span><span style="color: #000000">} </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;jtdc/lib/jtd-dialect/runtime&#039;</span><span style="color: #000000">;</span>
+<span style="color: #AF00DB">import</span><span style="color: #000000"> {</span><span style="color: #001080">User</span><span style="color: #000000">, </span><span style="color: #001080">validateUser</span><span style="color: #000000">} </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;./user.ts&#039;</span><span style="color: #000000">;</span>
 
-<span style="color: #AF00DB">export</span><span style="color: #000000"> </span><span style="color: #0000FF">interface</span><span style="color: #000000"> </span><span style="color: #267F99">IAccount</span><span style="color: #000000"> {</span>
-<span style="color: #000000">  </span><span style="color: #001080">user</span><span style="color: #000000">: </span><span style="color: #267F99">IUser</span><span style="color: #000000">;</span>
+<span style="color: #AF00DB">export</span><span style="color: #000000"> </span><span style="color: #0000FF">interface</span><span style="color: #000000"> </span><span style="color: #267F99">Account</span><span style="color: #000000"> {</span>
+<span style="color: #000000">  </span><span style="color: #001080">user</span><span style="color: #000000">: </span><span style="color: #267F99">User</span><span style="color: #000000">;</span>
 <span style="color: #000000">  </span><span style="color: #001080">stats</span><span style="color: #000000">: { </span><span style="color: #001080">visitCount</span><span style="color: #000000">: </span><span style="color: #267F99">number</span><span style="color: #000000">; };</span>
 <span style="color: #000000">  </span><span style="color: #008000">/**</span>
 <span style="color: #008000">   * Default role is guest</span>
@@ -179,57 +185,59 @@
 <span style="color: #0000FF">enum</span><span style="color: #000000"> </span><span style="color: #267F99">Role</span><span style="color: #000000"> {</span><span style="color: #0070C1">ADMIN</span><span style="color: #000000"> = </span><span style="color: #A31515">&#039;admin&#039;</span><span style="color: #000000">, </span><span style="color: #0070C1">GUEST</span><span style="color: #000000"> = </span><span style="color: #A31515">&#039;guest&#039;</span><span style="color: #000000">,}</span>
 
 <span style="color: #AF00DB">export</span><span style="color: #000000"> {</span><span style="color: #001080">Role</span><span style="color: #000000">};</span>
-
-<span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #795E26">validateAccount</span><span style="color: #000000">: </span><span style="color: #267F99">Validator</span><span style="color: #000000"> = (</span><span style="color: #001080">value</span><span style="color: #000000">, </span><span style="color: #001080">ctx</span><span style="color: #000000">, </span><span style="color: #001080">pointer</span><span style="color: #000000">) </span><span style="color: #0000FF">=&gt;</span><span style="color: #000000"> {</span>
-<span style="color: #000000">  </span><span style="color: #001080">ctx</span><span style="color: #000000"> ||= {};</span>
-<span style="color: #000000">  </span><span style="color: #001080">pointer</span><span style="color: #000000"> ||= </span><span style="color: #A31515">&#039;&#039;</span><span style="color: #000000">;</span>
-<span style="color: #000000">  </span><span style="color: #0000FF">let</span><span style="color: #000000"> </span><span style="color: #001080">a</span><span style="color: #000000">, </span><span style="color: #001080">b</span><span style="color: #000000">;</span>
-<span style="color: #000000">  </span><span style="color: #AF00DB">if</span><span style="color: #000000"> (</span><span style="color: #001080">c</span><span style="color: #000000">.</span><span style="color: #795E26">o</span><span style="color: #000000">(</span><span style="color: #001080">value</span><span style="color: #000000">, </span><span style="color: #001080">ctx</span><span style="color: #000000">, </span><span style="color: #001080">pointer</span><span style="color: #000000">)) {</span>
-<span style="color: #000000">    </span><span style="color: #795E26">validateUser</span><span style="color: #000000">(</span><span style="color: #001080">value</span><span style="color: #000000">.</span><span style="color: #001080">user</span><span style="color: #000000">, </span><span style="color: #001080">ctx</span><span style="color: #000000">, </span><span style="color: #001080">pointer</span><span style="color: #000000"> + </span><span style="color: #A31515">&#039;/user&#039;</span><span style="color: #000000">);</span>
-<span style="color: #000000">    </span><span style="color: #001080">a</span><span style="color: #000000"> = </span><span style="color: #001080">value</span><span style="color: #000000">.</span><span style="color: #001080">stats</span><span style="color: #000000">;</span>
-<span style="color: #000000">    </span><span style="color: #001080">b</span><span style="color: #000000"> = </span><span style="color: #001080">pointer</span><span style="color: #000000"> + </span><span style="color: #A31515">&#039;/stats&#039;</span><span style="color: #000000">;</span>
-<span style="color: #000000">    </span><span style="color: #AF00DB">if</span><span style="color: #000000"> (</span><span style="color: #001080">c</span><span style="color: #000000">.</span><span style="color: #795E26">o</span><span style="color: #000000">(</span><span style="color: #001080">a</span><span style="color: #000000">, </span><span style="color: #001080">ctx</span><span style="color: #000000">, </span><span style="color: #001080">b</span><span style="color: #000000">)) {</span>
-<span style="color: #000000">      </span><span style="color: #001080">c</span><span style="color: #000000">.</span><span style="color: #795E26">i</span><span style="color: #000000">(</span><span style="color: #001080">a</span><span style="color: #000000">.</span><span style="color: #001080">visitCount</span><span style="color: #000000">, </span><span style="color: #001080">ctx</span><span style="color: #000000">, </span><span style="color: #001080">b</span><span style="color: #000000"> + </span><span style="color: #A31515">&#039;/visitCount&#039;</span><span style="color: #000000">);</span>
+<span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #795E26">validateAccount</span><span style="color: #000000">: </span><span style="color: #267F99">_Validator</span><span style="color: #000000"> = (</span><span style="color: #001080">a</span><span style="color: #000000">, </span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">c</span><span style="color: #000000">) </span><span style="color: #0000FF">=&gt;</span><span style="color: #000000"> {</span>
+<span style="color: #000000">  </span><span style="color: #0000FF">let</span><span style="color: #000000"> </span><span style="color: #001080">d</span><span style="color: #000000">, </span><span style="color: #001080">e</span><span style="color: #000000">, </span><span style="color: #001080">f</span><span style="color: #000000">, </span><span style="color: #001080">g</span><span style="color: #000000">, </span><span style="color: #001080">h</span><span style="color: #000000">;</span>
+<span style="color: #000000">  </span><span style="color: #001080">b</span><span style="color: #000000"> = </span><span style="color: #001080">b</span><span style="color: #000000"> || {};</span>
+<span style="color: #000000">  </span><span style="color: #001080">c</span><span style="color: #000000"> = </span><span style="color: #001080">c</span><span style="color: #000000"> || </span><span style="color: #A31515">&#039;&#039;</span><span style="color: #000000">;</span>
+<span style="color: #000000">  </span><span style="color: #AF00DB">if</span><span style="color: #000000"> (</span><span style="color: #795E26">_o</span><span style="color: #000000">(</span><span style="color: #001080">a</span><span style="color: #000000">, </span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">c</span><span style="color: #000000">)) {</span>
+<span style="color: #000000">    </span><span style="color: #795E26">validateUser</span><span style="color: #000000">(</span><span style="color: #001080">a</span><span style="color: #000000">.</span><span style="color: #001080">user</span><span style="color: #000000">, </span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">c</span><span style="color: #000000"> + </span><span style="color: #A31515">&#039;/user&#039;</span><span style="color: #000000">);</span>
+<span style="color: #000000">    </span><span style="color: #001080">d</span><span style="color: #000000"> = </span><span style="color: #001080">a</span><span style="color: #000000">.</span><span style="color: #001080">stats</span><span style="color: #000000">;</span>
+<span style="color: #000000">    </span><span style="color: #001080">e</span><span style="color: #000000"> = </span><span style="color: #001080">c</span><span style="color: #000000"> + </span><span style="color: #A31515">&#039;/stats&#039;</span><span style="color: #000000">;</span>
+<span style="color: #000000">    </span><span style="color: #AF00DB">if</span><span style="color: #000000"> (</span><span style="color: #795E26">_o</span><span style="color: #000000">(</span><span style="color: #001080">d</span><span style="color: #000000">, </span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">e</span><span style="color: #000000">)) {</span>
+<span style="color: #000000">      </span><span style="color: #795E26">_i</span><span style="color: #000000">(</span><span style="color: #001080">d</span><span style="color: #000000">.</span><span style="color: #001080">visitCount</span><span style="color: #000000">, </span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">e</span><span style="color: #000000"> + </span><span style="color: #A31515">&#039;/visitCount&#039;</span><span style="color: #000000">);</span>
 <span style="color: #000000">    }</span>
-<span style="color: #000000">    </span><span style="color: #001080">a</span><span style="color: #000000"> = </span><span style="color: #001080">value</span><span style="color: #000000">.</span><span style="color: #001080">roles</span><span style="color: #000000">;</span>
-<span style="color: #000000">    </span><span style="color: #001080">b</span><span style="color: #000000"> = </span><span style="color: #001080">pointer</span><span style="color: #000000"> + </span><span style="color: #A31515">&#039;/roles&#039;</span><span style="color: #000000">;</span>
-<span style="color: #000000">    </span><span style="color: #AF00DB">if</span><span style="color: #000000"> (</span><span style="color: #001080">a</span><span style="color: #000000"> !== </span><span style="color: #0000FF">undefined</span><span style="color: #000000">) {</span>
-<span style="color: #000000">      </span><span style="color: #AF00DB">if</span><span style="color: #000000"> (</span><span style="color: #001080">c</span><span style="color: #000000">.</span><span style="color: #795E26">a</span><span style="color: #000000">(</span><span style="color: #001080">a</span><span style="color: #000000">, </span><span style="color: #001080">ctx</span><span style="color: #000000">, </span><span style="color: #001080">b</span><span style="color: #000000">)) {</span>
-<span style="color: #000000">        </span><span style="color: #AF00DB">for</span><span style="color: #000000"> (</span><span style="color: #0000FF">let</span><span style="color: #000000"> </span><span style="color: #001080">d</span><span style="color: #000000"> = </span><span style="color: #098658">0</span><span style="color: #000000">; </span><span style="color: #001080">d</span><span style="color: #000000"> &lt; </span><span style="color: #001080">a</span><span style="color: #000000">.</span><span style="color: #001080">length</span><span style="color: #000000">; </span><span style="color: #001080">d</span><span style="color: #000000">++) {</span>
-<span style="color: #000000">          </span><span style="color: #795E26">validateRole</span><span style="color: #000000">(</span><span style="color: #001080">a</span><span style="color: #000000">[</span><span style="color: #001080">d</span><span style="color: #000000">], </span><span style="color: #001080">ctx</span><span style="color: #000000">, </span><span style="color: #001080">b</span><span style="color: #000000"> + </span><span style="color: #A31515">&#039;/&#039;</span><span style="color: #000000"> + </span><span style="color: #001080">d</span><span style="color: #000000">);</span>
+<span style="color: #000000">    </span><span style="color: #001080">f</span><span style="color: #000000"> = </span><span style="color: #001080">a</span><span style="color: #000000">.</span><span style="color: #001080">roles</span><span style="color: #000000">;</span>
+<span style="color: #000000">    </span><span style="color: #AF00DB">if</span><span style="color: #000000"> (</span><span style="color: #795E26">_O</span><span style="color: #000000">(</span><span style="color: #001080">f</span><span style="color: #000000">)) {</span>
+<span style="color: #000000">      </span><span style="color: #001080">g</span><span style="color: #000000"> = </span><span style="color: #001080">c</span><span style="color: #000000"> + </span><span style="color: #A31515">&#039;/roles&#039;</span><span style="color: #000000">;</span>
+<span style="color: #000000">      </span><span style="color: #AF00DB">if</span><span style="color: #000000"> (</span><span style="color: #795E26">_a</span><span style="color: #000000">(</span><span style="color: #001080">f</span><span style="color: #000000">, </span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">g</span><span style="color: #000000">)) {</span>
+<span style="color: #000000">        </span><span style="color: #AF00DB">for</span><span style="color: #000000"> (</span><span style="color: #001080">h</span><span style="color: #000000"> = </span><span style="color: #098658">0</span><span style="color: #000000">; </span><span style="color: #001080">h</span><span style="color: #000000"> &lt; </span><span style="color: #001080">f</span><span style="color: #000000">.</span><span style="color: #001080">length</span><span style="color: #000000">; </span><span style="color: #001080">h</span><span style="color: #000000">++) {</span>
+<span style="color: #000000">          </span><span style="color: #795E26">validateRole</span><span style="color: #000000">(</span><span style="color: #001080">f</span><span style="color: #000000">[</span><span style="color: #001080">h</span><span style="color: #000000">], </span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">g</span><span style="color: #000000"> + </span><span style="color: #001080">_S</span><span style="color: #000000"> + </span><span style="color: #001080">h</span><span style="color: #000000">);</span>
 <span style="color: #000000">        }</span>
 <span style="color: #000000">      }</span>
 <span style="color: #000000">    }</span>
 <span style="color: #000000">  }</span>
-<span style="color: #000000">  </span><span style="color: #AF00DB">return</span><span style="color: #000000"> </span><span style="color: #001080">ctx</span><span style="color: #000000">.</span><span style="color: #001080">errors</span><span style="color: #000000">;</span>
+<span style="color: #000000">  </span><span style="color: #AF00DB">return</span><span style="color: #000000"> </span><span style="color: #001080">b</span><span style="color: #000000">.</span><span style="color: #001080">errors</span><span style="color: #000000">;</span>
 <span style="color: #000000">};</span>
+<span style="color: #AF00DB">export</span><span style="color: #000000"> {</span><span style="color: #001080">validateAccount</span><span style="color: #000000">};</span>
 
-<span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #795E26">isAccount</span><span style="color: #000000"> = (</span><span style="color: #001080">value</span><span style="color: #000000">: </span><span style="color: #267F99">unknown</span><span style="color: #000000">): </span><span style="color: #001080">value</span><span style="color: #000000"> </span><span style="color: #0000FF">is</span><span style="color: #000000"> </span><span style="color: #267F99">IAccount</span><span style="color: #000000"> </span><span style="color: #0000FF">=&gt;</span><span style="color: #000000"> !</span><span style="color: #795E26">validateAccount</span><span style="color: #000000">(</span><span style="color: #001080">value</span><span style="color: #000000">, {</span><span style="color: #001080">lazy:</span><span style="color: #000000"> </span><span style="color: #0000FF">true</span><span style="color: #000000">});</span>
+<span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #795E26">isAccount</span><span style="color: #000000"> = (</span><span style="color: #001080">value</span><span style="color: #000000">: </span><span style="color: #267F99">unknown</span><span style="color: #000000">): </span><span style="color: #001080">value</span><span style="color: #000000"> </span><span style="color: #0000FF">is</span><span style="color: #000000"> </span><span style="color: #267F99">Account</span><span style="color: #000000"> </span><span style="color: #0000FF">=&gt;</span><span style="color: #000000"> !</span><span style="color: #795E26">validateAccount</span><span style="color: #000000">(</span><span style="color: #001080">value</span><span style="color: #000000">, {</span><span style="color: #001080">shallow:</span><span style="color: #000000"> </span><span style="color: #0000FF">true</span><span style="color: #000000">});</span>
+<span style="color: #AF00DB">export</span><span style="color: #000000"> {</span><span style="color: #001080">isAccount</span><span style="color: #000000">};</span>
 
-<span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #795E26">validateRole</span><span style="color: #000000">: </span><span style="color: #267F99">Validator</span><span style="color: #000000"> = (</span><span style="color: #001080">value</span><span style="color: #000000">, </span><span style="color: #001080">ctx</span><span style="color: #000000">, </span><span style="color: #001080">pointer</span><span style="color: #000000">) </span><span style="color: #0000FF">=&gt;</span><span style="color: #000000"> {</span>
-<span style="color: #000000">  </span><span style="color: #001080">ctx</span><span style="color: #000000"> ||= {};</span>
-<span style="color: #000000">  </span><span style="color: #001080">pointer</span><span style="color: #000000"> ||= </span><span style="color: #A31515">&#039;&#039;</span><span style="color: #000000">;</span>
-<span style="color: #000000">  </span><span style="color: #0000FF">let</span><span style="color: #000000"> </span><span style="color: #001080">a</span><span style="color: #000000"> = </span><span style="color: #001080">validateRole</span><span style="color: #000000">.</span><span style="color: #001080">c</span><span style="color: #000000"> ||= {};</span>
-<span style="color: #000000">  </span><span style="color: #001080">c</span><span style="color: #000000">.</span><span style="color: #795E26">e</span><span style="color: #000000">(</span><span style="color: #001080">value</span><span style="color: #000000">, </span><span style="color: #001080">a</span><span style="color: #000000">.</span><span style="color: #001080">b</span><span style="color: #000000"> ||= [</span><span style="color: #A31515">&#039;admin&#039;</span><span style="color: #000000">, </span><span style="color: #A31515">&#039;guest&#039;</span><span style="color: #000000">], </span><span style="color: #001080">ctx</span><span style="color: #000000">, </span><span style="color: #001080">pointer</span><span style="color: #000000">);</span>
-<span style="color: #000000">  </span><span style="color: #AF00DB">return</span><span style="color: #000000"> </span><span style="color: #001080">ctx</span><span style="color: #000000">.</span><span style="color: #001080">errors</span><span style="color: #000000">;</span>
+<span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #795E26">validateRole</span><span style="color: #000000">: </span><span style="color: #267F99">_Validator</span><span style="color: #000000"> = (</span><span style="color: #001080">a</span><span style="color: #000000">, </span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">c</span><span style="color: #000000">) </span><span style="color: #0000FF">=&gt;</span><span style="color: #000000"> {</span>
+<span style="color: #000000">  </span><span style="color: #001080">b</span><span style="color: #000000"> = </span><span style="color: #001080">b</span><span style="color: #000000"> || {};</span>
+<span style="color: #000000">  </span><span style="color: #795E26">_e</span><span style="color: #000000">(</span><span style="color: #001080">a</span><span style="color: #000000">, (</span><span style="color: #001080">validateRole</span><span style="color: #000000">.</span><span style="color: #001080">cache</span><span style="color: #000000"> ||= {}).</span><span style="color: #001080">a</span><span style="color: #000000"> ||= [</span><span style="color: #A31515">&#039;admin&#039;</span><span style="color: #000000">, </span><span style="color: #A31515">&#039;guest&#039;</span><span style="color: #000000">], </span><span style="color: #001080">b</span><span style="color: #000000">, </span><span style="color: #001080">c</span><span style="color: #000000"> || </span><span style="color: #A31515">&#039;&#039;</span><span style="color: #000000">);</span>
+<span style="color: #000000">  </span><span style="color: #AF00DB">return</span><span style="color: #000000"> </span><span style="color: #001080">b</span><span style="color: #000000">.</span><span style="color: #001080">errors</span><span style="color: #000000">;</span>
 <span style="color: #000000">};</span>
+<span style="color: #AF00DB">export</span><span style="color: #000000"> {</span><span style="color: #001080">validateRole</span><span style="color: #000000">};</span>
 
-<span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #795E26">isRole</span><span style="color: #000000"> = (</span><span style="color: #001080">value</span><span style="color: #000000">: </span><span style="color: #267F99">unknown</span><span style="color: #000000">): </span><span style="color: #001080">value</span><span style="color: #000000"> </span><span style="color: #0000FF">is</span><span style="color: #000000"> </span><span style="color: #267F99">Role</span><span style="color: #000000"> </span><span style="color: #0000FF">=&gt;</span><span style="color: #000000"> !</span><span style="color: #795E26">validateRole</span><span style="color: #000000">(</span><span style="color: #001080">value</span><span style="color: #000000">, {</span><span style="color: #001080">lazy:</span><span style="color: #000000"> </span><span style="color: #0000FF">true</span><span style="color: #000000">});</span>
-
-<span style="color: #AF00DB">export</span><span style="color: #000000"> {</span><span style="color: #001080">validateAccount</span><span style="color: #000000">, </span><span style="color: #001080">isAccount</span><span style="color: #000000">, </span><span style="color: #001080">validateRole</span><span style="color: #000000">, </span><span style="color: #001080">isRole</span><span style="color: #000000">};</span>
+<span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #795E26">isRole</span><span style="color: #000000"> = (</span><span style="color: #001080">value</span><span style="color: #000000">: </span><span style="color: #267F99">unknown</span><span style="color: #000000">): </span><span style="color: #001080">value</span><span style="color: #000000"> </span><span style="color: #0000FF">is</span><span style="color: #000000"> </span><span style="color: #267F99">Role</span><span style="color: #000000"> </span><span style="color: #0000FF">=&gt;</span><span style="color: #000000"> !</span><span style="color: #795E26">validateRole</span><span style="color: #000000">(</span><span style="color: #001080">value</span><span style="color: #000000">, {</span><span style="color: #001080">shallow:</span><span style="color: #000000"> </span><span style="color: #0000FF">true</span><span style="color: #000000">});</span>
+<span style="color: #AF00DB">export</span><span style="color: #000000"> {</span><span style="color: #001080">isRole</span><span style="color: #000000">};</span>
 </code></pre>
+					</p>
+				</details>
 				<a href="#programmatic-usage" id="programmatic-usage" style="color: inherit; text-decoration: none;">
 					<h2>Programmatic usage</h2>
 				</a>
-				<pre><code class="language-ts"><span style="color: #AF00DB">import</span><span style="color: #000000"> {</span><span style="color: #001080">compileJtdTsModules</span><span style="color: #000000">} </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;jtdc&#039;</span><span style="color: #000000">;</span>
+				<p><a href="https://smikhalevski.github.io/jtdc/">Full API documentation.</a></p>
+				<pre><code class="language-ts"><span style="color: #AF00DB">import</span><span style="color: #000000"> {</span><span style="color: #001080">compileTsModules</span><span style="color: #000000">} </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;jtdc&#039;</span><span style="color: #000000">;</span>
 <span style="color: #AF00DB">import</span><span style="color: #000000"> </span><span style="color: #001080">userJson</span><span style="color: #000000"> </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;./src/user.json&#039;</span><span style="color: #000000">;</span>
 <span style="color: #AF00DB">import</span><span style="color: #000000"> </span><span style="color: #001080">accountJson</span><span style="color: #000000"> </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;./src/account.json&#039;</span><span style="color: #000000">;</span>
 
-<span style="color: #795E26">compileJtdTsModules</span><span style="color: #000000">({</span>
-<span style="color: #000000">  </span><span style="color: #A31515">&#039;./user.ts&#039;</span><span style="color: #001080">:</span><span style="color: #000000"> </span><span style="color: #001080">userJson</span><span style="color: #000000">,</span>
-<span style="color: #000000">  </span><span style="color: #A31515">&#039;./account.ts&#039;</span><span style="color: #001080">:</span><span style="color: #000000"> </span><span style="color: #001080">accountJson</span><span style="color: #000000">,</span>
+<span style="color: #795E26">compileTsModules</span><span style="color: #000000">({</span>
+<span style="color: #000000">  </span><span style="color: #A31515">&#039;./user&#039;</span><span style="color: #001080">:</span><span style="color: #000000"> </span><span style="color: #001080">userJson</span><span style="color: #000000">,</span>
+<span style="color: #000000">  </span><span style="color: #A31515">&#039;./account&#039;</span><span style="color: #001080">:</span><span style="color: #000000"> </span><span style="color: #001080">accountJson</span><span style="color: #000000">,</span>
 <span style="color: #000000">});</span>
-<span style="color: #008000">// → {&#039;./user.ts&#039;: &#039;import …&#039;, &#039;./account.ts&#039;: &#039;import …&#039;}</span>
+<span style="color: #008000">// → {&#039;./user&#039;: &#039;import …&#039;, &#039;./account&#039;: &#039;import …&#039;}</span>
 </code></pre>
 			</div>
 		</div>
@@ -244,112 +252,103 @@
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
 					<li class=" tsd-kind-enum">
-						<a href="enums/jtdnodetype.html" class="tsd-kind-icon">Jtd<wbr>Node<wbr>Type</a>
+						<a href="enums/JtdNodeType.html" class="tsd-kind-icon">Jtd<wbr>Node<wbr>Type</a>
 					</li>
 					<li class=" tsd-kind-enum">
-						<a href="enums/jtdtype.html" class="tsd-kind-icon">Jtd<wbr>Type</a>
+						<a href="enums/JtdType.html" class="tsd-kind-icon">Jtd<wbr>Type</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="interfaces/icheckercompiler.html" class="tsd-kind-icon">IChecker<wbr>Compiler</a>
+						<a href="interfaces/IJtd.html" class="tsd-kind-icon">IJtd</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="interfaces/icheckercompileroptions.html" class="tsd-kind-icon">IChecker<wbr>Compiler<wbr>Options</a>
+						<a href="interfaces/IJtdAnyNode.html" class="tsd-kind-icon">IJtd<wbr>Any<wbr>Node</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/IJtdDialectContext.html" class="tsd-kind-icon">IJtd<wbr>Dialect<wbr>Context</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="interfaces/ijtd.html" class="tsd-kind-icon">IJtd</a>
+						<a href="interfaces/IJtdElementsNode.html" class="tsd-kind-icon">IJtd<wbr>Elements<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="interfaces/ijtdanynode.html" class="tsd-kind-icon">IJtd<wbr>Any<wbr>Node</a>
+						<a href="interfaces/IJtdEnumNode.html" class="tsd-kind-icon">IJtd<wbr>Enum<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="interfaces/ijtdelementsnode.html" class="tsd-kind-icon">IJtd<wbr>Elements<wbr>Node</a>
+						<a href="interfaces/IJtdNode.html" class="tsd-kind-icon">IJtd<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="interfaces/ijtdenumnode.html" class="tsd-kind-icon">IJtd<wbr>Enum<wbr>Node</a>
+						<a href="interfaces/IJtdNodeVisitor.html" class="tsd-kind-icon">IJtd<wbr>Node<wbr>Visitor</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="interfaces/ijtdnode.html" class="tsd-kind-icon">IJtd<wbr>Node</a>
+						<a href="interfaces/IJtdNullableNode.html" class="tsd-kind-icon">IJtd<wbr>Nullable<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="interfaces/ijtdnodevisitor.html" class="tsd-kind-icon">IJtd<wbr>Node<wbr>Visitor</a>
+						<a href="interfaces/IJtdObjectNode.html" class="tsd-kind-icon">IJtd<wbr>Object<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="interfaces/ijtdnullablenode.html" class="tsd-kind-icon">IJtd<wbr>Nullable<wbr>Node</a>
+						<a href="interfaces/IJtdRefNode.html" class="tsd-kind-icon">IJtd<wbr>Ref<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="interfaces/ijtdobjectnode.html" class="tsd-kind-icon">IJtd<wbr>Object<wbr>Node</a>
+						<a href="interfaces/IJtdRoot.html" class="tsd-kind-icon">IJtd<wbr>Root</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="interfaces/ijtdrefnode.html" class="tsd-kind-icon">IJtd<wbr>Ref<wbr>Node</a>
+						<a href="interfaces/IJtdTypeNode.html" class="tsd-kind-icon">IJtd<wbr>Type<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="interfaces/ijtdroot.html" class="tsd-kind-icon">IJtd<wbr>Root</a>
+						<a href="interfaces/IJtdUnionNode.html" class="tsd-kind-icon">IJtd<wbr>Union<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="interfaces/ijtdtsmodulesoptions.html" class="tsd-kind-icon">IJtd<wbr>TsModules<wbr>Options</a>
+						<a href="interfaces/IJtdValuesNode.html" class="tsd-kind-icon">IJtd<wbr>Values<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="interfaces/ijtdtsoptions.html" class="tsd-kind-icon">IJtd<wbr>TsOptions</a>
+						<a href="interfaces/IJtdcDialect.html" class="tsd-kind-icon">IJtdc<wbr>Dialect</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="interfaces/ijtdtsrefrenameoptions.html" class="tsd-kind-icon">IJtd<wbr>TsRef<wbr>Rename<wbr>Options</a>
+						<a href="interfaces/IJtdcDialectOptions.html" class="tsd-kind-icon">IJtdc<wbr>Dialect<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="interfaces/ijtdtypenode.html" class="tsd-kind-icon">IJtd<wbr>Type<wbr>Node</a>
+						<a href="interfaces/ITsModulesCompilerOptions.html" class="tsd-kind-icon">ITs<wbr>Modules<wbr>Compiler<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="interfaces/ijtdunionnode.html" class="tsd-kind-icon">IJtd<wbr>Union<wbr>Node</a>
+						<a href="interfaces/ITsTypesCompilerOptions.html" class="tsd-kind-icon">ITs<wbr>Types<wbr>Compiler<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="interfaces/ijtdvaluesnode.html" class="tsd-kind-icon">IJtd<wbr>Values<wbr>Node</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-has-type-parameter">
-						<a href="interfaces/ivalidatorcompileroptions.html" class="tsd-kind-icon">IValidator<wbr>Compiler<wbr>Options</a>
+						<a href="interfaces/IValidatorCompilerOptions.html" class="tsd-kind-icon">IValidator<wbr>Compiler<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-type-alias tsd-has-type-parameter">
-						<a href="modules.html#jtdnode" class="tsd-kind-icon">Jtd<wbr>Node</a>
-					</li>
-					<li class=" tsd-kind-type-alias tsd-has-type-parameter">
-						<a href="modules.html#jtdrefresolver" class="tsd-kind-icon">Jtd<wbr>Ref<wbr>Resolver</a>
+						<a href="modules.html#JtdNode" class="tsd-kind-icon">Jtd<wbr>Node</a>
 					</li>
 					<li class=" tsd-kind-variable">
-						<a href="modules.html#jtdcheckercompiler" class="tsd-kind-icon">jtd<wbr>Checker<wbr>Compiler</a>
+						<a href="modules.html#jtdDialectOptions" class="tsd-kind-icon">jtd<wbr>Dialect<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-variable">
-						<a href="modules.html#jtdtsoptions" class="tsd-kind-icon">jtd<wbr>TsOptions</a>
+						<a href="modules.html#jtdTsPrimitiveTypeMap" class="tsd-kind-icon">jtd<wbr>TsPrimitive<wbr>Type<wbr>Map</a>
 					</li>
 					<li class=" tsd-kind-variable">
-						<a href="modules.html#jtdtstypemap" class="tsd-kind-icon">jtd<wbr>TsType<wbr>Map</a>
+						<a href="modules.html#tsTypesCompilerOptions" class="tsd-kind-icon">ts<wbr>Types<wbr>Compiler<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-variable">
-						<a href="modules.html#jtdvalidatoroptions" class="tsd-kind-icon">jtd<wbr>Validator<wbr>Options</a>
+						<a href="modules.html#validatorCompilerOptions" class="tsd-kind-icon">validator<wbr>Compiler<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-function tsd-has-type-parameter">
-						<a href="modules.html#compilejtdtsmodules" class="tsd-kind-icon">compile<wbr>Jtd<wbr>TsModules</a>
+						<a href="modules.html#compileTsModules" class="tsd-kind-icon">compile<wbr>TsModules</a>
 					</li>
 					<li class=" tsd-kind-function tsd-has-type-parameter">
-						<a href="modules.html#compiletsfromjtddefinitions" class="tsd-kind-icon">compile<wbr>TsFrom<wbr>Jtd<wbr>Definitions</a>
+						<a href="modules.html#compileTsTypes" class="tsd-kind-icon">compile<wbr>TsTypes</a>
 					</li>
 					<li class=" tsd-kind-function tsd-has-type-parameter">
-						<a href="modules.html#compilevalidatorbody" class="tsd-kind-icon">compile<wbr>Validator<wbr>Body</a>
+						<a href="modules.html#compileValidators" class="tsd-kind-icon">compile<wbr>Validators</a>
 					</li>
 					<li class=" tsd-kind-function tsd-has-type-parameter">
-						<a href="modules.html#compilevalidators" class="tsd-kind-icon">compile<wbr>Validators</a>
+						<a href="modules.html#parseJtd" class="tsd-kind-icon">parse<wbr>Jtd</a>
 					</li>
 					<li class=" tsd-kind-function tsd-has-type-parameter">
-						<a href="modules.html#parsejtd" class="tsd-kind-icon">parse<wbr>Jtd</a>
+						<a href="modules.html#parseJtdDefinitions" class="tsd-kind-icon">parse<wbr>Jtd<wbr>Definitions</a>
 					</li>
 					<li class=" tsd-kind-function tsd-has-type-parameter">
-						<a href="modules.html#parsejtddefinitions" class="tsd-kind-icon">parse<wbr>Jtd<wbr>Definitions</a>
+						<a href="modules.html#parseJtdRoot" class="tsd-kind-icon">parse<wbr>Jtd<wbr>Root</a>
 					</li>
 					<li class=" tsd-kind-function tsd-has-type-parameter">
-						<a href="modules.html#parsejtdroot" class="tsd-kind-icon">parse<wbr>Jtd<wbr>Root</a>
-					</li>
-					<li class=" tsd-kind-function tsd-has-type-parameter">
-						<a href="modules.html#renameref" class="tsd-kind-icon">rename<wbr>Ref</a>
-					</li>
-					<li class=" tsd-kind-function tsd-has-type-parameter">
-						<a href="modules.html#visitjtdnode" class="tsd-kind-icon">visit<wbr>Jtd<wbr>Node</a>
+						<a href="modules.html#visitJtdNode" class="tsd-kind-icon">visit<wbr>Jtd<wbr>Node</a>
 					</li>
 				</ul>
 			</nav>
@@ -362,6 +361,7 @@
 		<div class="tsd-legend-group">
 			<ul class="tsd-legend">
 				<li class="tsd-kind-property tsd-parent-kind-interface"><span class="tsd-kind-icon">Property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-interface"><span class="tsd-kind-icon">Method</span></li>
 			</ul>
 		</div>
 	</div>
