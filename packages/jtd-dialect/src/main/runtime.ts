@@ -14,17 +14,17 @@ export {
   checkString as _s,
   checkNumber as _n,
   checkInteger as _i,
-  rejectNullable as _N,
-  rejectOptional as _O,
+  isNotNullable as _N,
+  isNotOptional as _O,
 };
 
 export const JSON_POINTER_SEPARATOR = '/';
 
-export function rejectNullable(value: unknown): boolean {
+export function isNotNullable(value: unknown): boolean {
   return value !== null;
 }
 
-export function rejectOptional(value: unknown): boolean {
+export function isNotOptional(value: unknown): boolean {
   return value !== undefined;
 }
 
