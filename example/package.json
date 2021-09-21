@@ -3,9 +3,12 @@
   "private": true,
   "scripts": {
     "build": "npm run clean && npm run jtdc",
-    "jtdc": "jtdc --rootDir ./src --includes '*.json' --outDir ./src/gen --typeGuards",
+    "jtdc": "jtdc --rootDir ./src --includes '*.json' --outDir ./src/gen",
     "start": "ts-node ./src/index.ts",
     "clean": "rimraf ./src/gen ./target"
+  },
+  "dependencies": {
+    "@jtdc/jtd-dialect": "^1.0.0"
   },
   "devDependencies": {
     "@jtdc/cli": "^1.0.0",
