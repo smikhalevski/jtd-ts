@@ -23,6 +23,7 @@ providing `dialectFactory` option to the compiler.
 npm install --save-prod @jtdc/jtd-dialect
 ```
 
+
 ## CLI usage
 
 Let's assume you have user and account type definitions in separate files under `./src` folder:
@@ -69,7 +70,7 @@ Let's assume you have user and account type definitions in separate files under 
     "optionalProperties": {
       "roles": {
         "metadata": {
-          "comment": "Default role is guest"
+          "comment": "The default role is guest"
         },
         "elements": {"ref": "role"}
       }
@@ -87,13 +88,13 @@ Let's assume you have user and account type definitions in separate files under 
 To compile these definitions to TypeScript use this command:
 
 ```sh
-npx jtdc --package @jtdc/cli --rootDir ./src --includes '*.json' --outDir ./gen --typeGuards
+npx jtdc --package @jtdc/cli --rootDir ./src --includes '*.json' --outDir ./src/gen --typeGuards
 ```
 
-The result would be output to `./gen` folder:
+The result would be output to `./src/gen` folder:
 
 <details>
-<summary><code>./gen/user.ts</code></summary>
+<summary><code>./src/gen/user.ts</code></summary>
 <p>
 
 ```ts
@@ -139,7 +140,7 @@ export {isUser};
 </details>
 
 <details>
-<summary><code>./gen/account.ts</code></summary>
+<summary><code>./src/gen/account.ts</code></summary>
 <p>
 
 ```ts
@@ -150,7 +151,7 @@ export interface Account {
   user: User;
   stats: { visitCount: number; };
   /**
-   * Default role is guest
+   * The default role is guest
    */
   roles?: Array<Role>;
 }
@@ -199,6 +200,8 @@ export {isRole};
 
 </p>
 </details>
+
+You can find [the source code of this example here](./example).
 
 ## Programmatic usage
 
