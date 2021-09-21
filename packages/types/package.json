@@ -36,6 +36,6 @@
   },
   "homepage": "https://github.com/smikhalevski/jtdc#readme",
   "dependencies": {
-    "@smikhalevski/codegen": "^2.0.0"
+    "@smikhalevski/codegen": "^2.0.1"
   }
 }
