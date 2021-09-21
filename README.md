@@ -13,7 +13,14 @@
 [Full API documentation.](https://smikhalevski.github.io/jtdc/)
 
 ```shell
-npm install --save-prod jtdc
+npm install --save-dev @jtdc/cli
+```
+
+By default, validators and type guards use a `@jtdc/jtd-dialect` runtime dependency. You can alter compiler dialect by
+providing `dialectFactory` option to the compiler.
+
+```shell
+npm install --save-prod @jtdc/jtd-dialect
 ```
 
 ## CLI usage
@@ -45,7 +52,7 @@ Let's assume you have user and account type definitions in separate files under 
 </details>
 
 <details>
-<summary><code>./src/user.json</code></summary>
+<summary><code>./src/account.json</code></summary>
 <p>
 
 ```json
@@ -80,7 +87,7 @@ Let's assume you have user and account type definitions in separate files under 
 To compile these definitions to TypeScript use this command:
 
 ```sh
-npx jtdc --rootDir ./src --includes '*.json' --outDir ./gen --typeGuards
+npx jtdc --package @jtdc/cli --rootDir ./src --includes '*.json' --outDir ./gen --typeGuards
 ```
 
 The result would be output to `./gen` folder:
@@ -198,7 +205,7 @@ export {isRole};
 [Full API documentation.](https://smikhalevski.github.io/jtdc/)
 
 ```ts
-import {compileTsModules} from 'jtdc';
+import {compileTsModules} from '@jtdc/compiler';
 import userJson from './src/user.json';
 import accountJson from './src/account.json';
 
