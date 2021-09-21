@@ -1,0 +1,23 @@
+{
+  "account": {
+    "properties": {
+      "user": {"ref": "user"},
+      "stats": {
+        "properties": {
+          "visitCount": {"type": "int32"}
+        }
+      }
+    },
+    "optionalProperties": {
+      "roles": {
+        "metadata": {
+          "comment": "The default role is guest"
+        },
+        "elements": {"ref": "role"}
+      }
+    }
+  },
+  "role": {
+    "enum": ["admin", "guest"]
+  }
+}

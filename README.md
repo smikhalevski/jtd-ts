@@ -1,4 +1,4 @@
-# jtdc
+# JTDc
 
 [JSON Type Definition (RFC8927)](https://jsontypedef.com/) to TypeScript compiler.
 
@@ -13,16 +13,26 @@
 [Full API documentation.](https://smikhalevski.github.io/jtdc/)
 
 ```shell
-npm install --save-prod jtdc
+npm install --save-dev @jtdc/cli
 ```
+
+By default, validators and type guards use a `@jtdc/jtd-dialect` runtime dependency. You can alter compiler dialect by
+providing `dialectFactory` option to the compiler.
+
+```shell
+npm install --save-prod @jtdc/jtd-dialect
+```
+
 
 ## CLI usage
 
 Let's assume you have user and account type definitions in separate files under `./src` folder:
 
-```json5
-// ./src/user.json
+<details>
+<summary><code>./src/user.json</code></summary>
+<p>
 
+```json
 {
   "user": {
     "properties": {
@@ -39,9 +49,14 @@ Let's assume you have user and account type definitions in separate files under 
 }
 ```
 
-```json5
-// ./src/account.json
+</p>
+</details>
 
+<details>
+<summary><code>./src/account.json</code></summary>
+<p>
+
+```json
 {
   "account": {
     "properties": {
@@ -55,7 +70,7 @@ Let's assume you have user and account type definitions in separate files under 
     "optionalProperties": {
       "roles": {
         "metadata": {
-          "comment": "Default role is guest"
+          "comment": "The default role is guest"
         },
         "elements": {"ref": "role"}
       }
@@ -67,20 +82,23 @@ Let's assume you have user and account type definitions in separate files under 
 }
 ```
 
+</p>
+</details>
+
 To compile these definitions to TypeScript use this command:
 
 ```sh
-npx jtdc --rootDir ./src --includes '*.json' --outDir ./gen --typeGuards
+npx jtdc --package @jtdc/cli --rootDir ./src --includes '*.json' --outDir ./src/gen --typeGuards
 ```
 
-The result would be output to `./gen` folder:
+The result would be output to `./src/gen` folder:
 
 <details>
-<summary><code>./gen/user.ts</code></summary>
+<summary><code>./src/gen/user.ts</code></summary>
 <p>
 
 ```ts
-import {_a, _i, _o, _O, _S, _s, Validator as _Validator} from 'jtdc/lib/jtd-dialect/runtime';
+import {_a, _i, _o, _O, _S, _s, Validator as _Validator} from '@jtdc/jtd-dialect/lib/runtime';
 
 export interface User {
   email: string;
@@ -122,18 +140,18 @@ export {isUser};
 </details>
 
 <details>
-<summary><code>./gen/account.ts</code></summary>
+<summary><code>./src/gen/account.ts</code></summary>
 <p>
 
 ```ts
-import {_a, _e, _i, _o, _O, _S, Validator as _Validator} from 'jtdc/lib/jtd-dialect/runtime';
+import {_a, _e, _i, _o, _O, _S, Validator as _Validator} from '@jtdc/jtd-dialect/lib/runtime';
 import {User, validateUser} from './user.ts';
 
 export interface Account {
   user: User;
   stats: { visitCount: number; };
   /**
-   * Default role is guest
+   * The default role is guest
    */
   roles?: Array<Role>;
 }
@@ -183,12 +201,15 @@ export {isRole};
 </p>
 </details>
 
+You can find [the source code of this example here](./example).
+
+
 ## Programmatic usage
 
 [Full API documentation.](https://smikhalevski.github.io/jtdc/)
 
 ```ts
-import {compileTsModules} from 'jtdc';
+import {compileTsModules} from '@jtdc/compiler';
 import userJson from './src/user.json';
 import accountJson from './src/account.json';
 

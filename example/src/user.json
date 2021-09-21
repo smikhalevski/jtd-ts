@@ -1,0 +1,14 @@
+{
+  "user": {
+    "properties": {
+      "email": {"type": "string"},
+      "friends": {
+        "elements": {"ref": "user"}
+      }
+    },
+    "optionalProperties": {
+      "name": {"type": "string"},
+      "age": {"type": "int8"}
+    }
+  }
+}
