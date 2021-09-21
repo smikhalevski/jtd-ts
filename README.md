@@ -1,4 +1,4 @@
-# jtdc
+# JTDc
 
 [JSON Type Definition (RFC8927)](https://jsontypedef.com/) to TypeScript compiler.
 
@@ -20,9 +20,11 @@ npm install --save-prod jtdc
 
 Let's assume you have user and account type definitions in separate files under `./src` folder:
 
-```json5
-// ./src/user.json
+<details>
+<summary><code>./src/user.json</code></summary>
+<p>
 
+```json
 {
   "user": {
     "properties": {
@@ -39,9 +41,14 @@ Let's assume you have user and account type definitions in separate files under 
 }
 ```
 
-```json5
-// ./src/account.json
+</p>
+</details>
 
+<details>
+<summary><code>./src/user.json</code></summary>
+<p>
+
+```json
 {
   "account": {
     "properties": {
@@ -67,6 +74,9 @@ Let's assume you have user and account type definitions in separate files under 
 }
 ```
 
+</p>
+</details>
+
 To compile these definitions to TypeScript use this command:
 
 ```sh
@@ -80,7 +90,7 @@ The result would be output to `./gen` folder:
 <p>
 
 ```ts
-import {_a, _i, _o, _O, _S, _s, Validator as _Validator} from 'jtdc/lib/jtd-dialect/runtime';
+import {_a, _i, _o, _O, _S, _s, Validator as _Validator} from '@jtdc/jtd-dialect/lib/runtime';
 
 export interface User {
   email: string;
@@ -126,7 +136,7 @@ export {isUser};
 <p>
 
 ```ts
-import {_a, _e, _i, _o, _O, _S, Validator as _Validator} from 'jtdc/lib/jtd-dialect/runtime';
+import {_a, _e, _i, _o, _O, _S, Validator as _Validator} from '@jtdc/jtd-dialect/lib/runtime';
 import {User, validateUser} from './user.ts';
 
 export interface Account {
