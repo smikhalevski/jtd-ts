@@ -79,6 +79,8 @@ export interface ITsTypesCompilerOptions<M> {
 /**
  * Compiles provided JTD definitions as a TypeScript source.
  *
+ * @template M The type of the metadata.
+ *
  * @param definitions Map from ref to JTD node.
  * @param options The compilation options.
  *
@@ -92,6 +94,8 @@ export function compileTsTypes<M>(definitions: Record<string, JtdNode<M>>, optio
 
 /**
  * Returns the TypeScript type statement that describes the node.
+ *
+ * @template M The type of the metadata.
  *
  * @param ref The ref of the node in `definitions`.
  * @param definitions Known definitions that are used for ref resolution.
@@ -215,6 +219,8 @@ function compileTsTypeStatement<M>(ref: string, definitions: Record<string, JtdN
 
 /**
  * Returns the TypeScript type expression that describes the node.
+ *
+ * @template M The type of the metadata.
  *
  * @param node The JTD node for which TypeScript expression must be compiled.
  * @param definitions Known definitions that are used for ref resolution.

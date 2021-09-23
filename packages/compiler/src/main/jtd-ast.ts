@@ -14,6 +14,8 @@ import {createMap, die} from './misc';
 /**
  * Converts JTD and its dependencies to a map of nodes where key is `ref` and value is a parsed node.
  *
+ * @template M The type of the metadata.
+ *
  * @param ref The ref of the root JTD.
  * @param jtdRoot The JTD to parse.
  *
@@ -27,6 +29,8 @@ export function parseJtdRoot<M>(ref: string, jtdRoot: IJtdRoot<M>): Record<strin
 
 /**
  * Converts JTD dependencies to a map of nodes where key is `ref` and value is a parsed node.
+ *
+ * @template M The type of the metadata.
  *
  * @param jtdDefinitions The dictionary of ref-JTD pairs.
  *
@@ -43,6 +47,8 @@ export function parseJtdDefinitions<M>(jtdDefinitions: Record<string, IJtd<M>>):
 
 /**
  * Converts JTD to a corresponding node.
+ *
+ * @template M The type of the metadata.
  *
  * @param jtd The JTD to parse.
  *

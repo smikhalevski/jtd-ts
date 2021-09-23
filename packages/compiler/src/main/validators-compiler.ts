@@ -20,6 +20,9 @@ export interface IValidatorCompilerOptions<M, C> {
 
 /**
  * Compiles validators and type guards from the definitions.
+ *
+ * @template M The type of the metadata.
+ * @template C The type of the context.
  */
 export function compileValidators<M, C>(definitions: Record<string, JtdNode<M>>, options?: IValidatorCompilerOptions<M, C>): string {
   const opt = {...validatorCompilerOptions, ...options};

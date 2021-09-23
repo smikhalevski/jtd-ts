@@ -29,6 +29,8 @@ export interface IJtdDialectContext {
 
 /**
  * Creates a validator compilation dialect that renders validators which follow the JTD specification.
+ *
+ * @template M The type of the metadata.
  */
 export function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): IJtdcDialect<M, IJtdDialectContext> {
   const opt = {...jtdDialectOptions, ...options};

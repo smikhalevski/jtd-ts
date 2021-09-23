@@ -25,6 +25,9 @@ export interface ITsModulesCompilerOptions<M, C>
 /**
  * Compiles map of JTD definitions to a map of corresponding sources.
  *
+ * @template M The type of the metadata.
+ * @template C The type of the context.
+ *
  * @param jtdModules The map from module URI to JTD definitions map.
  * @param options Compiler options.
  */

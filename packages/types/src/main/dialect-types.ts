@@ -13,6 +13,8 @@ import {
 
 /**
  * Options provided to all validator dialect factories.
+ *
+ * @template M The type of the metadata.
  */
 export interface IJtdcDialectOptions<M> {
 
@@ -57,6 +59,9 @@ export interface IJtdcDialectOptions<M> {
 
 /**
  * The validator dialect that describes how validators and type narrowing functions are generated.
+ *
+ * @template M The type of the metadata.
+ * @template C The type of the context.
  */
 export interface IJtdcDialect<M, C> {
 
