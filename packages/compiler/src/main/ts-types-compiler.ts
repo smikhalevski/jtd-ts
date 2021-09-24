@@ -9,7 +9,7 @@ export interface ITsTypesCompilerOptions<M> {
   /**
    * Returns a TypeScript type name referenced by `node`.
    */
-  resolveExternalRef?: (node: IJtdRefNode<M>) => string;
+  resolveExternalRef?(node: IJtdRefNode<M>): string;
 
   /**
    * Returns a TypeScript type name described by `node`.
@@ -17,7 +17,7 @@ export interface ITsTypesCompilerOptions<M> {
    * @param ref The ref of the renamed type.
    * @param node The node that describes the renamed type.
    */
-  renameType?: (ref: string, node: JtdNode<M>) => string;
+  renameType?(ref: string, node: JtdNode<M>): string;
 
   /**
    * Returns a TypeScript type name of a JTD primitive type. By default, a {@link jtdTsPrimitiveTypeMap} is used to
@@ -26,54 +26,54 @@ export interface ITsTypesCompilerOptions<M> {
    * @example
    * (node) => node.type === 'int64' ? 'bigint' : 'string'
    */
-  rewritePrimitiveType?: (node: IJtdTypeNode<M>) => string;
+  rewritePrimitiveType?(node: IJtdTypeNode<M>): string;
 
   /**
    * Returns the new name of an object property.
    */
-  renamePropertyKey?: (propKey: string, propNode: JtdNode<M>, objectNode: IJtdObjectNode<M>) => string;
+  renamePropertyKey?(propKey: string, propNode: JtdNode<M>, objectNode: IJtdObjectNode<M>): string;
 
   /**
    * Returns the name of the enum key.
    */
-  renameEnumKey?: (value: string, node: IJtdEnumNode<M>) => string;
+  renameEnumKey?(value: string, node: IJtdEnumNode<M>): string;
 
   /**
    * Returns the contents of the enum value.
    */
-  rewriteEnumValue?: (value: string, node: IJtdEnumNode<M>) => string | number | undefined;
+  rewriteEnumValue?(value: string, node: IJtdEnumNode<M>): string | number | undefined;
 
   /**
    * Returns the name of the enum that holds mapping keys for the discriminated union.
    */
-  renameUnionEnum?: (ref: string, node: IJtdUnionNode<M>) => string;
+  renameUnionEnum?(ref: string, node: IJtdUnionNode<M>): string;
 
   /**
    * Returns the contents of the value from the enum that holds discriminator values.
    */
-  renameUnionEnumKey?: (mappingKey: string, mappingNode: IJtdObjectNode<M>, unionRef: string, unionNode: IJtdUnionNode<M>) => string;
+  renameUnionEnumKey?(mappingKey: string, mappingNode: IJtdObjectNode<M>, unionRef: string, unionNode: IJtdUnionNode<M>): string;
 
   /**
    * Returns the name of the union discriminator property.
    */
-  renameDiscriminatorKey?: (node: IJtdUnionNode<M>) => string;
+  renameDiscriminatorKey?(node: IJtdUnionNode<M>): string;
 
   /**
    * Returns the value that would be used as a value of the discriminator property.
    */
-  rewriteMappingKey?: (mappingKey: string, mappingNode: IJtdObjectNode<M>, unionRef: string | undefined, unionNode: IJtdUnionNode<M>) => string | number | undefined;
+  rewriteMappingKey?(mappingKey: string, mappingNode: IJtdObjectNode<M>, unionRef: string | undefined, unionNode: IJtdUnionNode<M>): string | number | undefined;
 
   /**
    * Returns the name of the interface that is the part of the discriminated union.
    */
-  renameMappingInterface?: (mappingKey: string, mappingNode: IJtdObjectNode<M>, unionRef: string, unionNode: IJtdUnionNode<M>) => string;
+  renameMappingInterface?(mappingKey: string, mappingNode: IJtdObjectNode<M>, unionRef: string, unionNode: IJtdUnionNode<M>): string;
 
   /**
    * Returns the doc comment string that is associated with the node.
    *
    * @default node.metadata?.comment
    */
-  getDocComment?: (node: JtdNode<M>) => string | null | undefined;
+  getDocComment?(node: JtdNode<M>): string | null | undefined;
 }
 
 /**

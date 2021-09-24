@@ -19,7 +19,7 @@ export interface ITsModulesCompilerOptions<M, C>
   /**
    * The callback that produces the validator compilation dialect.
    */
-  dialectFactory?: (options?: IJtdcDialectOptions<M>) => IJtdcDialect<M, C>;
+  dialectFactory?(options?: IJtdcDialectOptions<M>): IJtdcDialect<M, C>;
 }
 
 /**

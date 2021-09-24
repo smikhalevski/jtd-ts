@@ -17,14 +17,14 @@ import {toJsonPointer} from './runtime';
  * Context used by the dialect during validator compilation.
  */
 export interface IJtdDialectContext {
+  valueVar: IVarRefCgNode;
+  ctxVar: IVarRefCgNode;
+  pointerVar: IVarRefCgNode;
 
   /**
    * Wraps an expression so result is retained between validator invocations.
    */
-  warpCache: (frag: IFragmentCgNode) => IFragmentCgNode;
-  valueVar: IVarRefCgNode;
-  ctxVar: IVarRefCgNode;
-  pointerVar: IVarRefCgNode;
+  warpCache(frag: IFragmentCgNode): IFragmentCgNode;
 }
 
 /**
