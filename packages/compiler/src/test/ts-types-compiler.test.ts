@@ -243,9 +243,9 @@ describe('compileTsTypes', () => {
   test('resolves external refs with resolveRef', () => {
     const resolveExternalRefMock = jest.fn();
 
-    const src = compileTsTypes(parseJtdRoot('foo', {
+    compileTsTypes(parseJtdRoot('foo', {
       ref: 'wow',
-    }), {resolveExternalRef: resolveExternalRefMock});
+    }), resolveExternalRefMock);
 
     expect(resolveExternalRefMock).toHaveBeenCalledTimes(1);
     expect(resolveExternalRefMock).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.REF}));

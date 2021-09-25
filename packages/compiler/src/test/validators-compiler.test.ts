@@ -2,6 +2,7 @@ import {ModuleKind, transpileModule} from 'typescript';
 import {compileValidators} from '../main/validators-compiler';
 import {parseJtdRoot} from '../main/jtd-ast';
 import {JtdType} from '@jtdc/types';
+import {createJtdDialect} from '@jtdc/jtd-dialect/src/main';
 
 function evalModule(source: string): Record<string, any> {
   return eval(`
@@ -14,43 +15,45 @@ function evalModule(source: string): Record<string, any> {
 
 describe('compileValidators', () => {
 
+  const jtdDialect = createJtdDialect();
+
   test('compiles string type validator', () => {
-    expect(compileValidators(parseJtdRoot('foo', {type: JtdType.STRING}), {typeGuardsRendered: true})).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};_s(a,b,c||"");return b.errors;};export{validateFoo};const isFoo=(value:unknown):value is Foo=>!validateFoo(value,{shallow:true});export{isFoo};');
+    expect(compileValidators(parseJtdRoot('foo', {type: JtdType.STRING}), jtdDialect, {typeGuardsRendered: true})).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};_s(a,b,c||"");return b.errors;};export{validateFoo};const isFoo=(value:unknown):value is Foo=>!validateFoo(value,{shallow:true});export{isFoo};');
   });
 
   test('compiles nullable checker', () => {
     expect(compileValidators(parseJtdRoot('foo', {
       type: JtdType.STRING,
       nullable: true,
-    }))).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};if(_N(a)){_s(a,b,c||"");}return b.errors;};export{validateFoo};');
+    }), jtdDialect)).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};if(_N(a)){_s(a,b,c||"");}return b.errors;};export{validateFoo};');
   });
 
   test('compiles nullable any checker', () => {
-    expect(compileValidators(parseJtdRoot('foo', {nullable: true}))).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};return b.errors;};export{validateFoo};');
+    expect(compileValidators(parseJtdRoot('foo', {nullable: true}), jtdDialect)).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};return b.errors;};export{validateFoo};');
   });
 
   test('compiles reference checker', () => {
-    expect(compileValidators(parseJtdRoot('foo', {ref: 'bar'}))).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};validateBar(a,b,c||"");return b.errors;};export{validateFoo};');
+    expect(compileValidators(parseJtdRoot('foo', {ref: 'bar'}), jtdDialect)).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};validateBar(a,b,c||"");return b.errors;};export{validateFoo};');
   });
 
   test('compiles enum checker', () => {
-    expect(compileValidators(parseJtdRoot('foo', {enum: ['AAA', 'BBB']}))).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};_e(a,(validateFoo.cache||={}).a||=["AAA","BBB"],b,c||"");return b.errors;};export{validateFoo};');
+    expect(compileValidators(parseJtdRoot('foo', {enum: ['AAA', 'BBB']}), jtdDialect)).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};_e(a,(validateFoo.cache||={}).a||=["AAA","BBB"],b,c||"");return b.errors;};export{validateFoo};');
   });
 
   test('compiles elements checker', () => {
-    expect(compileValidators(parseJtdRoot('foo', {elements: {type: JtdType.STRING}}))).toBe('const validateFoo:_Validator=(a,b,c)=>{let d;b=b||{};c=c||"";if(_a(a,b,c)){for(d=0;d<a.length;d++){_s(a[d],b,c+_S+d);}}return b.errors;};export{validateFoo};');
+    expect(compileValidators(parseJtdRoot('foo', {elements: {type: JtdType.STRING}}), jtdDialect)).toBe('const validateFoo:_Validator=(a,b,c)=>{let d;b=b||{};c=c||"";if(_a(a,b,c)){for(d=0;d<a.length;d++){_s(a[d],b,c+_S+d);}}return b.errors;};export{validateFoo};');
   });
 
   test('compiles any elements checker', () => {
-    expect(compileValidators(parseJtdRoot('foo', {elements: {}}))).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};_a(a,b,c||"");return b.errors;};export{validateFoo};');
+    expect(compileValidators(parseJtdRoot('foo', {elements: {}}), jtdDialect)).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};_a(a,b,c||"");return b.errors;};export{validateFoo};');
   });
 
   test('compiles values checker', () => {
-    expect(compileValidators(parseJtdRoot('foo', {values: {type: JtdType.STRING}}))).toBe('const validateFoo:_Validator=(a,b,c)=>{let d,e;b=b||{};c=c||"";if(_o(a,b,c)){for(d=0,e=_K(a);d<e.length;d++){_s(a[e[d]],b,c+_P(e[d]));}}return b.errors;};export{validateFoo};');
+    expect(compileValidators(parseJtdRoot('foo', {values: {type: JtdType.STRING}}), jtdDialect)).toBe('const validateFoo:_Validator=(a,b,c)=>{let d,e;b=b||{};c=c||"";if(_o(a,b,c)){for(d=0,e=_K(a);d<e.length;d++){_s(a[e[d]],b,c+_P(e[d]));}}return b.errors;};export{validateFoo};');
   });
 
   test('compiles any values checker', () => {
-    expect(compileValidators(parseJtdRoot('foo', {values: {}}))).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};_o(a,b,c||"");return b.errors;};export{validateFoo};');
+    expect(compileValidators(parseJtdRoot('foo', {values: {}}), jtdDialect)).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};_o(a,b,c||"");return b.errors;};export{validateFoo};');
   });
 
   test('compiles object properties checker', () => {
@@ -61,7 +64,7 @@ describe('compileValidators', () => {
       optionalProperties: {
         bar: {type: JtdType.FLOAT32},
       },
-    }))).toBe('const validateFoo:_Validator=(a,b,c)=>{let d;b=b||{};c=c||"";if(_o(a,b,c)){_s(a.foo,b,c+"/foo");d=a.bar;if(_O(d)){_n(d,b,c+"/bar");}}return b.errors;};export{validateFoo};');
+    }), jtdDialect)).toBe('const validateFoo:_Validator=(a,b,c)=>{let d;b=b||{};c=c||"";if(_o(a,b,c)){_s(a.foo,b,c+"/foo");d=a.bar;if(_O(d)){_n(d,b,c+"/bar");}}return b.errors;};export{validateFoo};');
   });
 
   test('compiles multiple optional properties', () => {
@@ -70,7 +73,7 @@ describe('compileValidators', () => {
         foo: {type: JtdType.STRING},
         bar: {type: JtdType.FLOAT32},
       },
-    }))).toBe('const validateFoo:_Validator=(a,b,c)=>{let d,e;b=b||{};c=c||"";if(_o(a,b,c)){d=a.foo;if(_O(d)){_s(d,b,c+"/foo");}e=a.bar;if(_O(e)){_n(e,b,c+"/bar");}}return b.errors;};export{validateFoo};');
+    }), jtdDialect)).toBe('const validateFoo:_Validator=(a,b,c)=>{let d,e;b=b||{};c=c||"";if(_o(a,b,c)){d=a.foo;if(_O(d)){_s(d,b,c+"/foo");}e=a.bar;if(_O(e)){_n(e,b,c+"/bar");}}return b.errors;};export{validateFoo};');
   });
 
   test('compiles discriminated union checker', () => {
@@ -88,7 +91,7 @@ describe('compileValidators', () => {
           },
         },
       },
-    }))).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};c=c||"";if(_o(a,b,c)){switch(a.type){case "AAA":_s(a.foo,b,c+"/foo");break;case "BBB":_i(a.bar,b,c+"/bar");break;}_R(b,c+"/type")}return b.errors;};export{validateFoo};');
+    }), jtdDialect)).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};c=c||"";if(_o(a,b,c)){switch(a.type){case "AAA":_s(a.foo,b,c+"/foo");break;case "BBB":_i(a.bar,b,c+"/bar");break;}_R(b,c+"/type")}return b.errors;};export{validateFoo};');
   });
 
   test('compiles multiple validators', () => {
@@ -97,7 +100,7 @@ describe('compileValidators', () => {
         bar: {type: JtdType.STRING},
       },
       ref: 'bar',
-    }))).toBe('const validateBar:_Validator=(a,b,c)=>{b=b||{};_s(a,b,c||"");return b.errors;};export{validateBar};const validateFoo:_Validator=(a,b,c)=>{b=b||{};validateBar(a,b,c||"");return b.errors;};export{validateFoo};');
+    }), jtdDialect)).toBe('const validateBar:_Validator=(a,b,c)=>{b=b||{};_s(a,b,c||"");return b.errors;};export{validateBar};const validateFoo:_Validator=(a,b,c)=>{b=b||{};validateBar(a,b,c||"");return b.errors;};export{validateFoo};');
   });
 
   test('compiles nested objects', () => {
@@ -109,7 +112,7 @@ describe('compileValidators', () => {
           },
         },
       },
-    }))).toBe('const validateFoo:_Validator=(a,b,c)=>{let d,e;b=b||{};c=c||"";if(_o(a,b,c)){d=a.aaa;e=c+"/aaa";if(_o(d,b,e)){_s(d.bbb,b,e+"/bbb");}}return b.errors;};export{validateFoo};');
+    }), jtdDialect)).toBe('const validateFoo:_Validator=(a,b,c)=>{let d,e;b=b||{};c=c||"";if(_o(a,b,c)){d=a.aaa;e=c+"/aaa";if(_o(d,b,e)){_s(d.bbb,b,e+"/bbb");}}return b.errors;};export{validateFoo};');
   });
 
   test('compiles nested elements and values', () => {
@@ -122,7 +125,7 @@ describe('compileValidators', () => {
           },
         },
       },
-    }))).toBe('const validateFoo:_Validator=(a,b,c)=>{let d,e,f,g,h,i,j;b=b||{};c=c||"";if(_a(a,b,c)){for(d=0;d<a.length;d++){e=a[d];f=c+_S+d;if(_o(e,b,f)){for(g=0,h=_K(e);g<h.length;g++){i=e[h[g]];j=f+_P(h[g]);if(_o(i,b,j)){_s(i.foo,b,j+"/foo");_i(i.bar,b,j+"/bar");}}}}}return b.errors;};export{validateFoo};');
+    }), jtdDialect)).toBe('const validateFoo:_Validator=(a,b,c)=>{let d,e,f,g,h,i,j;b=b||{};c=c||"";if(_a(a,b,c)){for(d=0;d<a.length;d++){e=a[d];f=c+_S+d;if(_o(e,b,f)){for(g=0,h=_K(e);g<h.length;g++){i=e[h[g]];j=f+_P(h[g]);if(_o(i,b,j)){_s(i.foo,b,j+"/foo");_i(i.bar,b,j+"/bar");}}}}}return b.errors;};export{validateFoo};');
   });
 
   test('compiles self-reference', () => {
@@ -137,7 +140,7 @@ describe('compileValidators', () => {
           },
         },
       },
-    }))).toBe('const validateFoo:_Validator=(a,b,c)=>{let d,e,f;b=b||{};c=c||"";if(_o(a,b,c)){_s(a.aaa,b,c+"/aaa");d=a.bbb;e=c+"/bbb";if(_a(d,b,e)){for(f=0;f<d.length;f++){validateFoo(d[f],b,e+_S+f);}}}return b.errors;};export{validateFoo};');
+    }), jtdDialect)).toBe('const validateFoo:_Validator=(a,b,c)=>{let d,e,f;b=b||{};c=c||"";if(_o(a,b,c)){_s(a.aaa,b,c+"/aaa");d=a.bbb;e=c+"/bbb";if(_a(d,b,e)){for(f=0;f<d.length;f++){validateFoo(d[f],b,e+_S+f);}}}return b.errors;};export{validateFoo};');
   });
 
   test('compiles runnable source code', () => {
@@ -150,7 +153,7 @@ describe('compileValidators', () => {
               enum: ['AAA', 'BBB'],
             },
           },
-        }), {typeGuardsRendered: true});
+        }), jtdDialect, {typeGuardsRendered: true});
 
     const module = evalModule(src);
 

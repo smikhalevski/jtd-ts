@@ -1,25 +1,40 @@
-import {compileTsTypes, ITsTypesCompilerOptions, tsTypesCompilerOptions} from './ts-types-compiler';
+import {compileTsTypes, ITsTypesCompilerOptions, RefResolver} from './ts-types-compiler';
 import {parseJtdDefinitions} from './jtd-ast';
-import {IJtd, IJtdcDialect, IJtdcDialectOptions, JtdNode} from '@jtdc/types';
+import {IJtd, IJtdcDialect, IJtdcDialectOptions, JtdcDialectFactory, JtdNode} from '@jtdc/types';
 import {createMap, die} from './misc';
-import {compileValidators, IValidatorCompilerOptions, validatorCompilerOptions} from './validators-compiler';
+import {compileValidators, IValidatorCompilerOptions} from './validators-compiler';
 import {compileJsSource} from '@smikhalevski/codegen';
-import {createJtdDialect, jtdDialectOptions} from '@jtdc/jtd-dialect';
+import {pascalCase} from 'change-case-all';
 
 export interface ITsModulesCompilerOptions<M, C>
-    extends Omit<ITsTypesCompilerOptions<M>, 'resolveExternalRef'>,
-            Omit<IValidatorCompilerOptions<M, C>, 'dialect'>,
+    extends ITsTypesCompilerOptions<M>,
+            IValidatorCompilerOptions<M, C>,
             IJtdcDialectOptions<M> {
 
   /**
    * If `true` then validator functions are rendered along with types.
    */
   validatorsRendered?: boolean;
+}
+
+export interface ITsModule<M> {
 
   /**
-   * The callback that produces the validator compilation dialect.
+   * The module source code.
    */
-  dialectFactory?(options?: IJtdcDialectOptions<M>): IJtdcDialect<M, C>;
+  source: string;
+
+  definitions: Record<string, JtdNode<M>>;
+
+  /**
+   * Map from exported ref to a TS type name.
+   */
+  exports: Record<string, string>;
+
+  /**
+   * Map from an URI of an imported module to a map from ref to an AST node.
+   */
+  imports: Record<string, Record<string, JtdNode<M>>>;
 }
 
 /**
@@ -29,81 +44,82 @@ export interface ITsModulesCompilerOptions<M, C>
  * @template C The type of the context.
  *
  * @param jtdModules The map from module URI to JTD definitions map.
+ * @param dialectFactory The callback that produces the validator compilation dialect.
  * @param options Compiler options.
  */
-export function compileTsModules<M, C>(jtdModules: Record<string, Record<string, IJtd<M>>>, options?: ITsModulesCompilerOptions<M, C>): Record<string, string> {
-
-  const opts = {
-    ...validatorCompilerOptions,
-    ...tsTypesCompilerOptions,
-    ...jtdDialectOptions,
-    ...options,
-  };
+export function compileTsModules<M, C>(jtdModules: Record<string, Record<string, IJtd<M>>>, dialectFactory: JtdcDialectFactory<M, C>, options: ITsModulesCompilerOptions<M, C> = {}): Record<string, ITsModule<M>> {
 
   const {
+    renameType = (ref) => pascalCase(ref),
+    renameValidator = (ref) => 'validate' + pascalCase(ref),
     validatorsRendered,
-    dialectFactory = createJtdDialect,
-  } = opts;
+  } = options;
 
-  const dialect = dialectFactory(opts);
-  const tsModules = createMap<string>();
+  const dialect: IJtdcDialect<any, any> = dialectFactory(options);
+  const tsModules = createMap<ITsModule<M>>();
 
-  const modules = Object.entries(jtdModules).map(([uri, jtdDefinitions]) => {
+  // Resolve module exports
+  for (const [uri, jtdDefinitions] of Object.entries(jtdModules)) {
+
     const definitions = parseJtdDefinitions(jtdDefinitions);
-    const exports = extractExports(definitions, opts);
-    return {uri, definitions, exports};
-  });
+    const exports = createMap<string>();
 
-  for (const module of modules) {
-    const imports = createMap<Set<string>>();
+    for (const [ref, node] of Object.entries(definitions)) {
+      exports[ref] = renameType(ref, node);
+    }
 
-    opts.resolveExternalRef = (node) => {
-      for (const module of modules) {
-        const exportedRef = module.exports[node.ref];
-        if (exportedRef) {
-          const importedNames = imports[module.uri] ||= new Set();
+    tsModules[uri] = {
+      source: '',
+      definitions,
+      exports,
+      imports: createMap(),
+    };
+  }
 
-          importedNames.add(exportedRef.typeName);
+  const tsModuleEntries = Object.entries(tsModules);
 
-          if (validatorsRendered) {
-            importedNames.add(exportedRef.validatorName);
-          }
-          return exportedRef.typeName;
+  for (const [, tsModule] of tsModuleEntries) {
+
+    const resolveExternalRef: RefResolver<M> = (node) => {
+      for (const [uri, otherTsModule] of tsModuleEntries) {
+        if (tsModule === otherTsModule) {
+          continue;
+        }
+        const typeNode = otherTsModule.definitions[node.ref];
+
+        if (typeNode) {
+          (tsModule.imports[uri] ||= createMap())[node.ref] = typeNode;
+          return otherTsModule.exports[node.ref];
         }
       }
       die('Unresolved reference: ' + node.ref);
     };
 
-    let src = compileTsTypes(module.definitions, opts);
+    let src = compileTsTypes(tsModule.definitions, resolveExternalRef, options);
 
-    for (const [uri, importedNames] of Object.entries(imports)) {
-      src = `import{${Array.from(importedNames).sort().join(',')}}from${JSON.stringify(uri)};` + src;
+    for (const [uri, refMap] of Object.entries(tsModule.imports)) {
+      const importedNames: Array<string> = [];
+
+      for (const [ref, node] of Object.entries(refMap)) {
+        importedNames.push(renameType(ref, node));
+
+        if (validatorsRendered) {
+          importedNames.push(renameValidator(ref, node));
+        }
+      }
+
+      importedNames.sort();
+
+      src = `import{${importedNames.join(',')}}from${JSON.stringify(uri)};` + src;
     }
 
     if (validatorsRendered && dialect != null) {
       src = compileJsSource(dialect.import()) + src;
-      src += compileValidators(module.definitions, opts);
+      src += compileValidators(tsModule.definitions, dialect, options);
     }
 
-    tsModules[module.uri] = src;
+    tsModule.source = src;
   }
 
   return tsModules;
-}
-
-interface IExport<M> {
-  typeName: string;
-  validatorName: string;
-}
-
-function extractExports<M>(definitions: Record<string, JtdNode<M>>, options: Required<IJtdcDialectOptions<M>>): Record<string, IExport<M>> {
-  const exports: Record<string, IExport<M>> = createMap();
-
-  for (const [ref, node] of Object.entries(definitions)) {
-    exports[ref] = {
-      typeName: options.renameType(ref, node),
-      validatorName: options.renameValidator(ref, node),
-    };
-  }
-  return exports;
 }

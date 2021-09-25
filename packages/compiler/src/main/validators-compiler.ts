@@ -1,7 +1,6 @@
 import {IJtdcDialect, JtdNode} from '@jtdc/types';
 import {visitJtdNode} from './jtd-visitor';
 import {compileJsSource, IFragmentCgNode, template as _} from '@smikhalevski/codegen';
-import {createJtdDialect} from '@jtdc/jtd-dialect';
 
 export interface IValidatorCompilerOptions<M, C> {
 
@@ -11,26 +10,20 @@ export interface IValidatorCompilerOptions<M, C> {
    * @see {@link https://www.typescriptlang.org/docs/handbook/2/narrowing.html TypeScript Narrowing}
    */
   typeGuardsRendered?: boolean;
-
-  /**
-   * The validator compilation dialect that describes how validators and type guards are compiled.
-   */
-  dialect?: IJtdcDialect<M, C>;
 }
 
 /**
  * Compiles validators and type guards from the definitions.
  *
+ * @param definitions Definitions for which validators must be compiled.
+ * @param dialect The validator compilation dialect that describes how validators and type guards are compiled.
+ * @param options Compilation options.
+ *
  * @template M The type of the metadata.
  * @template C The type of the context.
  */
-export function compileValidators<M, C>(definitions: Record<string, JtdNode<M>>, options?: IValidatorCompilerOptions<M, C>): string {
-  const opt = {...validatorCompilerOptions, ...options};
-
-  const {
-    typeGuardsRendered,
-    dialect,
-  } = opt;
+export function compileValidators<M, C>(definitions: Record<string, JtdNode<M>>, dialect: IJtdcDialect<M, C>, options: IValidatorCompilerOptions<M, C> = {}): string {
+  const {typeGuardsRendered} = options;
 
   let src = '';
 
@@ -101,8 +94,3 @@ function compileValidatorBody<M, C>(node: JtdNode<M>, ctx: C, dialect: IJtdcDial
 
   return _(frags);
 }
-
-export const validatorCompilerOptions: Required<IValidatorCompilerOptions<any, any>> = {
-  typeGuardsRendered: false,
-  dialect: createJtdDialect(),
-};

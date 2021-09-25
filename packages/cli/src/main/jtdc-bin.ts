@@ -3,6 +3,7 @@ import {compileTsModules, ITsModulesCompilerOptions} from '@jtdc/compiler';
 import fs from 'fs';
 import path from 'path';
 import glob from 'glob';
+import {createJtdDialect} from '@jtdc/jtd-dialect';
 
 const CONFIG_PATH = 'jtdc.config.js';
 
@@ -54,15 +55,15 @@ for (const filePath of filePaths) {
 
 let tsModules;
 try {
-  tsModules = compileTsModules(jtdModules, config);
+  tsModules = compileTsModules(jtdModules, createJtdDialect, config);
 } catch (error: any) {
   console.log('error: ' + error.message);
   process.exit(1);
 }
 
-for (const [uri, src] of Object.entries(tsModules)) {
+for (const [uri, tsModule] of Object.entries(tsModules)) {
   const filePath = path.resolve(outDir, uri + '.ts');
 
   fs.mkdirSync(path.dirname(filePath), {recursive: true});
-  fs.writeFileSync(filePath, src + '\n', {encoding: 'utf8'});
+  fs.writeFileSync(filePath, tsModule.source + '\n', {encoding: 'utf8'});
 }

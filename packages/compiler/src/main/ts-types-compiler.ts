@@ -4,12 +4,11 @@ import {compileDocComment, compilePropertyName} from '@smikhalevski/codegen';
 import {constantCase, pascalCase} from 'change-case-all';
 import {die} from './misc';
 
-export interface ITsTypesCompilerOptions<M> {
+export type RefResolver<M> = (node: IJtdRefNode<M>) => string;
 
-  /**
-   * Returns a TypeScript type name referenced by `node`.
-   */
-  resolveExternalRef?(node: IJtdRefNode<M>): string;
+const fatalRefResolver: RefResolver<unknown> = (node) => die('Unresolved reference: ' + node.ref);
+
+export interface ITsTypesCompilerOptions<M> {
 
   /**
    * Returns a TypeScript type name described by `node`.
@@ -82,14 +81,15 @@ export interface ITsTypesCompilerOptions<M> {
  * @template M The type of the metadata.
  *
  * @param definitions Map from ref to JTD node.
+ * @param externalRefResolver Returns a TypeScript type name referenced by node.
  * @param options The compilation options.
  *
  * @returns The TypeScript source code with type, interface and enum definitions.
  */
-export function compileTsTypes<M>(definitions: Record<string, JtdNode<M>>, options?: ITsTypesCompilerOptions<M>): string {
+export function compileTsTypes<M>(definitions: Record<string, JtdNode<M>>, externalRefResolver: RefResolver<M> = fatalRefResolver, options?: ITsTypesCompilerOptions<M>): string {
   const opts = {...tsTypesCompilerOptions, ...options};
 
-  return Object.keys(definitions).reduce((src, ref) => src + compileTsTypeStatement(ref, definitions, opts), '');
+  return Object.keys(definitions).reduce((src, ref) => src + compileTsTypeStatement(ref, definitions, externalRefResolver, opts), '');
 }
 
 /**
@@ -99,9 +99,10 @@ export function compileTsTypes<M>(definitions: Record<string, JtdNode<M>>, optio
  *
  * @param ref The ref of the node in `definitions`.
  * @param definitions Known definitions that are used for ref resolution.
+ * @param externalRefResolver Returns a TypeScript type name referenced by node.
  * @param options Compiler options.
  */
-function compileTsTypeStatement<M>(ref: string, definitions: Record<string, JtdNode<M>>, options: Required<ITsTypesCompilerOptions<M>>): string {
+function compileTsTypeStatement<M>(ref: string, definitions: Record<string, JtdNode<M>>, externalRefResolver: RefResolver<M>, options: Required<ITsTypesCompilerOptions<M>>): string {
   const {
     renameType,
     renamePropertyKey,
@@ -119,7 +120,7 @@ function compileTsTypeStatement<M>(ref: string, definitions: Record<string, JtdN
 
   const compileTypeStatement = (node: JtdNode<M>): void => {
     src += compileDocComment(getDocComment(node))
-        + `export type ${renameType(ref, node)}=${compileTsTypeExpression(node, definitions, options)};`;
+        + `export type ${renameType(ref, node)}=${compileTsTypeExpression(node, definitions, externalRefResolver, options)};`;
   };
 
   visitJtdNode(definitions[ref], {
@@ -159,7 +160,7 @@ function compileTsTypeStatement<M>(ref: string, definitions: Record<string, JtdN
       src += compileDocComment(getDocComment(propNode))
           + compilePropertyName(renamePropertyKey(propKey, propNode, objectNode))
           + ':'
-          + compileTsTypeExpression(propNode, definitions, options)
+          + compileTsTypeExpression(propNode, definitions, externalRefResolver, options)
           + ';';
     },
 
@@ -167,7 +168,7 @@ function compileTsTypeStatement<M>(ref: string, definitions: Record<string, JtdN
       src += compileDocComment(getDocComment(propNode))
           + compilePropertyName(renamePropertyKey(propKey, propNode, objectNode))
           + '?:'
-          + compileTsTypeExpression(propNode, definitions, options)
+          + compileTsTypeExpression(propNode, definitions, externalRefResolver, options)
           + ';';
     },
 
@@ -224,11 +225,11 @@ function compileTsTypeStatement<M>(ref: string, definitions: Record<string, JtdN
  *
  * @param node The JTD node for which TypeScript expression must be compiled.
  * @param definitions Known definitions that are used for ref resolution.
+ * @param externalRefResolver Returns a TypeScript type name referenced by node.
  * @param options Compiler options.
  */
-function compileTsTypeExpression<M>(node: JtdNode<M>, definitions: Record<string, JtdNode<M>>, options: Required<ITsTypesCompilerOptions<M>>): string {
+function compileTsTypeExpression<M>(node: JtdNode<M>, definitions: Record<string, JtdNode<M>>, externalRefResolver: RefResolver<M>, options: Required<ITsTypesCompilerOptions<M>>): string {
   const {
-    resolveExternalRef,
     renameType,
     rewritePrimitiveType,
     rewriteEnumValue,
@@ -244,7 +245,7 @@ function compileTsTypeExpression<M>(node: JtdNode<M>, definitions: Record<string
       src += 'any';
     },
     ref(node) {
-      src += definitions[node.ref] ? renameType(node.ref, definitions[node.ref]) : resolveExternalRef(node);
+      src += definitions[node.ref] ? renameType(node.ref, definitions[node.ref]) : externalRefResolver(node);
     },
     nullable(node, next) {
       next();
@@ -310,7 +311,6 @@ function compileTsTypeExpression<M>(node: JtdNode<M>, definitions: Record<string
  * Global default options used by {@link compileTsTypes}.
  */
 export const tsTypesCompilerOptions: Required<ITsTypesCompilerOptions<any>> = {
-  resolveExternalRef: (node) => die('Unresolved reference: ' + node.ref),
   renameType: (ref) => pascalCase(ref),
   renamePropertyKey: (propKey) => propKey,
   rewritePrimitiveType: (node) => jtdTsPrimitiveTypeMap[node.type] || die('Unknown type: ' + node.type),
