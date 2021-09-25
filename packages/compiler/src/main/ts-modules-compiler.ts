@@ -32,9 +32,9 @@ export interface ITsModule<M> {
   exports: Record<string, string>;
 
   /**
-   * Map from an URI of an imported module to a map from ref to an AST node.
+   * Map from an URI of an imported module to an imported ref.
    */
-  imports: Record<string, Record<string, JtdNode<M>>>;
+  imports: Record<string, Array<string>>;
 }
 
 /**
@@ -72,7 +72,7 @@ export function compileTsModules<M, C>(jtdModules: Record<string, Record<string,
       source: '',
       definitions,
       exports,
-      imports: createMap(),
+      imports: {},
     };
   }
 
@@ -81,26 +81,38 @@ export function compileTsModules<M, C>(jtdModules: Record<string, Record<string,
   for (const [, tsModule] of tsModuleEntries) {
 
     const resolveExternalRef: RefResolver<M> = (node) => {
+      const ref = node.ref;
+
       for (const [uri, otherTsModule] of tsModuleEntries) {
         if (tsModule === otherTsModule) {
           continue;
         }
-        const typeNode = otherTsModule.definitions[node.ref];
 
-        if (typeNode) {
-          (tsModule.imports[uri] ||= createMap())[node.ref] = typeNode;
-          return otherTsModule.exports[node.ref];
+        const typeNode = otherTsModule.definitions[ref];
+
+        if (!typeNode) {
+          continue;
         }
+
+        const refs = tsModule.imports[uri] ||= [];
+
+        if (refs.indexOf(ref) === -1) {
+          refs.push(ref);
+        }
+        return otherTsModule.exports[ref];
       }
-      die('Unresolved reference: ' + node.ref);
+      die('Unresolved reference: ' + ref);
     };
 
     let src = compileTsTypes(tsModule.definitions, resolveExternalRef, options);
 
-    for (const [uri, refMap] of Object.entries(tsModule.imports)) {
+    for (const [uri, refs] of Object.entries(tsModule.imports)) {
       const importedNames: Array<string> = [];
 
-      for (const [ref, node] of Object.entries(refMap)) {
+      for (const ref of refs) {
+
+        const node = tsModules[uri].definitions[ref];
+
         importedNames.push(renameType(ref, node));
 
         if (validatorsRendered) {

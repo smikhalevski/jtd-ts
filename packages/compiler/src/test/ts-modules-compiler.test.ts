@@ -67,9 +67,7 @@ describe('compileJtdTsModules', () => {
           role: 'Role',
         },
         imports: {
-          './user': {
-            user: expect.any(Object),
-          },
+          './user': ['user'],
         },
       },
       './user': {
