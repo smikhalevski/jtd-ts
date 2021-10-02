@@ -18,18 +18,18 @@ import {
  * @template M The type of the metadata.
  */
 export interface IJtdNodeVisitor<M> {
-  any?: (node: IJtdAnyNode<M>) => void;
-  ref?: (node: IJtdRefNode<M>) => void;
-  nullable?: (node: IJtdNullableNode<M>, next: () => void) => void;
-  type?: (node: IJtdTypeNode<M>) => void;
-  enum?: (node: IJtdEnumNode<M>) => void;
-  elements?: (node: IJtdElementsNode<M>, next: () => void) => void;
-  values?: (node: IJtdValuesNode<M>, next: () => void) => void;
-  object?: (node: IJtdObjectNode<M>, next: () => void) => void;
-  property?: (propKey: string, propNode: JtdNode<M>, objectNode: IJtdObjectNode<M>, next: () => void) => void;
-  optionalProperty?: (propKey: string, propNode: JtdNode<M>, objectNode: IJtdObjectNode<M>, next: () => void) => void;
-  union?: (node: IJtdUnionNode<M>, next: () => void) => void;
-  mapping?: (mappingKey: string, mappingNode: IJtdObjectNode<M>, unionNode: IJtdUnionNode<M>, next: () => void) => void;
+  any?(node: IJtdAnyNode<M>): void;
+  ref?(node: IJtdRefNode<M>): void;
+  nullable?(node: IJtdNullableNode<M>, next: () => void): void;
+  type?(node: IJtdTypeNode<M>): void;
+  enum?(node: IJtdEnumNode<M>): void;
+  elements?(node: IJtdElementsNode<M>, next: () => void): void;
+  values?(node: IJtdValuesNode<M>, next: () => void): void;
+  object?(node: IJtdObjectNode<M>, next: () => void): void;
+  property?(propKey: string, propNode: JtdNode<M>, objectNode: IJtdObjectNode<M>, next: () => void): void;
+  optionalProperty?(propKey: string, propNode: JtdNode<M>, objectNode: IJtdObjectNode<M>, next: () => void): void;
+  union?(node: IJtdUnionNode<M>, next: () => void): void;
+  mapping?(mappingKey: string, mappingNode: IJtdObjectNode<M>, unionNode: IJtdUnionNode<M>, next: () => void): void;
 }
 
 /**
