@@ -1,5 +1,7 @@
+import {JSON_POINTER_SEPARATOR, toJsonPointer} from './json-pointer';
 import {IValidationContext, ValidationErrorCode} from './runtime-types';
 
+export * from './json-pointer';
 export * from './runtime-types';
 
 export {
@@ -18,8 +20,6 @@ export {
   isNotOptional as _O,
 };
 
-export const JSON_POINTER_SEPARATOR = '/';
-
 export function isNotNullable(value: unknown): boolean {
   return value !== null;
 }
@@ -37,10 +37,6 @@ export function getObjectKeys(value: object): Array<string> {
  */
 export function isValidationCompleted(ctx: IValidationContext): boolean {
   return !(!ctx.shallow || !ctx.errors || ctx.errors.length === 0);
-}
-
-export function toJsonPointer(str: string | number): string {
-  return JSON_POINTER_SEPARATOR + str.toString().replace(/~/g, '~0').replace(/\//g, '~1');
 }
 
 export function raiseValidationError(code: string | number, ctx: IValidationContext, pointer: string): false {
