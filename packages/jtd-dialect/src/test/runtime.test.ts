@@ -9,7 +9,7 @@ import {
   raiseInvalid,
   raiseValidationError,
   rejectExcluded,
-} from '../main/runtime-utils';
+} from '../main/runtime';
 
 describe('isValidationCompleted', () => {
 

@@ -100,6 +100,7 @@ function compileValidatorBody<M, C>(node: JtdNode<M>, ctx: C, dialect: IValidato
  * The default validator dialect config.
  */
 export const validatorDialectConfig: IValidatorDialectConfig<any> = {
+  runtimeVarName: 'runtime',
   renameValidator: (name) => 'validate' + pascalCase(name),
   renamePropertyKey: (propKey) => propKey,
   renameDiscriminatorKey: (node) => node.discriminator,

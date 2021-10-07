@@ -24,6 +24,11 @@ export type ValidatorDialectFactory<M, C> = (config: IValidatorDialectConfig<M>)
 export interface IValidatorDialectConfig<M> {
 
   /**
+   * The name of the variable that holds the runtime object.
+   */
+  runtimeVarName: string;
+
+  /**
    * Returns the name of the emitted validator function.
    *
    * @param name The JTD definition name.

@@ -31,6 +31,46 @@ export interface ITsModulesCompilerOptions<M, C>
   validatorsRendered?: boolean;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /**
  * The TypeScript module.
  */
@@ -186,7 +226,7 @@ function createTsModules<M>(jtdModules: Record<string, IJtdDict<M>>, options: Re
 
     for (const [name, node] of Object.entries(module.definitions)) {
       module.exports[name] = {
-        typeName: renameType(name, node),
+        typeName: renameTypeAlias(name, node),
         validatorName: renameValidator(name, node),
         typeGuardName: renameTypeGuard(name, node),
       };
