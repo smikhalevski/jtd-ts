@@ -5,6 +5,9 @@
     "strict": true,
     "target": "ES5",
     "module": "ES6",
+    "lib": [
+      "ES2021"
+    ],
     "rootDir": ".",
     "baseUrl": ".",
     "paths": {

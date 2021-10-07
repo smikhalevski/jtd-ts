@@ -1,4 +1,4 @@
-import {IJtdcDialect, JtdNode} from '@jtdc/types';
+import {IJtdcDialect, IJtdNodeDict, JtdNode} from '@jtdc/types';
 import {visitJtdNode} from './jtd-visitor';
 import {compileJsSource, IFragmentCgNode, template as _} from '@smikhalevski/codegen';
 
@@ -22,7 +22,7 @@ export interface IValidatorCompilerOptions<M, C> {
  * @template M The type of the metadata.
  * @template C The type of the context.
  */
-export function compileValidators<M, C>(definitions: Record<string, JtdNode<M>>, dialect: IJtdcDialect<M, C>, options: IValidatorCompilerOptions<M, C> = {}): string {
+export function compileValidators<M, C>(definitions: IJtdNodeDict<M>, dialect: IJtdcDialect<M, C>, options: IValidatorCompilerOptions<M, C> = {}): string {
   const {typeGuardsRendered} = options;
 
   let src = '';
@@ -38,59 +38,59 @@ export function compileValidators<M, C>(definitions: Record<string, JtdNode<M>>,
 }
 
 function compileValidatorBody<M, C>(node: JtdNode<M>, ctx: C, dialect: IJtdcDialect<M, C>): IFragmentCgNode {
-  let frags: Array<IFragmentCgNode> = [];
+  let fragments: Array<IFragmentCgNode> = [];
 
   const createNext = (next: () => void) => (nextCtx: C) => {
-    const prevFrags = frags;
+    const prevFragments = fragments;
     const prevCtx = ctx;
 
-    frags = [];
+    fragments = [];
     ctx = nextCtx;
     next();
 
-    const nextFrag = _(frags);
+    const nextFragment = _(fragments);
 
-    frags = prevFrags;
+    fragments = prevFragments;
     ctx = prevCtx;
 
-    return nextFrag;
+    return nextFragment;
   };
 
   visitJtdNode(node, {
     ref(node) {
-      frags.push(dialect.ref(node, ctx));
+      fragments.push(dialect.ref(node, ctx));
     },
     nullable(node, next) {
-      frags.push(dialect.nullable(node, ctx, createNext(next)));
+      fragments.push(dialect.nullable(node, ctx, createNext(next)));
     },
     type(node) {
-      frags.push(dialect.type(node, ctx));
+      fragments.push(dialect.type(node, ctx));
     },
     enum(node) {
-      frags.push(dialect.enum(node, ctx));
+      fragments.push(dialect.enum(node, ctx));
     },
     elements(node, next) {
-      frags.push(dialect.elements(node, ctx, createNext(next)));
+      fragments.push(dialect.elements(node, ctx, createNext(next)));
     },
     values(node, next) {
-      frags.push(dialect.values(node, ctx, createNext(next)));
+      fragments.push(dialect.values(node, ctx, createNext(next)));
     },
     object(node, next) {
-      frags.push(dialect.object(node, ctx, createNext(next)));
+      fragments.push(dialect.object(node, ctx, createNext(next)));
     },
     property(propKey, propNode, objectNode, next) {
-      frags.push(dialect.property(propKey, propNode, objectNode, ctx, createNext(next)));
+      fragments.push(dialect.property(propKey, propNode, objectNode, ctx, createNext(next)));
     },
     optionalProperty(propKey, propNode, objectNode, next) {
-      frags.push(dialect.optionalProperty(propKey, propNode, objectNode, ctx, createNext(next)));
+      fragments.push(dialect.optionalProperty(propKey, propNode, objectNode, ctx, createNext(next)));
     },
     union(node, next) {
-      frags.push(dialect.union(node, ctx, createNext(next)));
+      fragments.push(dialect.union(node, ctx, createNext(next)));
     },
     mapping(mappingKey, mappingNode, unionNode, next) {
-      frags.push(dialect.mapping(mappingKey, mappingNode, unionNode, ctx, createNext(next)));
+      fragments.push(dialect.mapping(mappingKey, mappingNode, unionNode, ctx, createNext(next)));
     },
   });
 
-  return _(frags);
+  return _(fragments);
 }

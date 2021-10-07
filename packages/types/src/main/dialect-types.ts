@@ -14,44 +14,44 @@ import {
 /**
  * A factory that produces a validator compilation dialect with given options.
  */
-export type JtdcDialectFactory<M, C> = (options?: IJtdcDialectOptions<M>) => IJtdcDialect<M, C>;
+export type JtdcDialectFactory<M, C> = (config: IJtdcDialectConfig<M>) => IJtdcDialect<M, C>;
 
 /**
  * Options provided to all validator dialect factories.
  *
  * @template M The type of the metadata.
  */
-export interface IJtdcDialectOptions<M> {
+export interface IJtdcDialectConfig<M> {
 
   /**
    * Returns the name of the emitted validator function.
    */
-  renameValidator?(ref: string, node: JtdNode<M>): string;
+  renameValidator(ref: string, node: JtdNode<M>): string;
 
   /**
    * Returns the name of an object property.
    */
-  renamePropertyKey?(propKey: string, propNode: JtdNode<M>, objectNode: IJtdObjectNode<M>): string;
+  renamePropertyKey(propKey: string, propNode: JtdNode<M>, objectNode: IJtdObjectNode<M>): string;
 
   /**
    * Returns the name of the union discriminator property.
    */
-  renameDiscriminatorKey?(node: IJtdUnionNode<M>): string;
+  renameDiscriminatorKey(node: IJtdUnionNode<M>): string;
 
   /**
    * Returns the contents of the enum value.
    */
-  rewriteEnumValue?(value: string, node: IJtdEnumNode<M>): string | number | undefined;
+  rewriteEnumValue(value: string, node: IJtdEnumNode<M>): string | number | undefined;
 
   /**
    * Returns the string value that would be used as a value of discriminator property in united interfaces.
    */
-  rewriteMappingKey?(mappingKey: string, mappingNode: IJtdObjectNode<M>, unionRef: string | undefined, unionNode: IJtdUnionNode<M>): string | number | undefined;
+  rewriteMappingKey(mappingKey: string, mappingNode: IJtdObjectNode<M>, unionRef: string | undefined, unionNode: IJtdUnionNode<M>): string | number | undefined;
 
   /**
    * Returns the name of the type guard function.
    */
-  renameTypeGuard?(ref: string, node: JtdNode<M>): string;
+  renameTypeGuard(ref: string, node: JtdNode<M>): string;
 
   /**
    * Returns a TypeScript type name described by `node`.
@@ -59,7 +59,7 @@ export interface IJtdcDialectOptions<M> {
    * @param ref The ref of the renamed type.
    * @param node The node that describes the renamed type.
    */
-  renameType?(ref: string, node: JtdNode<M>): string;
+  renameType(ref: string, node: JtdNode<M>): string;
 }
 
 /**

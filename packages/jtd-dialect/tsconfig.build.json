@@ -3,6 +3,7 @@
   "compilerOptions": {
     "importHelpers": true,
     "declaration": true,
+    "preserveConstEnums": true,
     "rootDir": "./src/main",
     "outDir": "./lib",
     "paths": {}

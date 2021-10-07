@@ -31,6 +31,10 @@ export type JtdNode<M> =
     | IJtdObjectNode<M>
     | IJtdUnionNode<M>;
 
+export interface IJtdNodeDict<M> {
+  [name: string]: JtdNode<M>;
+}
+
 /**
  * The base type of the JTD AST node.
  *
@@ -78,8 +82,8 @@ export interface IJtdValuesNode<M> extends IJtdNode<M> {
 
 export interface IJtdObjectNode<M> extends IJtdNode<M> {
   nodeType: JtdNodeType.OBJECT;
-  properties: Record<string, JtdNode<M>>;
-  optionalProperties: Record<string, JtdNode<M>>;
+  properties: IJtdNodeDict<M>;
+  optionalProperties: IJtdNodeDict<M>;
 }
 
 /**

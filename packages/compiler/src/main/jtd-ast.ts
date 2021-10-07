@@ -1,6 +1,8 @@
 import {
   IJtd,
+  IJtdDict,
   IJtdElementsNode,
+  IJtdNodeDict,
   IJtdNullableNode,
   IJtdObjectNode,
   IJtdRoot,
@@ -21,7 +23,7 @@ import {createMap, die} from './misc';
  *
  * @returns The map from ref to a parsed node.
  */
-export function parseJtdRoot<M>(ref: string, jtdRoot: IJtdRoot<M>): Record<string, JtdNode<M>> {
+export function parseJtdRoot<M>(ref: string, jtdRoot: IJtdRoot<M>): IJtdNodeDict<M> {
   const nodes = jtdRoot.definitions ? parseJtdDefinitions(jtdRoot.definitions) : createMap();
   nodes[ref] = parseJtd(jtdRoot);
   return nodes;
@@ -36,7 +38,7 @@ export function parseJtdRoot<M>(ref: string, jtdRoot: IJtdRoot<M>): Record<strin
  *
  * @returns The map from ref to a parsed node.
  */
-export function parseJtdDefinitions<M>(jtdDefinitions: Record<string, IJtd<M>>): Record<string, JtdNode<M>> {
+export function parseJtdDefinitions<M>(jtdDefinitions: IJtdDict<M>): IJtdNodeDict<M> {
   const nodes = createMap<JtdNode<M>>();
 
   for (const [ref, jtd] of Object.entries(jtdDefinitions)) {

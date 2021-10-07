@@ -1,36 +1,31 @@
-const separator = '/';
-
-const encodeRe0 = /~/g;
-const encodeRe1 = /\//g;
-const encoded0 = '~0';
-const encoded1 = '~1';
-
-const decodeRe0 = /~0/g;
-const decodeRe1 = /~1/g;
-const decoded0 = '~';
-const decoded1 = '\/';
-
-export const JSON_POINTER_SEPARATOR = separator;
+export const JSON_POINTER_SEPARATOR = '/';
 
 export function toJsonPointer(keys: string | number | Array<string | number>): string {
-  if (Array.isArray(keys)) {
-    let pointer = '';
-
-    for (const key of keys) {
-      pointer += toJsonPointer(key);
-    }
-    return pointer;
+  if (!Array.isArray(keys)) {
+    return JSON_POINTER_SEPARATOR + encodeKey(keys + '');
   }
-  return separator + keys.toString().replace(encodeRe0, encoded0).replace(encodeRe1, encoded1);
+  let pointer = '';
+
+  for (const key of keys) {
+    pointer += JSON_POINTER_SEPARATOR + encodeKey(key + '');
+  }
+  return pointer;
 }
 
 export function fromJsonPointer(str: string): Array<string> {
-  if (str.charAt(0) === separator) {
+  if (str.length === 0) {
+    return [];
+  }
+  if (str.charAt(0) === JSON_POINTER_SEPARATOR) {
     str = str.substring(1);
   }
-  return str.split(separator).map(decodeJsonPointer);
+  return str.split(JSON_POINTER_SEPARATOR).map(decodeKey);
 }
 
-function decodeJsonPointer(str: string): string {
-  return str.replace(decodeRe1, decoded1).replace(decodeRe0, decoded0);
+function encodeKey(str: string): string {
+  return str.replaceAll('~', '~0').replaceAll('/', '~1');
+}
+
+function decodeKey(str: string): string {
+  return str.replaceAll('~1', '/').replaceAll('~0', '~');
 }

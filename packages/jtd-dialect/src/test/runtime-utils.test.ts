@@ -1,15 +1,15 @@
+import {IValidationContext, ValidationErrorCode} from '../main/runtime';
 import {
   checkArray,
   checkObject,
   checkRequired,
+  checkTimestamp,
   isValidationCompleted,
-  IValidationContext,
   raiseIllegalType,
   raiseInvalid,
   raiseValidationError,
   rejectExcluded,
-  ValidationErrorCode,
-} from '../main/runtime';
+} from '../main/runtime-utils';
 
 describe('isValidationCompleted', () => {
 
@@ -183,5 +183,19 @@ describe('checkObject', () => {
 
     expect(checkObject(value, ctx, 'foo')).toBe(false);
     expect(ctx).toEqual({excluded: new Set([value])});
+  });
+});
+
+describe('checkTimestamp', () => {
+
+  test('returns false if value is not a properly formatted timestamp', () => {
+    const ctx: IValidationContext = {};
+
+    expect(checkTimestamp('123', ctx, 'foo')).toBe(false);
+    expect(ctx).toEqual({errors: [{pointer: 'foo', code: ValidationErrorCode.INVALID}]});
+  });
+
+  test('returns true if value is a properly formatted timestamp', () => {
+    expect(checkTimestamp('2020-01-01T10:00:00Z', {}, 'foo')).toBe(true);
   });
 });

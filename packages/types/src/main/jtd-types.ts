@@ -22,6 +22,10 @@ export const enum JtdType {
   UINT32 = 'uint32',
 }
 
+export interface IJtdDict<M> {
+  [name: string]: IJtd<M>;
+}
+
 /**
  * The JTD with embedded definitions.
  *
@@ -31,7 +35,7 @@ export const enum JtdType {
  * @see https://jsontypedef.com/docs/jtd-in-5-minutes JTD in 5 minutes
  */
 export interface IJtdRoot<M> extends IJtd<M> {
-  definitions?: Record<string, IJtd<M>>;
+  definitions?: IJtdDict<M>;
 }
 
 /**
@@ -47,8 +51,8 @@ export interface IJtd<M> {
   enum?: Array<string>;
   elements?: IJtd<M>;
   values?: IJtd<M>;
-  properties?: Record<string, IJtd<M>>;
-  optionalProperties?: Record<string, IJtd<M>>;
+  properties?: IJtdDict<M>;
+  optionalProperties?: IJtdDict<M>;
   discriminator?: string;
-  mapping?: Record<string, IJtd<M>>;
+  mapping?: IJtdDict<M>;
 }

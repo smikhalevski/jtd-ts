@@ -8,10 +8,9 @@ import {
   joinFragmentChildren,
   template as _,
 } from '@smikhalevski/codegen';
-import {pascalCase} from 'change-case-all';
-import {IJtdcDialect, IJtdcDialectOptions, JtdNode, JtdNodeType, JtdType} from '@jtdc/types';
+import {IJtdcDialect, IJtdcDialectConfig, JtdNode, JtdNodeType, JtdType} from '@jtdc/types';
 import * as runtime from './runtime';
-import {toJsonPointer} from './runtime';
+import {toJsonPointer} from './json-pointer';
 
 /**
  * Context used by the dialect during validator compilation.
@@ -24,7 +23,7 @@ export interface IJtdDialectContext {
   /**
    * Wraps an expression so result is retained between validator invocations.
    */
-  warpCache(frag: IFragmentCgNode): IFragmentCgNode;
+  warpCache(fragment: IFragmentCgNode): IFragmentCgNode;
 }
 
 /**
@@ -32,8 +31,7 @@ export interface IJtdDialectContext {
  *
  * @template M The type of the metadata.
  */
-export function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): IJtdcDialect<M, IJtdDialectContext> {
-  const opt = {...jtdDialectOptions, ...options};
+export function createJtdDialect<M>(config: IJtdcDialectConfig<M>): IJtdcDialect<M, IJtdDialectContext> {
 
   const {
     renameValidator,
@@ -43,7 +41,7 @@ export function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): IJtdcDial
     rewriteMappingKey,
     renameTypeGuard,
     renameType,
-  } = opt;
+  } = config;
 
   return {
 
@@ -69,12 +67,12 @@ export function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): IJtdcDial
 
       let cacheSize = 0;
 
-      const bodyFrag = _(
+      const bodyFragment = _(
           _.assignment(ctxVar, _`${ctxVar}||{}`, true),
           _.assignment(pointerVar, _`${pointerVar}||""`),
           _.assignment(cacheVar, _`(${name}.cache||={})`),
           next({
-            warpCache: (frag: IFragmentCgNode) => _`${cacheVar}.${encodeLetters(cacheSize++)}||=${frag}`,
+            warpCache: (fragment) => _`${cacheVar}.${encodeLetters(cacheSize++)}||=${fragment}`,
             valueVar,
             ctxVar,
             pointerVar,
@@ -82,14 +80,14 @@ export function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): IJtdcDial
           _`return ${ctxVar}.errors;`,
       );
 
-      inlineVarAssignments(bodyFrag);
+      inlineVarAssignments(bodyFragment);
 
-      const undeclaredVars = collectVarRefs(bodyFrag, [valueVar, ctxVar, pointerVar]);
+      const undeclaredVars = collectVarRefs(bodyFragment, [valueVar, ctxVar, pointerVar]);
 
       return _(
           _.block`const ${name}:_Validator=(${valueVar},${ctxVar},${pointerVar})=>{${_(
               undeclaredVars.length !== 0 && _`let ${joinFragmentChildren(undeclaredVars, ',')};`,
-              bodyFrag,
+              bodyFragment,
           )}};`,
           _`export{${name}};`,
       );
@@ -118,10 +116,10 @@ export function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): IJtdcDial
     },
 
     enum(node, ctx) {
-      const valuesFrag = ctx.warpCache(_`[${
+      const valuesFragment = ctx.warpCache(_`[${
           joinFragmentChildren(node.values.map((value) => JSON.stringify(rewriteEnumValue(value, node))), ',')
       }]`);
-      return _`_e(${ctx.valueVar},${valuesFrag},${ctx.ctxVar},${ctx.pointerVar});`;
+      return _`_e(${ctx.valueVar},${valuesFragment},${ctx.ctxVar},${ctx.pointerVar});`;
     },
 
     elements(node, ctx, next) {
@@ -229,18 +227,18 @@ export function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): IJtdcDial
   };
 }
 
-function compileJsonPointer(key: string): string {
+export function compileJsonPointer(key: string): string {
   return JSON.stringify(toJsonPointer(key));
 }
 
-function isUnconstrainedNode<M>(node: JtdNode<M>): boolean {
+export function isUnconstrainedNode<M>(node: JtdNode<M>): boolean {
   return node.nodeType === JtdNodeType.ANY || node.nodeType === JtdNodeType.NULLABLE && isUnconstrainedNode(node.valueNode);
 }
 
 const jtdTypeCheckerMap: Record<string, keyof typeof runtime> = {
   [JtdType.BOOLEAN]: '_b',
   [JtdType.STRING]: '_s',
-  [JtdType.TIMESTAMP]: '_s',
+  [JtdType.TIMESTAMP]: '_t',
   [JtdType.FLOAT32]: '_n',
   [JtdType.FLOAT64]: '_n',
   [JtdType.INT8]: '_i',
@@ -249,17 +247,4 @@ const jtdTypeCheckerMap: Record<string, keyof typeof runtime> = {
   [JtdType.UINT16]: '_i',
   [JtdType.INT32]: '_i',
   [JtdType.UINT32]: '_i',
-};
-
-/**
- * Global default options used by {@link createJtdDialect}.
- */
-export const jtdDialectOptions: Required<IJtdcDialectOptions<any>> = {
-  renameValidator: (ref) => 'validate' + pascalCase(ref),
-  renamePropertyKey: (propKey) => propKey,
-  renameDiscriminatorKey: (node) => node.discriminator,
-  rewriteEnumValue: (value) => value,
-  rewriteMappingKey: (mappingKey) => mappingKey,
-  renameTypeGuard: (ref) => 'is' + pascalCase(ref),
-  renameType: (ref) => pascalCase(ref),
 };

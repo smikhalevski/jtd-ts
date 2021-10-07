@@ -32,4 +32,13 @@ describe('fromJsonPointer', () => {
     expect(fromJsonPointer(toJsonPointer(['a', '\/']))).toEqual(['a', '\/']);
     expect(fromJsonPointer(toJsonPointer(['a', 'aaa~\/~\/bbb']))).toEqual(['a', 'aaa~\/~\/bbb']);
   });
+
+  test('decodes empty pointer', () => {
+    expect(fromJsonPointer('')).toEqual([]);
+  });
+
+  test('decodes pointer with an empty string key', () => {
+    expect(fromJsonPointer('/')).toEqual(['']);
+    expect(fromJsonPointer('//a')).toEqual(['', 'a']);
+  });
 });
