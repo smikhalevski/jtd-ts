@@ -1,9 +1,9 @@
 import {program} from 'commander';
-import {compileModules, IModulesCompilerOptions} from '@jtdc/compiler';
+import {compileModules, IModulesCompilerOptions, nodeImportResolver} from '@jtdc/compiler';
 import fs from 'fs';
 import path from 'path';
 import glob from 'glob';
-import {createJtdValidatorDialect} from '@jtdc/jtd-dialect';
+import {validatorDialectFactory} from '@jtdc/jtd-dialect';
 
 const CONFIG_PATH = 'jtdc.config.js';
 
@@ -28,10 +28,13 @@ const outDir = path.resolve(cwd, opts.outDir);
 const rootDir = path.resolve(cwd, opts.rootDir);
 const configPath = path.join(cwd, opts.config);
 
-let config: IModulesCompilerOptions<any, any> = {};
+let config: IModulesCompilerOptions<any, any> = {
+  importResolver: nodeImportResolver,
+  validatorDialectFactory,
+};
 
 if (fs.existsSync(configPath)) {
-  config = require(configPath);
+  Object.assign(config, require(configPath));
 } else if (opts.config !== CONFIG_PATH) {
   console.log('error: Config not found ' + configPath);
   process.exit(1);
@@ -50,20 +53,18 @@ if (!filePaths.length) {
 const jtdModules = Object.create(null);
 
 for (const filePath of filePaths) {
-  jtdModules['.' + path.sep + filePath.replace(/\.[^.]*$/, '')] = require(path.resolve(rootDir, filePath));
+  jtdModules[path.join(outDir, filePath.replace(/\.[^.]*$/, '.ts'))] = require(path.resolve(rootDir, filePath));
 }
 
 let tsModules;
 try {
-  tsModules = compileModules(jtdModules, createJtdValidatorDialect, config);
+  tsModules = compileModules(jtdModules, config);
 } catch (error: any) {
   console.log('error: ' + error.message);
   process.exit(1);
 }
 
-for (const [uri, tsModule] of Object.entries(tsModules)) {
-  const filePath = path.resolve(outDir, uri + '.ts');
-
-  fs.mkdirSync(path.dirname(filePath), {recursive: true});
-  fs.writeFileSync(filePath, tsModule.source + '\n', {encoding: 'utf8'});
+for (const module of tsModules) {
+  fs.mkdirSync(path.dirname(module.path), {recursive: true});
+  fs.writeFileSync(module.path, module.source + '\n', {encoding: 'utf8'});
 }

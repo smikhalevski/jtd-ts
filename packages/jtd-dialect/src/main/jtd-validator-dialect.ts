@@ -54,7 +54,7 @@ export function createJtdValidatorDialect<M>(config: IValidatorDialectConfig<M>)
       const name = renameTypeGuard(jtdName, node);
 
       return _(
-          _`const ${name}=(value:unknown):value is ${renameType(jtdName, node)}=>!${renameValidator(jtdName, node)}(value,{shallow:true});`,
+          _`let ${name}=(value:unknown):value is ${renameType(jtdName, node)}=>!${renameValidator(jtdName, node)}(value,{shallow:true});`,
           _`export{${name}};`,
       );
     },
@@ -86,7 +86,7 @@ export function createJtdValidatorDialect<M>(config: IValidatorDialectConfig<M>)
       const undeclaredVars = collectVarRefs(bodyFragment, [valueVar, ctxVar, pointerVar]);
 
       return _(
-          _.block`const ${name}:${runtimeVarName}.Validator=(${valueVar},${ctxVar},${pointerVar})=>{${_(
+          _.block`let ${name}:${runtimeVarName}.Validator=(${valueVar},${ctxVar},${pointerVar})=>{${_(
               undeclaredVars.length !== 0 && _`let ${joinFragmentChildren(undeclaredVars, ',')};`,
               bodyFragment,
           )}};`,
@@ -102,7 +102,7 @@ export function createJtdValidatorDialect<M>(config: IValidatorDialectConfig<M>)
       if (isUnconstrainedNode(node.valueNode)) {
         return _``;
       }
-      return _.block`if(${runtimeVarName}.isNotNullable(${ctx.valueVar})){${
+      return _.block`if(${runtimeVarName}.isNotNull(${ctx.valueVar})){${
           next(ctx)
       }}`;
     },
@@ -201,7 +201,7 @@ export function createJtdValidatorDialect<M>(config: IValidatorDialectConfig<M>)
 
       return _.block(
           _.assignment(valueVar, _`${ctx.valueVar}${compilePropertyAccessor(propKey)}`),
-          _.block`if(${runtimeVarName}.isNotOptional(${valueVar})){${_(
+          _.block`if(${runtimeVarName}.isDefined(${valueVar})){${_(
               _.assignment(pointerVar, _`${ctx.pointerVar}+${compileJsonPointer(propKey)}`),
               next({...ctx, valueVar, pointerVar}),
           )}}`,

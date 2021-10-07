@@ -55,6 +55,8 @@ function compileModule<M>(module: IModule, modules: Array<IModule>, options: Req
 
   const {
     importResolver,
+    renameValidator,
+    renameTypeGuard,
     validatorsRendered,
     validatorDialectFactory,
   } = options;
@@ -82,7 +84,11 @@ function compileModule<M>(module: IModule, modules: Array<IModule>, options: Req
 
   if (validatorsRendered) {
 
-    const dialect = validatorDialectFactory(options);
+    const dialect = validatorDialectFactory({
+      ...options,
+      renameValidator: (name, node) => node.nodeType === JtdNodeType.REF ? module.definitions[node.ref] ? renameValidator(name, module.definitions[node.ref]) : importResolver(node, module.path, modules)[0].validatorName : renameValidator(name, node),
+      renameTypeGuard: (name, node) => node.nodeType === JtdNodeType.REF ? module.definitions[node.ref] ? renameTypeGuard(name, module.definitions[node.ref]) : importResolver(node, module.path, modules)[0].typeGuardName : renameTypeGuard(name, node),
+    });
 
     src = compileJsSource(dialect.import())
         + src

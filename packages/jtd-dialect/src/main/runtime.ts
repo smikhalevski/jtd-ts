@@ -1,5 +1,6 @@
 import {IValidationContext, ValidationErrorCode} from './runtime-types';
 
+export * from './json-pointer';
 export * from './runtime-types';
 
 /**
@@ -13,11 +14,11 @@ export * from './runtime-types';
  */
 const datePattern = /^\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?$/;
 
-export function isNotNullable(value: unknown): boolean {
+export function isNotNull(value: unknown): boolean {
   return value !== null;
 }
 
-export function isNotOptional(value: unknown): boolean {
+export function isDefined(value: unknown): boolean {
   return value !== undefined;
 }
 

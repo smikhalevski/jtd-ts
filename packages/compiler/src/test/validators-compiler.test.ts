@@ -25,7 +25,7 @@ describe('compileValidators', () => {
     expect(compileValidators(parseJtdRoot('foo', {
       type: JtdType.STRING,
       nullable: true,
-    }), validatorDialect)).toBe('const validateFoo:runtime.Validator=(a,b,c)=>{b=b||{};if(runtime.isNotNullable(a)){runtime.checkString(a,b,c||"");}return b.errors;};export{validateFoo};');
+    }), validatorDialect)).toBe('const validateFoo:runtime.Validator=(a,b,c)=>{b=b||{};if(runtime.isNotNull(a)){runtime.checkString(a,b,c||"");}return b.errors;};export{validateFoo};');
   });
 
   test('compiles nullable any checker', () => {
@@ -64,7 +64,7 @@ describe('compileValidators', () => {
       optionalProperties: {
         bar: {type: JtdType.FLOAT32},
       },
-    }), validatorDialect)).toBe('const validateFoo:runtime.Validator=(a,b,c)=>{let d;b=b||{};c=c||"";if(runtime.checkObject(a,b,c)){runtime.checkString(a.foo,b,c+"/foo");d=a.bar;if(runtime.isNotOptional(d)){runtime.checkNumber(d,b,c+"/bar");}}return b.errors;};export{validateFoo};');
+    }), validatorDialect)).toBe('const validateFoo:runtime.Validator=(a,b,c)=>{let d;b=b||{};c=c||"";if(runtime.checkObject(a,b,c)){runtime.checkString(a.foo,b,c+"/foo");d=a.bar;if(runtime.isDefined(d)){runtime.checkNumber(d,b,c+"/bar");}}return b.errors;};export{validateFoo};');
   });
 
   test('compiles multiple optional properties', () => {
@@ -73,7 +73,7 @@ describe('compileValidators', () => {
         foo: {type: JtdType.STRING},
         bar: {type: JtdType.FLOAT32},
       },
-    }), validatorDialect)).toBe('const validateFoo:runtime.Validator=(a,b,c)=>{let d,e;b=b||{};c=c||"";if(runtime.checkObject(a,b,c)){d=a.foo;if(runtime.isNotOptional(d)){runtime.checkString(d,b,c+"/foo");}e=a.bar;if(runtime.isNotOptional(e)){runtime.checkNumber(e,b,c+"/bar");}}return b.errors;};export{validateFoo};');
+    }), validatorDialect)).toBe('const validateFoo:runtime.Validator=(a,b,c)=>{let d,e;b=b||{};c=c||"";if(runtime.checkObject(a,b,c)){d=a.foo;if(runtime.isDefined(d)){runtime.checkString(d,b,c+"/foo");}e=a.bar;if(runtime.isDefined(e)){runtime.checkNumber(e,b,c+"/bar");}}return b.errors;};export{validateFoo};');
   });
 
   test('compiles discriminated union checker', () => {
