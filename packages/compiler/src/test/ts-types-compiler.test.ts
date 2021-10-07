@@ -240,15 +240,15 @@ describe('compileTsTypes', () => {
     }))).toThrow();
   });
 
-  test('resolves external refs with resolveRef', () => {
-    const resolveExternalRefMock = jest.fn();
+  test('resolves external refs', () => {
+    const refResolverMock = jest.fn();
 
     compileTsTypes(parseJtdRoot('foo', {
       ref: 'wow',
-    }), resolveExternalRefMock);
+    }), refResolverMock);
 
-    expect(resolveExternalRefMock).toHaveBeenCalledTimes(1);
-    expect(resolveExternalRefMock).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.REF}));
+    expect(refResolverMock).toHaveBeenCalledTimes(1);
+    expect(refResolverMock).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.REF}));
   });
 
   test('resolves refs to local definitions', () => {
