@@ -8,7 +8,8 @@
     "clean": "rimraf ./src/gen ./target"
   },
   "dependencies": {
-    "@jtdc/jtd-dialect": "^1.0.0"
+    "@jtdc/jtd-dialect": "^1.0.0",
+    "@jtdc/jtd-types": "^1.0.0"
   },
   "devDependencies": {
     "@jtdc/cli": "^1.0.0",

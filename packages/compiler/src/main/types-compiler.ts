@@ -27,7 +27,7 @@ export interface ITypesCompilerOptions<M> {
    *
    * ```ts
    * // Add the "I" prefix to the interface names.
-   * (name, node) => (node.type === JtdNodeType.OBJECT ? 'I' : '') + pascalCase(name);
+   * (name, node) => (node.nodeType === JtdNodeType.OBJECT ? 'I' : '') + pascalCase(name);
    * ```
    *
    * @param name The JTD definition name.
