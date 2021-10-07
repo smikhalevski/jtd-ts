@@ -5,9 +5,11 @@ export * from './runtime-types';
 /**
  * RegExp to validate an RFC3339 timestamp.
  *
- * @see https://datatracker.ietf.org/doc/html/rfc3339#section-5.6 Internet Date/Time Format
- * @example
+ * ```ts
  * "1985-04-12T23:20:50.52Z"
+ * ```
+ *
+ * @see https://datatracker.ietf.org/doc/html/rfc3339#section-5.6 Internet Date/Time Format
  */
 const datePattern = /^\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?$/;
 

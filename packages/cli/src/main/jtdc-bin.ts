@@ -1,5 +1,5 @@
 import {program} from 'commander';
-import {compileTsModules, ITsModulesCompilerOptions} from '@jtdc/compiler';
+import {compileModules, IModulesCompilerOptions} from '@jtdc/compiler';
 import fs from 'fs';
 import path from 'path';
 import glob from 'glob';
@@ -28,7 +28,7 @@ const outDir = path.resolve(cwd, opts.outDir);
 const rootDir = path.resolve(cwd, opts.rootDir);
 const configPath = path.join(cwd, opts.config);
 
-let config: ITsModulesCompilerOptions<any, any> = {};
+let config: IModulesCompilerOptions<any, any> = {};
 
 if (fs.existsSync(configPath)) {
   config = require(configPath);
@@ -55,7 +55,7 @@ for (const filePath of filePaths) {
 
 let tsModules;
 try {
-  tsModules = compileTsModules(jtdModules, createJtdValidatorDialect, config);
+  tsModules = compileModules(jtdModules, createJtdValidatorDialect, config);
 } catch (error: any) {
   console.log('error: ' + error.message);
   process.exit(1);

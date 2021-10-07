@@ -3,7 +3,7 @@ import {visitJtdNode} from './jtd-visitor';
 import {compileJsSource, IFragmentCgNode, template as _} from '@smikhalevski/codegen';
 import {pascalCase} from 'change-case-all';
 
-export interface IValidatorCompilerOptions<M, C> {
+export interface IValidatorsCompilerOptions<M, C> {
 
   /**
    * If set to `true` then type guards are rendered along with validators.
@@ -23,7 +23,7 @@ export interface IValidatorCompilerOptions<M, C> {
  * @template M The type of the JTD metadata.
  * @template C The type of the context.
  */
-export function compileValidators<M, C>(definitions: IJtdNodeDict<M>, dialect: IValidatorDialect<M, C>, options: IValidatorCompilerOptions<M, C> = {}): string {
+export function compileValidators<M, C>(definitions: IJtdNodeDict<M>, dialect: IValidatorDialect<M, C>, options: IValidatorsCompilerOptions<M, C> = {}): string {
   const {typeGuardsRendered} = options;
 
   let src = '';

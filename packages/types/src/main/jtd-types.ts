@@ -8,8 +8,9 @@ export const enum JtdType {
   /**
    * JSON strings containing an RFC3339 timestamp.
    *
-   * @example
+   * ```ts
    * "1985-04-12T23:20:50.52Z"
+   * ```
    */
   TIMESTAMP = 'timestamp',
   FLOAT32 = 'float32',
