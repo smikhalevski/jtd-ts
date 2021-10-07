@@ -1,6 +1,7 @@
-import {IJtdcDialect, IJtdNodeDict, JtdNode} from '@jtdc/types';
+import {IValidatorDialect, IValidatorDialectConfig, IJtdNodeDict, JtdNode} from '@jtdc/types';
 import {visitJtdNode} from './jtd-visitor';
 import {compileJsSource, IFragmentCgNode, template as _} from '@smikhalevski/codegen';
+import {pascalCase} from 'change-case-all';
 
 export interface IValidatorCompilerOptions<M, C> {
 
@@ -19,25 +20,25 @@ export interface IValidatorCompilerOptions<M, C> {
  * @param dialect The validator compilation dialect that describes how validators and type guards are compiled.
  * @param options Compilation options.
  *
- * @template M The type of the metadata.
+ * @template M The type of the JTD metadata.
  * @template C The type of the context.
  */
-export function compileValidators<M, C>(definitions: IJtdNodeDict<M>, dialect: IJtdcDialect<M, C>, options: IValidatorCompilerOptions<M, C> = {}): string {
+export function compileValidators<M, C>(definitions: IJtdNodeDict<M>, dialect: IValidatorDialect<M, C>, options: IValidatorCompilerOptions<M, C> = {}): string {
   const {typeGuardsRendered} = options;
 
   let src = '';
 
-  for (const [ref, node] of Object.entries(definitions)) {
-    src += compileJsSource(dialect.validator(ref, node, (ctx) => compileValidatorBody(node, ctx, dialect)));
+  for (const [name, node] of Object.entries(definitions)) {
+    src += compileJsSource(dialect.validator(name, node, (ctx) => compileValidatorBody(node, ctx, dialect)));
 
     if (typeGuardsRendered) {
-      src += compileJsSource(dialect.typeGuard(ref, node));
+      src += compileJsSource(dialect.typeGuard(name, node));
     }
   }
   return src;
 }
 
-function compileValidatorBody<M, C>(node: JtdNode<M>, ctx: C, dialect: IJtdcDialect<M, C>): IFragmentCgNode {
+function compileValidatorBody<M, C>(node: JtdNode<M>, ctx: C, dialect: IValidatorDialect<M, C>): IFragmentCgNode {
   let fragments: Array<IFragmentCgNode> = [];
 
   const createNext = (next: () => void) => (nextCtx: C) => {
@@ -94,3 +95,16 @@ function compileValidatorBody<M, C>(node: JtdNode<M>, ctx: C, dialect: IJtdcDial
 
   return _(fragments);
 }
+
+/**
+ * The default validator dialect config.
+ */
+export const validatorDialectConfig: IValidatorDialectConfig<any> = {
+  renameValidator: (name) => 'validate' + pascalCase(name),
+  renamePropertyKey: (propKey) => propKey,
+  renameDiscriminatorKey: (node) => node.discriminator,
+  rewriteEnumValue: (value) => value,
+  rewriteMappingKey: (mappingKey) => mappingKey,
+  renameTypeGuard: (name) => 'is' + pascalCase(name),
+  renameType: (name) => pascalCase(name),
+};

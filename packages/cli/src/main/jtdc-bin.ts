@@ -3,7 +3,7 @@ import {compileTsModules, ITsModulesCompilerOptions} from '@jtdc/compiler';
 import fs from 'fs';
 import path from 'path';
 import glob from 'glob';
-import {createJtdDialect} from '@jtdc/jtd-dialect';
+import {createJtdValidatorDialect} from '@jtdc/jtd-dialect';
 
 const CONFIG_PATH = 'jtdc.config.js';
 
@@ -55,7 +55,7 @@ for (const filePath of filePaths) {
 
 let tsModules;
 try {
-  tsModules = compileTsModules(jtdModules, createJtdDialect, config);
+  tsModules = compileTsModules(jtdModules, createJtdValidatorDialect, config);
 } catch (error: any) {
   console.log('error: ' + error.message);
   process.exit(1);

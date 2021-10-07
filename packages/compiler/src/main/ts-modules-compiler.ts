@@ -1,41 +1,34 @@
-import {compileTsTypes, ITsTypesCompilerOptions, RefResolver, tsTypesCompilerOptions} from './ts-types-compiler';
+import {compileTypes, ITypesCompilerOptions, RefResolver, typesCompilerOptions} from './types-compiler';
 import {parseJtdDefinitions} from './jtd-ast';
-import {IJtdcDialectConfig, IJtdDict, IJtdNodeDict, IJtdRefNode, JtdcDialectFactory, JtdNodeType} from '@jtdc/types';
+import {IValidatorDialectConfig, IJtdDict, IJtdNodeDict, IJtdRefNode, ValidatorDialectFactory, JtdNodeType} from '@jtdc/types';
 import {createMap, die} from './misc';
-import {compileValidators, IValidatorCompilerOptions} from './validators-compiler';
+import {compileValidators, IValidatorCompilerOptions, validatorDialectConfig} from './validators-compiler';
 import {compileJsSource} from '@smikhalevski/codegen';
-import {pascalCase} from 'change-case-all';
 
 export interface ITsModulesCompilerOptions<M, C>
-    extends ITsTypesCompilerOptions<M>,
+    extends ITypesCompilerOptions<M>,
             IValidatorCompilerOptions<M, C>,
-            Partial<IJtdcDialectConfig<M>> {
+            Partial<IValidatorDialectConfig<M>> {
 
   /**
-   * The callback that produces the validator compilation dialect.
+   * Returns the module and the definition name referenced by node.
    */
-  dialectFactory: JtdcDialectFactory<M, C>;
-
-  /**
-   * Returns a ref and module that exports a referenced type.
-   */
-  resolveImportedRef(node: IJtdRefNode<M>, originTsModule: ITsModule, tsModules: Array<ITsModule>): [ref: string, tsModule: ITsModule];
+  resolveImportRef(node: IJtdRefNode<M>, nodeModule: ITsModule, modules: Array<ITsModule>): [importedModule: ITsModule, name: string];
 
   /**
    * Returns a relative import path.
    */
-  resolveImportPath(importedTsModule: ITsModule, tsModule: ITsModule): string;
+  resolveImportPath(importedModule: ITsModule, module: ITsModule): string;
+
+  /**
+   * The callback that produces the validator compilation dialect.
+   */
+  dialectFactory?: ValidatorDialectFactory<M, C>;
 
   /**
    * If `true` then validator functions are rendered along with types.
    */
   validatorsRendered?: boolean;
-}
-
-export const enum TsModuleExportKind {
-  TYPE = 'type',
-  TYPE_GUARD = 'typeGuard',
-  VALIDATOR = 'validator',
 }
 
 /**
@@ -44,12 +37,12 @@ export const enum TsModuleExportKind {
 export interface ITsModule {
 
   /**
-   * The module path.
+   * The path of the JTD module from which this TypeScript module was derived.
    */
-  path: string;
+  jtdPath: string;
 
   /**
-   * Parsed definitions contained by the module.
+   * Parsed definitions from the JTD module.
    */
   definitions: IJtdNodeDict<any>;
 
@@ -59,15 +52,21 @@ export interface ITsModule {
   source: string;
 
   /**
-   * Map from a ref to a map of export names by kind.
+   * Map from the definition name to a map of corresponding exports.
    */
-  exports: Record<string, Record<TsModuleExportKind, string>>;
+  exports: Record<string, ITsModuleExport>;
+}
+
+export interface ITsModuleExport {
+  typeName: string;
+  validatorName: string;
+  typeGuardName: string;
 }
 
 /**
  * Compiles map of JTD definitions to a map of corresponding sources.
  *
- * @template M The type of the metadata.
+ * @template M The type of the JTD metadata.
  * @template C The type of the context.
  */
 export function compileTsModules<M, C>(jtdModules: Record<string, IJtdDict<M>>, options: ITsModulesCompilerOptions<M, C>): Array<ITsModule> {
@@ -75,129 +74,126 @@ export function compileTsModules<M, C>(jtdModules: Record<string, IJtdDict<M>>, 
   const resolvedOptions: Required<ITsModulesCompilerOptions<M, C>> = {
     validatorsRendered: false,
     typeGuardsRendered: false,
-    ...tsTypesCompilerOptions,
-    ...dialectConfig,
+    dialectFactory: () => die('Cannot compile validators and type guards without validatorDialectFactory'),
+    ...typesCompilerOptions,
+    ...validatorDialectConfig,
     ...options,
   };
+
+  const modules = createTsModules(jtdModules, resolvedOptions);
+
+  for (const module of modules) {
+    compileTsModule(module, modules, resolvedOptions);
+  }
+
+  return modules;
+}
+
+function compileTsModule<M>(module: ITsModule, modules: Array<ITsModule>, options: Required<ITsModulesCompilerOptions<M, unknown>>): void {
 
   const {
     renameValidator,
     renameTypeGuard,
     validatorsRendered,
     dialectFactory,
-    resolveImportedRef,
+    resolveImportRef,
     resolveImportPath,
-  } = resolvedOptions;
+  } = options;
 
-  const dialect = dialectFactory(resolvedOptions);
-  const tsModules = createTsModules(jtdModules, resolvedOptions);
+  const imports = new Map<ITsModule, Array<string>>();
 
-  for (const tsModule of tsModules) {
+  const refResolver: RefResolver<M> = (node) => {
+    const [importedModule, name] = resolveImportRef(node, module, modules);
 
-    const imports = new Map<ITsModule, Array<string>>();
+    if (module.jtdPath !== importedModule.jtdPath) {
+      imports.get(importedModule)?.push(name) || imports.set(importedModule, [name]);
+    }
+    return importedModule.exports[name].typeName;
+  };
 
-    const refResolver: RefResolver<M> = (node) => {
-      const [ref, importedTsModule] = resolveImportedRef(node, tsModule, tsModules);
+  let src = compileTypes(module.definitions, refResolver, options);
+  let importsSrc = '';
 
-      if (tsModule !== importedTsModule) {
-        imports.get(importedTsModule)?.push(ref) || imports.set(importedTsModule, [ref]);
+  imports.forEach((names, importedModule) => {
+    const tsNames: Array<string> = [];
+
+    for (const name of names) {
+      tsNames.push(importedModule.exports[name].typeName);
+
+      if (validatorsRendered) {
+        tsNames.push(importedModule.exports[name].validatorName);
       }
-      return importedTsModule.exports[ref][TsModuleExportKind.TYPE];
-    };
+    }
+    importsSrc += `import{${tsNames.sort().join(',')}}from${JSON.stringify(resolveImportPath(importedModule, module))};`;
+  });
 
-    // Compile types
-    let src = compileTsTypes(tsModule.definitions, refResolver, resolvedOptions);
+  src = importsSrc + src;
 
-    // Assemble imports
-    let importsSrc = '';
-    imports.forEach((refs, importedTsModule) => {
-      const importedNames: Array<string> = [];
+  if (validatorsRendered) {
 
-      for (const ref of refs) {
-        importedNames.push(importedTsModule.exports[ref][TsModuleExportKind.TYPE]);
+    const dialect = dialectFactory({
+      ...options,
 
-        if (validatorsRendered) {
-          importedNames.push(importedTsModule.exports[ref][TsModuleExportKind.VALIDATOR]);
+      renameValidator(jtdName, node) {
+        if (node.nodeType !== JtdNodeType.REF) {
+          return renameValidator(jtdName, node);
         }
-      }
-      importsSrc += `import{${importedNames.sort().join(',')}}from${JSON.stringify(resolveImportPath(importedTsModule, tsModule))};`;
+        const [importedModule, name] = resolveImportRef(node, module, modules);
+        return importedModule.exports[name].validatorName;
+      },
+
+      renameTypeGuard(jtdName, node) {
+        if (node.nodeType !== JtdNodeType.REF) {
+          return renameTypeGuard(jtdName, node);
+        }
+        const [importedModule, name] = resolveImportRef(node, module, modules);
+        return importedModule.exports[name].typeGuardName;
+      },
     });
 
-    src = importsSrc + src;
-
-    // Compile validators
-    if (validatorsRendered) {
-
-      resolvedOptions.renameValidator = (ref, node) => {
-        if (node.nodeType === JtdNodeType.REF) {
-          const [ref, importedTsModule] = resolveImportedRef(node, tsModule, tsModules);
-          return importedTsModule.exports[ref][TsModuleExportKind.VALIDATOR];
-        }
-        return renameValidator(ref, node);
-      };
-
-      resolvedOptions.renameTypeGuard = (ref, node) => {
-        if (node.nodeType === JtdNodeType.REF) {
-          const [ref, importedTsModule] = resolveImportedRef(node, tsModule, tsModules);
-          return importedTsModule.exports[ref][TsModuleExportKind.TYPE_GUARD];
-        }
-        return renameTypeGuard(ref, node);
-      };
-
-      src = compileJsSource(dialect.import())
-          + src
-          + compileValidators(tsModule.definitions, dialect, resolvedOptions);
-    }
-
-    tsModule.source = src;
+    src = compileJsSource(dialect.import())
+        + src
+        + compileValidators(module.definitions, dialect, options);
   }
 
-  return tsModules;
+  module.source = src;
 }
 
+/**
+ * Parses JTD modules as TS modules.
+ *
+ * @param jtdModules The map from path to a JTD definitions.
+ * @param options Compiler options.
+ */
 function createTsModules<M>(jtdModules: Record<string, IJtdDict<M>>, options: Required<ITsModulesCompilerOptions<M, unknown>>): Array<ITsModule> {
 
   const {
     renameValidator,
-    renameType,
+    renameTypeAlias,
     renameTypeGuard,
   } = options;
 
-  const tsModules: Array<ITsModule> = [];
+  const modules: Array<ITsModule> = [];
 
-  for (const [path, jtdDefinitions] of Object.entries(jtdModules)) {
+  for (const [jtdPath, jtdDefinitions] of Object.entries(jtdModules)) {
 
-    const definitions = parseJtdDefinitions(jtdDefinitions);
-    const tsModule: ITsModule = {
-      path,
-      definitions,
+    const module: ITsModule = {
+      jtdPath,
+      definitions: parseJtdDefinitions(jtdDefinitions),
       source: '',
       exports: createMap(),
     };
 
-    for (const [ref, node] of Object.entries(definitions)) {
-      tsModule.exports[ref] = {
-        [TsModuleExportKind.TYPE]: renameType(ref, node),
-        [TsModuleExportKind.VALIDATOR]: renameValidator(ref, node),
-        [TsModuleExportKind.TYPE_GUARD]: renameTypeGuard(ref, node),
+    for (const [name, node] of Object.entries(module.definitions)) {
+      module.exports[name] = {
+        typeName: renameType(name, node),
+        validatorName: renameValidator(name, node),
+        typeGuardName: renameTypeGuard(name, node),
       };
     }
 
-    tsModules.push(tsModule);
+    modules.push(module);
   }
 
-  return tsModules;
+  return modules;
 }
-
-/**
- * The default dialect config.
- */
-export const dialectConfig: IJtdcDialectConfig<any> = {
-  renameValidator: (ref) => 'validate' + pascalCase(ref),
-  renamePropertyKey: (propKey) => propKey,
-  renameDiscriminatorKey: (node) => node.discriminator,
-  rewriteEnumValue: (value) => value,
-  rewriteMappingKey: (mappingKey) => mappingKey,
-  renameTypeGuard: (ref) => 'is' + pascalCase(ref),
-  renameType: (ref) => pascalCase(ref),
-};

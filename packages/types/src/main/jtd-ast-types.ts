@@ -18,7 +18,7 @@ export const enum JtdNodeType {
 /**
  * Union of all JTD AST node types.
  *
- * @template M The type of the metadata.
+ * @template M The type of the JTD metadata.
  */
 export type JtdNode<M> =
     | IJtdAnyNode<M>
@@ -38,7 +38,7 @@ export interface IJtdNodeDict<M> {
 /**
  * The base type of the JTD AST node.
  *
- * @template M The type of the metadata.
+ * @template M The type of the JTD metadata.
  */
 export interface IJtdNode<M> {
   nodeType: JtdNodeType;

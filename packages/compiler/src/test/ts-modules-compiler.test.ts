@@ -1,5 +1,5 @@
 import {compileTsModules} from '../main/ts-modules-compiler';
-import {dialectFactory} from '@jtdc/jtd-dialect';
+import {validatorDialectFactory} from '@jtdc/jtd-dialect';
 
 describe('compileJtdTsModules', () => {
 
@@ -56,7 +56,7 @@ describe('compileJtdTsModules', () => {
           },
         },
       },
-    }, dialectFactory, {validatorsRendered: true, typeGuardsRendered: true});
+    }, {dialectFactory: validatorDialectFactory, validatorsRendered: true, typeGuardsRendered: true});
 
     expect(modules).toEqual({
       './account': {

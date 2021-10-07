@@ -15,7 +15,7 @@ import {
 /**
  * Defines set of callbacks that {@link visitJtdNode} can invoke.
  *
- * @template M The type of the metadata.
+ * @template M The type of the JTD metadata.
  */
 export interface IJtdNodeVisitor<M> {
   any?(node: IJtdAnyNode<M>): void;
@@ -35,7 +35,7 @@ export interface IJtdNodeVisitor<M> {
 /**
  * Invokes callbacks from `visitor` for each node tree under `node`.
  *
- * @template M The type of the metadata.
+ * @template M The type of the JTD metadata.
  *
  * @param node The root of the JTD node tree.
  * @param visitor Callbacks that must be invoked for nodes under `node`.

@@ -8,14 +8,14 @@ import {
   joinFragmentChildren,
   template as _,
 } from '@smikhalevski/codegen';
-import {IJtdcDialect, IJtdcDialectConfig, JtdNode, JtdNodeType, JtdType} from '@jtdc/types';
+import {IValidatorDialect, IValidatorDialectConfig, JtdNode, JtdNodeType, JtdType} from '@jtdc/types';
 import * as runtime from './runtime';
 import {toJsonPointer} from './json-pointer';
 
 /**
  * Context used by the dialect during validator compilation.
  */
-export interface IJtdDialectContext {
+export interface IJtdValidatorDialectContext {
   valueVar: IVarRefCgNode;
   ctxVar: IVarRefCgNode;
   pointerVar: IVarRefCgNode;
@@ -29,9 +29,9 @@ export interface IJtdDialectContext {
 /**
  * Creates a validator compilation dialect that renders validators which follow the JTD specification.
  *
- * @template M The type of the metadata.
+ * @template M The type of the JTD metadata.
  */
-export function createJtdDialect<M>(config: IJtdcDialectConfig<M>): IJtdcDialect<M, IJtdDialectContext> {
+export function createJtdValidatorDialect<M>(config: IValidatorDialectConfig<M>): IValidatorDialect<M, IJtdValidatorDialectContext> {
 
   const {
     renameValidator,
@@ -49,21 +49,21 @@ export function createJtdDialect<M>(config: IJtdcDialectConfig<M>): IJtdcDialect
       return _`import{_S,_P,_K,_R,_o,_a,_e,_b,_s,_n,_i,_N,_O,Validator as _Validator}from"@jtdc/jtd-dialect/lib/runtime";`;
     },
 
-    typeGuard(ref, node) {
-      const name = renameTypeGuard(ref, node);
+    typeGuard(jtdName, node) {
+      const name = renameTypeGuard(jtdName, node);
 
       return _(
-          _`const ${name}=(value:unknown):value is ${renameType(ref, node)}=>!${renameValidator(ref, node)}(value,{shallow:true});`,
+          _`const ${name}=(value:unknown):value is ${renameType(jtdName, node)}=>!${renameValidator(jtdName, node)}(value,{shallow:true});`,
           _`export{${name}};`,
       );
     },
 
-    validator(ref, node, next) {
+    validator(jtdName, node, next) {
       const valueVar = _.var();
       const ctxVar = _.var();
       const pointerVar = _.var();
       const cacheVar = _.var();
-      const name = renameValidator(ref, node);
+      const name = renameValidator(jtdName, node);
 
       let cacheSize = 0;
 

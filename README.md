@@ -16,13 +16,12 @@
 npm install --save-dev @jtdc/cli
 ```
 
-By default, validators and type guards use a `@jtdc/jtd-dialect` runtime dependency. You can alter compiler dialect by
-providing `dialectFactory` option to the compiler.
+By default, validators and type guards use a `@jtdc/jtd-dialect` runtime dependency. You can alter validator compiler
+dialect by providing `validatorDialectFactory` option to the compiler.
 
 ```shell
 npm install --save-prod @jtdc/jtd-dialect
 ```
-
 
 ## CLI usage
 
@@ -202,7 +201,6 @@ export {isRole};
 </details>
 
 You can find [the source code of this example here](./example).
-
 
 ## Programmatic usage
 

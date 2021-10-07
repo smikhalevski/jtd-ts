@@ -13,22 +13,26 @@ import {compileDocComment, compilePropertyName} from '@smikhalevski/codegen';
 import {constantCase, pascalCase} from 'change-case-all';
 import {die} from './misc';
 
+/**
+ * Returns the name of the TypeScript type referenced by the node.
+ */
 export type RefResolver<M> = (node: IJtdRefNode<M>) => string;
 
 const throwRefResolver: RefResolver<unknown> = (node) => die('Unresolved reference: ' + node.ref);
 
-export interface ITsTypesCompilerOptions<M> {
+export interface ITypesCompilerOptions<M> {
 
   /**
    * Returns a TypeScript type name described by `node`.
    *
-   * @param ref The ref of the renamed type.
+   * @param name The JTD definition name.
    * @param node The node that describes the renamed type.
+   * @see https://www.typescriptlang.org/docs/handbook/advanced-types.html#type-aliases Type Aliases
    */
-  renameType?(ref: string, node: JtdNode<M>): string;
+  renameTypeAlias?(name: string, node: JtdNode<M>): string;
 
   /**
-   * Returns a TypeScript type name of a JTD primitive type. By default, a {@link jtdTsPrimitiveTypeMap} is used to
+   * Returns a TypeScript type name of a JTD primitive type. By default, a {@link primitiveTypeMap} is used to
    * resolve the name.
    *
    * @example
@@ -54,12 +58,12 @@ export interface ITsTypesCompilerOptions<M> {
   /**
    * Returns the name of the enum that holds mapping keys for the discriminated union.
    */
-  renameUnionEnum?(ref: string, node: IJtdUnionNode<M>): string;
+  renameUnionEnum?(name: string, node: IJtdUnionNode<M>): string;
 
   /**
    * Returns the contents of the value from the enum that holds discriminator values.
    */
-  renameUnionEnumKey?(mappingKey: string, mappingNode: IJtdObjectNode<M>, unionRef: string, unionNode: IJtdUnionNode<M>): string;
+  renameUnionEnumKey?(mappingKey: string, mappingNode: IJtdObjectNode<M>, unionName: string, unionNode: IJtdUnionNode<M>): string;
 
   /**
    * Returns the name of the union discriminator property.
@@ -69,12 +73,12 @@ export interface ITsTypesCompilerOptions<M> {
   /**
    * Returns the value that would be used as a value of the discriminator property.
    */
-  rewriteMappingKey?(mappingKey: string, mappingNode: IJtdObjectNode<M>, unionRef: string | undefined, unionNode: IJtdUnionNode<M>): string | number | undefined;
+  rewriteMappingKey?(mappingKey: string, mappingNode: IJtdObjectNode<M>, unionName: string | undefined, unionNode: IJtdUnionNode<M>): string | number | undefined;
 
   /**
    * Returns the name of the interface that is the part of the discriminated union.
    */
-  renameMappingInterface?(mappingKey: string, mappingNode: IJtdObjectNode<M>, unionRef: string, unionNode: IJtdUnionNode<M>): string;
+  renameMappingInterface?(mappingKey: string, mappingNode: IJtdObjectNode<M>, unionName: string, unionNode: IJtdUnionNode<M>): string;
 
   /**
    * Returns the doc comment string that is associated with the node.
@@ -87,33 +91,32 @@ export interface ITsTypesCompilerOptions<M> {
 /**
  * Compiles provided JTD definitions as a TypeScript source.
  *
- * @template M The type of the metadata.
+ * @template M The type of the JTD metadata.
  *
- * @param definitions Map from ref to JTD node.
+ * @param definitions Map from name to JTD node.
  * @param refResolver Returns a TypeScript type name referenced by node.
  * @param options The compilation options.
- *
  * @returns The TypeScript source code with type, interface and enum definitions.
  */
-export function compileTsTypes<M>(definitions: IJtdNodeDict<M>, refResolver: RefResolver<M> = throwRefResolver, options?: ITsTypesCompilerOptions<M>): string {
-  const resolvedOptions = {...tsTypesCompilerOptions, ...options};
+export function compileTypes<M>(definitions: IJtdNodeDict<M>, refResolver: RefResolver<M> = throwRefResolver, options?: ITypesCompilerOptions<M>): string {
+  const resolvedOptions = {...typesCompilerOptions, ...options};
 
-  return Object.keys(definitions).reduce((src, ref) => src + compileTsTypeStatement(ref, definitions, refResolver, resolvedOptions), '');
+  return Object.keys(definitions).reduce((src, jtdName) => src + compileTypeStatement(jtdName, definitions, refResolver, resolvedOptions), '');
 }
 
 /**
  * Returns the TypeScript type statement that describes the node.
  *
- * @template M The type of the metadata.
+ * @template M The type of the JTD metadata.
  *
- * @param ref The ref of the node in `definitions`.
+ * @param jtdName The JTD definition name.
  * @param definitions Known definitions that are used for ref resolution.
  * @param refResolver Returns a TypeScript type name referenced by node.
  * @param options Compiler options.
  */
-function compileTsTypeStatement<M>(ref: string, definitions: IJtdNodeDict<M>, refResolver: RefResolver<M>, options: Required<ITsTypesCompilerOptions<M>>): string {
+function compileTypeStatement<M>(jtdName: string, definitions: IJtdNodeDict<M>, refResolver: RefResolver<M>, options: Required<ITypesCompilerOptions<M>>): string {
   const {
-    renameType,
+    renameTypeAlias,
     renamePropertyKey,
     renameEnumKey,
     rewriteEnumValue,
@@ -129,10 +132,10 @@ function compileTsTypeStatement<M>(ref: string, definitions: IJtdNodeDict<M>, re
 
   const compileTypeStatement = (node: JtdNode<M>): void => {
     src += compileDocComment(getDocComment(node))
-        + `export type ${renameType(ref, node)}=${compileTsTypeExpression(node, definitions, refResolver, options)};`;
+        + `export type ${renameTypeAlias(jtdName, node)}=${compileTypeExpression(node, definitions, refResolver, options)};`;
   };
 
-  visitJtdNode(definitions[ref], {
+  visitJtdNode(definitions[jtdName], {
 
     any: compileTypeStatement,
     ref: compileTypeStatement,
@@ -142,7 +145,7 @@ function compileTsTypeStatement<M>(ref: string, definitions: IJtdNodeDict<M>, re
     values: compileTypeStatement,
 
     enum(node) {
-      const name = renameType(ref, node);
+      const name = renameTypeAlias(jtdName, node);
 
       src += compileDocComment(getDocComment(node))
           + `enum ${name}{`;
@@ -160,7 +163,7 @@ function compileTsTypeStatement<M>(ref: string, definitions: IJtdNodeDict<M>, re
 
     object(node, next) {
       src += compileDocComment(getDocComment(node))
-          + `export interface ${renameType(ref, node)}{`;
+          + `export interface ${renameTypeAlias(jtdName, node)}{`;
       next();
       src += '}';
     },
@@ -169,7 +172,7 @@ function compileTsTypeStatement<M>(ref: string, definitions: IJtdNodeDict<M>, re
       src += compileDocComment(getDocComment(propNode))
           + compilePropertyName(renamePropertyKey(propKey, propNode, objectNode))
           + ':'
-          + compileTsTypeExpression(propNode, definitions, refResolver, options)
+          + compileTypeExpression(propNode, definitions, refResolver, options)
           + ';';
     },
 
@@ -177,12 +180,12 @@ function compileTsTypeStatement<M>(ref: string, definitions: IJtdNodeDict<M>, re
       src += compileDocComment(getDocComment(propNode))
           + compilePropertyName(renamePropertyKey(propKey, propNode, objectNode))
           + '?:'
-          + compileTsTypeExpression(propNode, definitions, refResolver, options)
+          + compileTypeExpression(propNode, definitions, refResolver, options)
           + ';';
     },
 
     union(node, next) {
-      const unionName = renameType(ref, node);
+      const unionName = renameTypeAlias(jtdName, node);
       const mappingEntries = Object.entries(node.mapping);
 
       if (mappingEntries.length === 0) {
@@ -190,12 +193,12 @@ function compileTsTypeStatement<M>(ref: string, definitions: IJtdNodeDict<M>, re
         return;
       }
 
-      const enumName = renameUnionEnum(ref, node);
+      const enumName = renameUnionEnum(jtdName, node);
       src += `enum ${enumName}{`
           + mappingEntries.reduce((src, [mappingKey, mappingNode]) => src
-              + renameUnionEnumKey(mappingKey, mappingNode, ref, node)
+              + renameUnionEnumKey(mappingKey, mappingNode, jtdName, node)
               + '='
-              + JSON.stringify(rewriteMappingKey(mappingKey, mappingNode, ref, node))
+              + JSON.stringify(rewriteMappingKey(mappingKey, mappingNode, jtdName, node))
               + ',',
               '',
           )
@@ -205,7 +208,7 @@ function compileTsTypeStatement<M>(ref: string, definitions: IJtdNodeDict<M>, re
           + compileDocComment(getDocComment(node))
           + `export type ${unionName}=`
           + mappingEntries.reduce((src, [mappingKey, mappingNode]) => src
-              + '|' + renameMappingInterface(mappingKey, mappingNode, ref, node),
+              + '|' + renameMappingInterface(mappingKey, mappingNode, jtdName, node),
               '',
           )
           + ';';
@@ -214,10 +217,10 @@ function compileTsTypeStatement<M>(ref: string, definitions: IJtdNodeDict<M>, re
 
     mapping(mappingKey, mappingNode, unionNode, next) {
       src += compileDocComment(getDocComment(mappingNode))
-          + `export interface ${renameMappingInterface(mappingKey, mappingNode, ref, unionNode)}{`
+          + `export interface ${renameMappingInterface(mappingKey, mappingNode, jtdName, unionNode)}{`
           + compilePropertyName(renameDiscriminatorKey(unionNode))
           + ':'
-          + renameUnionEnum(ref, unionNode) + '.' + renameUnionEnumKey(mappingKey, mappingNode, ref, unionNode)
+          + renameUnionEnum(jtdName, unionNode) + '.' + renameUnionEnumKey(mappingKey, mappingNode, jtdName, unionNode)
           + ';';
       next();
       src += '}';
@@ -230,16 +233,16 @@ function compileTsTypeStatement<M>(ref: string, definitions: IJtdNodeDict<M>, re
 /**
  * Returns the TypeScript type expression that describes the node.
  *
- * @template M The type of the metadata.
+ * @template M The type of the JTD metadata.
  *
  * @param node The JTD node for which TypeScript expression must be compiled.
  * @param definitions Known definitions that are used for ref resolution.
  * @param refResolver Returns a TypeScript type name referenced by node.
  * @param options Compiler options.
  */
-function compileTsTypeExpression<M>(node: JtdNode<M>, definitions: IJtdNodeDict<M>, refResolver: RefResolver<M>, options: Required<ITsTypesCompilerOptions<M>>): string {
+function compileTypeExpression<M>(node: JtdNode<M>, definitions: IJtdNodeDict<M>, refResolver: RefResolver<M>, options: Required<ITypesCompilerOptions<M>>): string {
   const {
-    renameType,
+    renameTypeAlias,
     rewritePrimitiveType,
     rewriteEnumValue,
     rewriteMappingKey,
@@ -254,7 +257,7 @@ function compileTsTypeExpression<M>(node: JtdNode<M>, definitions: IJtdNodeDict<
       src += 'any';
     },
     ref(node) {
-      src += definitions[node.ref] ? renameType(node.ref, definitions[node.ref]) : refResolver(node);
+      src += definitions[node.ref] ? renameTypeAlias(node.ref, definitions[node.ref]) : refResolver(node);
     },
     nullable(node, next) {
       next();
@@ -317,26 +320,26 @@ function compileTsTypeExpression<M>(node: JtdNode<M>, definitions: IJtdNodeDict<
 }
 
 /**
- * Global default options used by {@link compileTsTypes}.
+ * Global default options used by {@link compileTypes}.
  */
-export const tsTypesCompilerOptions: Required<ITsTypesCompilerOptions<any>> = {
-  renameType: (ref) => pascalCase(ref),
+export const typesCompilerOptions: Required<ITypesCompilerOptions<any>> = {
+  renameTypeAlias: (name) => pascalCase(name),
   renamePropertyKey: (propKey) => propKey,
-  rewritePrimitiveType: (node) => jtdTsPrimitiveTypeMap[node.type] || die('Unknown type: ' + node.type),
-  renameEnumKey: (ref) => constantCase(ref),
+  rewritePrimitiveType: (node) => primitiveTypeMap[node.type] || die('Unknown type: ' + node.type),
+  renameEnumKey: (name) => constantCase(name),
   rewriteEnumValue: (value) => value,
-  renameUnionEnum: (ref, node) => pascalCase(ref) + pascalCase(node.discriminator),
-  renameUnionEnumKey: (ref) => constantCase(ref),
+  renameUnionEnum: (name, node) => pascalCase(name) + pascalCase(node.discriminator),
+  renameUnionEnumKey: (name) => constantCase(name),
   renameDiscriminatorKey: (node) => node.discriminator,
   rewriteMappingKey: (mappingKey) => mappingKey,
-  renameMappingInterface: (mappingKey, mappingNode, unionRef) => pascalCase(unionRef) + pascalCase(mappingKey),
+  renameMappingInterface: (mappingKey, mappingNode, unionName) => pascalCase(unionName) + pascalCase(mappingKey),
   getDocComment: (node) => node.jtd.metadata?.comment,
 };
 
 /**
  * Mapping from the JTD standard data types to TypeScript primitive types.
  */
-export const jtdTsPrimitiveTypeMap: Record<string, string> = {
+export const primitiveTypeMap: Record<string, string> = {
   [JtdType.BOOLEAN]: 'boolean',
   [JtdType.STRING]: 'string',
   [JtdType.TIMESTAMP]: 'string',

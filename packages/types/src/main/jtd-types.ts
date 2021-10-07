@@ -29,7 +29,7 @@ export interface IJtdDict<M> {
 /**
  * The JTD with embedded definitions.
  *
- * @template M The type of the metadata.
+ * @template M The type of the JTD metadata.
  *
  * @see https://tools.ietf.org/html/rfc8927 RFC8927
  * @see https://jsontypedef.com/docs/jtd-in-5-minutes JTD in 5 minutes
@@ -41,7 +41,7 @@ export interface IJtdRoot<M> extends IJtd<M> {
 /**
  * The definition of a type.
  *
- * @template M The type of the metadata.
+ * @template M The type of the JTD metadata.
  */
 export interface IJtd<M> {
   metadata?: M;
