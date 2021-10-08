@@ -59,7 +59,7 @@ Let's assume you have user and account type definitions in separate files under 
 {
   "account": {
     "properties": {
-      "user": {"ref": "user"},
+      "user": {"ref": "./user.json#user"},
       "stats": {
         "properties": {
           "visitCount": {"type": "int32"}
