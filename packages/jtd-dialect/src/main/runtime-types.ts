@@ -23,7 +23,7 @@ export interface IValidationContext {
 
 export const enum ValidationErrorCode {
   REQUIRED = 'required',
-  ILLEGAL_TYPE = 'illegal_type',
+  ILLEGAL_TYPE = 'illegalType',
   INVALID = 'invalid',
 }
 
@@ -41,8 +41,7 @@ export interface IValidationError {
 }
 
 /**
- * The validator is the function that ensures that that `value` is conforms the JTD. It returns the list errors of
- * errors or `undefined` if there were no errors.
+ * The validator is the function that ensures that that `value` is conforms the JTD.
  */
 export interface Validator {
 
@@ -52,6 +51,7 @@ export interface Validator {
    * @param value The validated value.
    * @param ctx The context that holds errors and may be populated during validation.
    * @param pointer JSON pointer of the validated value.
+   * @returns The list errors of errors or `undefined` if there were no errors.
    */
   (value: unknown, ctx?: IValidationContext, pointer?: string): Array<IValidationError> | undefined;
 

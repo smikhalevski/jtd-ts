@@ -4,7 +4,7 @@ import {IJtdDict, IValidatorDialectConfig, JtdNodeType, ValidatorDialectFactory}
 import {createMap} from './misc';
 import {compileValidators, IValidatorsCompilerOptions, validatorDialectConfig} from './validators-compiler';
 import {compileJsSource} from '@smikhalevski/codegen';
-import {IModule, ImportResolver} from './module-types';
+import {IDefinitionExports, IModule, ImportResolver} from './module-types';
 
 export interface IModulesCompilerOptions<M, C>
     extends ITypesCompilerOptions<M>,
@@ -32,6 +32,10 @@ export interface IModulesCompilerOptions<M, C>
  *
  * @template M The type of the JTD metadata.
  * @template C The type of the context.
+ *
+ * @param jtdModules The map from a file path to JTD definitions.
+ * @param options Compiler options.
+ * @returns The list of compiled modules.
  */
 export function compileModules<M, C>(jtdModules: Record<string, IJtdDict<M>>, options: IModulesCompilerOptions<M, C>): Array<IModule> {
 
@@ -51,12 +55,17 @@ export function compileModules<M, C>(jtdModules: Record<string, IJtdDict<M>>, op
   return modules;
 }
 
+/**
+ * Compiles a source code and updates the module.
+ *
+ * @param module The module that is compiled and updated.
+ * @param modules Other available modules.
+ * @param options Compiler options.
+ */
 function compileModule<M>(module: IModule, modules: Array<IModule>, options: Required<IModulesCompilerOptions<M, unknown>>): void {
-
   const {
     importResolver,
     renameValidator,
-    renameTypeGuard,
     validatorsRendered,
     validatorDialectFactory,
   } = options;
@@ -64,8 +73,8 @@ function compileModule<M>(module: IModule, modules: Array<IModule>, options: Req
   const imports = createMap<Set<string>>();
 
   const refResolver: RefResolver<M> = (node) => {
-    const [exports, path] = importResolver(node, module.path, modules);
-    const importSet = imports[path] ||= new Set();
+    const [exports, importPath] = importResolver(node, module.filePath, modules);
+    const importSet = imports[importPath] ||= new Set();
 
     importSet.add(exports.typeName);
 
@@ -78,16 +87,32 @@ function compileModule<M>(module: IModule, modules: Array<IModule>, options: Req
 
   let src = compileTypes(module.definitions, refResolver, options);
 
-  for (const [path, names] of Object.entries(imports)) {
-    src = `import{${Array.from(names).join(',')}}from${JSON.stringify(path)};` + src;
+  for (const [importPath, names] of Object.entries(imports)) {
+    src = `import{${Array.from(names).join(',')}}from${JSON.stringify(importPath)};`
+        + src;
   }
 
   if (validatorsRendered) {
 
     const dialect = validatorDialectFactory({
       ...options,
-      renameValidator: (name, node) => node.nodeType === JtdNodeType.REF ? module.definitions[node.ref] ? renameValidator(name, module.definitions[node.ref]) : importResolver(node, module.path, modules)[0].validatorName : renameValidator(name, node),
-      renameTypeGuard: (name, node) => node.nodeType === JtdNodeType.REF ? module.definitions[node.ref] ? renameTypeGuard(name, module.definitions[node.ref]) : importResolver(node, module.path, modules)[0].typeGuardName : renameTypeGuard(name, node),
+
+      renameValidator(name, node) {
+
+        // Not a reference
+        if (node.nodeType !== JtdNodeType.REF) {
+          return renameValidator(name, node);
+        }
+
+        // Local reference
+        const localNode = module.definitions[node.ref];
+        if (localNode) {
+          return renameValidator(name, localNode);
+        }
+
+        // Import reference
+        return importResolver(node, module.filePath, modules)[0].validatorName;
+      },
     });
 
     src = compileJsSource(dialect.import())
@@ -99,13 +124,12 @@ function compileModule<M>(module: IModule, modules: Array<IModule>, options: Req
 }
 
 /**
- * Parses JTD modules as TS modules.
+ * Parses JTD modules as TypeScript modules.
  *
- * @param jtdModules The map from URI to a JTD definitions.
+ * @param jtdModules The map from a file path to JTD definitions.
  * @param options Compiler options.
  */
 function createModules<M, C>(jtdModules: Record<string, IJtdDict<M>>, options: Required<IModulesCompilerOptions<M, C>>): Array<IModule> {
-
   const {
     renameType,
     renameValidator,
@@ -114,16 +138,20 @@ function createModules<M, C>(jtdModules: Record<string, IJtdDict<M>>, options: R
 
   const modules: Array<IModule> = [];
 
-  for (const [path, definitions] of Object.entries(jtdModules)) {
+  for (const [filePath, jtdDefinitions] of Object.entries(jtdModules)) {
+
+    const definitions = parseJtdDefinitions(jtdDefinitions);
+    const exports = createMap<IDefinitionExports>();
+
     const module: IModule = {
-      path,
-      definitions: parseJtdDefinitions(definitions),
+      filePath,
+      definitions,
+      exports,
       source: '',
-      exports: createMap(),
     };
 
-    for (const [name, node] of Object.entries(module.definitions)) {
-      module.exports[name] = {
+    for (const [name, node] of Object.entries(definitions)) {
+      exports[name] = {
         typeName: renameType(name, node),
         validatorName: renameValidator(name, node),
         typeGuardName: renameTypeGuard(name, node),

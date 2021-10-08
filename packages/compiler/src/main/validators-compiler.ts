@@ -1,4 +1,4 @@
-import {IValidatorDialect, IValidatorDialectConfig, IJtdNodeDict, JtdNode} from '@jtdc/types';
+import {IJtdNodeDict, IValidatorDialect, IValidatorDialectConfig, JtdNode} from '@jtdc/types';
 import {visitJtdNode} from './jtd-visitor';
 import {compileJsSource, IFragmentCgNode, template as _} from '@smikhalevski/codegen';
 import {pascalCase} from 'change-case-all';
@@ -8,7 +8,7 @@ export interface IValidatorsCompilerOptions<M, C> {
   /**
    * If set to `true` then type guards are rendered along with validators.
    *
-   * @see {@link https://www.typescriptlang.org/docs/handbook/2/narrowing.html TypeScript Narrowing}
+   * @see https://www.typescriptlang.org/docs/handbook/2/narrowing.html TypeScript Narrowing
    */
   typeGuardsRendered?: boolean;
 }

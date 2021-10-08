@@ -159,7 +159,7 @@ function compileTypeStatement<M>(jtdName: string, definitions: IJtdNodeDict<M>, 
       const name = renameType(jtdName, node);
 
       src += compileDocComment(getTypeDocComment(node))
-          + `enum ${name}{`;
+          + `export enum ${name}{`;
 
       for (const value of node.values) {
         src += renameEnumKey(value, node)
@@ -167,9 +167,7 @@ function compileTypeStatement<M>(jtdName: string, definitions: IJtdNodeDict<M>, 
             + JSON.stringify(rewriteEnumValue(value, node))
             + ',';
       }
-      src += '}'
-          // Support enum name mangling
-          + `export{${name}};`;
+      src += '}';
     },
 
     object(node, next) {
@@ -205,7 +203,7 @@ function compileTypeStatement<M>(jtdName: string, definitions: IJtdNodeDict<M>, 
       }
 
       const enumName = renameUnionEnum(jtdName, node);
-      src += `enum ${enumName}{`
+      src += `export enum ${enumName}{`
           + mappingEntries.reduce((src, [mappingKey, mappingNode]) => src
               + renameUnionEnumKey(mappingKey, mappingNode, jtdName, node)
               + '='
@@ -214,8 +212,6 @@ function compileTypeStatement<M>(jtdName: string, definitions: IJtdNodeDict<M>, 
               '',
           )
           + '}'
-          // Support enum name mangling
-          + `export{${enumName}};`
           + compileDocComment(getTypeDocComment(node))
           + `export type ${unionName}=`
           + mappingEntries.reduce((src, [mappingKey, mappingNode]) => src

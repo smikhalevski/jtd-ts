@@ -8,7 +8,7 @@ import {
   joinFragmentChildren,
   template as _,
 } from '@smikhalevski/codegen';
-import {IValidatorDialect, IValidatorDialectConfig, JtdNode, JtdNodeType, JtdType} from '@jtdc/types';
+import {JtdNode, JtdNodeType, JtdType, ValidatorDialectFactory} from '@jtdc/types';
 import * as runtime from './runtime';
 import {toJsonPointer} from './json-pointer';
 
@@ -31,7 +31,7 @@ export interface IJtdValidatorDialectContext {
  *
  * @template M The type of the JTD metadata.
  */
-export function createJtdValidatorDialect<M>(config: IValidatorDialectConfig<M>): IValidatorDialect<M, IJtdValidatorDialectContext> {
+export const validatorDialectFactory: ValidatorDialectFactory<unknown, IJtdValidatorDialectContext> = (config) => {
 
   const {
     runtimeVarName,
@@ -53,10 +53,7 @@ export function createJtdValidatorDialect<M>(config: IValidatorDialectConfig<M>)
     typeGuard(jtdName, node) {
       const name = renameTypeGuard(jtdName, node);
 
-      return _(
-          _`let ${name}=(value:unknown):value is ${renameType(jtdName, node)}=>!${renameValidator(jtdName, node)}(value,{shallow:true});`,
-          _`export{${name}};`,
-      );
+      return _`export let ${name}=(value:unknown):value is ${renameType(jtdName, node)}=>!${renameValidator(jtdName, node)}(value,{shallow:true});`;
     },
 
     validator(jtdName, node, next) {
@@ -85,13 +82,10 @@ export function createJtdValidatorDialect<M>(config: IValidatorDialectConfig<M>)
 
       const undeclaredVars = collectVarRefs(bodyFragment, [valueVar, ctxVar, pointerVar]);
 
-      return _(
-          _.block`let ${name}:${runtimeVarName}.Validator=(${valueVar},${ctxVar},${pointerVar})=>{${_(
-              undeclaredVars.length !== 0 && _`let ${joinFragmentChildren(undeclaredVars, ',')};`,
-              bodyFragment,
-          )}};`,
-          _`export{${name}};`,
-      );
+      return _.block`export let ${name}:${runtimeVarName}.Validator=(${valueVar},${ctxVar},${pointerVar})=>{${_(
+          undeclaredVars.length !== 0 && _`let ${joinFragmentChildren(undeclaredVars, ',')};`,
+          bodyFragment,
+      )}};`;
     },
 
     ref(node, ctx) {
@@ -226,7 +220,7 @@ export function createJtdValidatorDialect<M>(config: IValidatorDialectConfig<M>)
       );
     },
   };
-}
+};
 
 export function compileJsonPointer(key: string): string {
   return JSON.stringify(toJsonPointer(key));
