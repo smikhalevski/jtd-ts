@@ -42,7 +42,7 @@ describe('compileTypes', () => {
       enum: ['foo', 'bar'],
     }));
 
-    expect(src).toBe('enum Foo{FOO="foo",BAR="bar",}export{Foo};');
+    expect(src).toBe('export enum Foo{FOO="foo",BAR="bar",}');
   });
 
   test('compiles array type', () => {
@@ -131,7 +131,7 @@ describe('compileTypes', () => {
     }));
 
     expect(src).toBe(
-        'enum FooType{AAA="AAA",BBB="BBB",}export{FooType};'
+        'export enum FooType{AAA="AAA",BBB="BBB",}'
         + 'export type Foo=|FooAaa|FooBbb;'
         + 'export interface FooAaa{type:FooType.AAA;foo:string;}'
         + 'export interface FooBbb{type:FooType.BBB;bar:number;}',
