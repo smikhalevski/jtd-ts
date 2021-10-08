@@ -11,7 +11,7 @@
   ],
   "scripts": {
     "build": "tsc --project ./tsconfig.build.json && npm run rollup && npm run rollup-runtime && npm run terser-runtime",
-    "rollup": "rollup --external @jtdc/types,@smikhalevski/codegen,change-case-all,tslib --input ./lib/index.js --file ./lib/index-cjs.js --format cjs --plugin @rollup/plugin-node-resolve",
+    "rollup": "rollup --external @jtdc/types,@smikhalevski/codegen,tslib --input ./lib/index.js --file ./lib/index-cjs.js --format cjs --plugin @rollup/plugin-node-resolve",
     "rollup-runtime": "rollup --input ./lib/runtime.js --file ./lib/runtime.js --format cjs --plugin @rollup/plugin-node-resolve",
     "terser-runtime": "terser --compress --mangle toplevel --output ./lib/runtime.js -- ./lib/runtime.js",
     "clean": "rimraf ./lib",
@@ -52,7 +52,6 @@
   "dependencies": {
     "@jtdc/types": "^1.0.0",
     "@smikhalevski/codegen": "^2.0.1",
-    "change-case-all": "^1.0.14",
     "tslib": "^2.3.1"
   }
 }

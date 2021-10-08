@@ -8,8 +8,9 @@ export const enum JtdType {
   /**
    * JSON strings containing an RFC3339 timestamp.
    *
-   * @example
+   * ```ts
    * "1985-04-12T23:20:50.52Z"
+   * ```
    */
   TIMESTAMP = 'timestamp',
   FLOAT32 = 'float32',
@@ -22,18 +23,26 @@ export const enum JtdType {
   UINT32 = 'uint32',
 }
 
+export interface IJtdDict<M> {
+  [name: string]: IJtd<M>;
+}
+
 /**
  * The JTD with embedded definitions.
+ *
+ * @template M The type of the JTD metadata.
  *
  * @see https://tools.ietf.org/html/rfc8927 RFC8927
  * @see https://jsontypedef.com/docs/jtd-in-5-minutes JTD in 5 minutes
  */
 export interface IJtdRoot<M> extends IJtd<M> {
-  definitions?: Record<string, IJtd<M>>;
+  definitions?: IJtdDict<M>;
 }
 
 /**
  * The definition of a type.
+ *
+ * @template M The type of the JTD metadata.
  */
 export interface IJtd<M> {
   metadata?: M;
@@ -43,8 +52,8 @@ export interface IJtd<M> {
   enum?: Array<string>;
   elements?: IJtd<M>;
   values?: IJtd<M>;
-  properties?: Record<string, IJtd<M>>;
-  optionalProperties?: Record<string, IJtd<M>>;
+  properties?: IJtdDict<M>;
+  optionalProperties?: IJtdDict<M>;
   discriminator?: string;
-  mapping?: Record<string, IJtd<M>>;
+  mapping?: IJtdDict<M>;
 }

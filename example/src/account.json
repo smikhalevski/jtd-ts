@@ -1,7 +1,7 @@
 {
   "account": {
     "properties": {
-      "user": {"ref": "user"},
+      "user": {"ref": "./user.json#user"},
       "stats": {
         "properties": {
           "visitCount": {"type": "int32"}

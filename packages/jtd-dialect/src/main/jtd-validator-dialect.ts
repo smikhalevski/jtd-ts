@@ -8,32 +8,33 @@ import {
   joinFragmentChildren,
   template as _,
 } from '@smikhalevski/codegen';
-import {pascalCase} from 'change-case-all';
-import {IJtdcDialect, IJtdcDialectOptions, JtdNode, JtdNodeType, JtdType} from '@jtdc/types';
+import {JtdNode, JtdNodeType, JtdType, ValidatorDialectFactory} from '@jtdc/types';
 import * as runtime from './runtime';
-import {toJsonPointer} from './runtime';
+import {toJsonPointer} from './json-pointer';
 
 /**
  * Context used by the dialect during validator compilation.
  */
-export interface IJtdDialectContext {
+export interface IJtdValidatorDialectContext {
+  valueVar: IVarRefCgNode;
+  ctxVar: IVarRefCgNode;
+  pointerVar: IVarRefCgNode;
 
   /**
    * Wraps an expression so result is retained between validator invocations.
    */
-  warpCache: (frag: IFragmentCgNode) => IFragmentCgNode;
-  valueVar: IVarRefCgNode;
-  ctxVar: IVarRefCgNode;
-  pointerVar: IVarRefCgNode;
+  warpCache(fragment: IFragmentCgNode): IFragmentCgNode;
 }
 
 /**
  * Creates a validator compilation dialect that renders validators which follow the JTD specification.
+ *
+ * @template M The type of the JTD metadata.
  */
-export function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): IJtdcDialect<M, IJtdDialectContext> {
-  const opt = {...jtdDialectOptions, ...options};
+export const validatorDialectFactory: ValidatorDialectFactory<unknown, IJtdValidatorDialectContext> = (config) => {
 
   const {
+    runtimeVarName,
     renameValidator,
     renamePropertyKey,
     renameDiscriminatorKey,
@@ -41,56 +42,50 @@ export function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): IJtdcDial
     rewriteMappingKey,
     renameTypeGuard,
     renameType,
-  } = opt;
+  } = config;
 
   return {
 
     import() {
-      return _`import{_S,_P,_K,_R,_o,_a,_e,_b,_s,_n,_i,_N,_O,Validator as _Validator}from"@jtdc/jtd-dialect/lib/runtime";`;
+      return _`import*as ${runtimeVarName} from"@jtdc/jtd-dialect/lib/runtime";`;
     },
 
-    typeGuard(ref, node) {
-      const name = renameTypeGuard(ref, node);
+    typeGuard(jtdName, node) {
+      const name = renameTypeGuard(jtdName, node);
 
-      return _(
-          _`const ${name}=(value:unknown):value is ${renameType(ref, node)}=>!${renameValidator(ref, node)}(value,{shallow:true});`,
-          _`export{${name}};`,
-      );
+      return _`export let ${name}=(value:unknown):value is ${renameType(jtdName, node)}=>!${renameValidator(jtdName, node)}(value,{shallow:true});`;
     },
 
-    validator(ref, node, next) {
+    validator(jtdName, node, next) {
       const valueVar = _.var();
       const ctxVar = _.var();
       const pointerVar = _.var();
       const cacheVar = _.var();
-      const name = renameValidator(ref, node);
+      const name = renameValidator(jtdName, node);
 
       let cacheSize = 0;
 
-      const bodyFrag = _(
+      const bodyFragment = _(
           _.assignment(ctxVar, _`${ctxVar}||{}`, true),
           _.assignment(pointerVar, _`${pointerVar}||""`),
           _.assignment(cacheVar, _`(${name}.cache||={})`),
           next({
-            warpCache: (frag: IFragmentCgNode) => _`${cacheVar}.${encodeLetters(cacheSize++)}||=${frag}`,
             valueVar,
             ctxVar,
             pointerVar,
+            warpCache: (fragment) => _`${cacheVar}.${encodeLetters(cacheSize++)}||=${fragment}`,
           }),
           _`return ${ctxVar}.errors;`,
       );
 
-      inlineVarAssignments(bodyFrag);
+      inlineVarAssignments(bodyFragment);
 
-      const undeclaredVars = collectVarRefs(bodyFrag, [valueVar, ctxVar, pointerVar]);
+      const undeclaredVars = collectVarRefs(bodyFragment, [valueVar, ctxVar, pointerVar]);
 
-      return _(
-          _.block`const ${name}:_Validator=(${valueVar},${ctxVar},${pointerVar})=>{${_(
-              undeclaredVars.length !== 0 && _`let ${joinFragmentChildren(undeclaredVars, ',')};`,
-              bodyFrag,
-          )}};`,
-          _`export{${name}};`,
-      );
+      return _.block`export let ${name}:${runtimeVarName}.Validator=(${valueVar},${ctxVar},${pointerVar})=>{${_(
+          undeclaredVars.length !== 0 && _`let ${joinFragmentChildren(undeclaredVars, ',')};`,
+          bodyFragment,
+      )}};`;
     },
 
     ref(node, ctx) {
@@ -101,40 +96,40 @@ export function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): IJtdcDial
       if (isUnconstrainedNode(node.valueNode)) {
         return _``;
       }
-      return _.block`if(_N(${ctx.valueVar})){${
+      return _.block`if(${runtimeVarName}.isNotNull(${ctx.valueVar})){${
           next(ctx)
       }}`;
     },
 
     type(node, ctx) {
-      const typeCheckerName = jtdTypeCheckerMap[node.type];
+      const typeCheckerName = jtdTypeCheckerMap[node.type as JtdType];
 
       if (!typeCheckerName) {
         throw new Error('Unknown type: ' + node.type);
       }
-      return _`${typeCheckerName}(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
+      return _`${runtimeVarName}.${typeCheckerName}(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
     },
 
     enum(node, ctx) {
-      const valuesFrag = ctx.warpCache(_`[${
+      const valuesFragment = ctx.warpCache(_`[${
           joinFragmentChildren(node.values.map((value) => JSON.stringify(rewriteEnumValue(value, node))), ',')
       }]`);
-      return _`_e(${ctx.valueVar},${valuesFrag},${ctx.ctxVar},${ctx.pointerVar});`;
+      return _`${runtimeVarName}.checkEnum(${ctx.valueVar},${valuesFragment},${ctx.ctxVar},${ctx.pointerVar});`;
     },
 
     elements(node, ctx, next) {
       if (isUnconstrainedNode(node.elementNode)) {
-        return _`_a(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
+        return _`${runtimeVarName}.checkArray(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
       }
 
       const indexVar = _.var();
       const valueVar = _.var();
       const pointerVar = _.var();
 
-      return _.block`if(_a(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${
+      return _.block`if(${runtimeVarName}.checkArray(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${
           _.block`for(${indexVar}=0;${indexVar}<${ctx.valueVar}.length;${indexVar}++){${_(
               _.assignment(valueVar, _`${ctx.valueVar}[${indexVar}]`),
-              _.assignment(pointerVar, _`${ctx.pointerVar}+_S+${indexVar}`),
+              _.assignment(pointerVar, _`${ctx.pointerVar}+${runtimeVarName}.JSON_POINTER_SEPARATOR+${indexVar}`),
 
               next({...ctx, pointerVar, valueVar}),
           )}}`
@@ -143,7 +138,7 @@ export function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): IJtdcDial
 
     values(node, ctx, next) {
       if (isUnconstrainedNode(node.valueNode)) {
-        return _`_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
+        return _`${runtimeVarName}.checkObject(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
       }
 
       const indexVar = _.var();
@@ -151,10 +146,10 @@ export function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): IJtdcDial
       const valueVar = _.var();
       const pointerVar = _.var();
 
-      return _.block`if(_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${
-          _.block`for(${indexVar}=0,${keysVar}=_K(${ctx.valueVar});${indexVar}<${keysVar}.length;${indexVar}++){${_(
+      return _.block`if(${runtimeVarName}.checkObject(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${
+          _.block`for(${indexVar}=0,${keysVar}=${runtimeVarName}.getObjectKeys(${ctx.valueVar});${indexVar}<${keysVar}.length;${indexVar}++){${_(
               _.assignment(valueVar, _`${ctx.valueVar}[${keysVar}[${indexVar}]]`),
-              _.assignment(pointerVar, _`${ctx.pointerVar}+_P(${keysVar}[${indexVar}])`),
+              _.assignment(pointerVar, _`${ctx.pointerVar}+${runtimeVarName}.toJsonPointer(${keysVar}[${indexVar}])`),
 
               next({...ctx, valueVar, pointerVar}),
           )}}`
@@ -163,10 +158,10 @@ export function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): IJtdcDial
 
     object(node, ctx, next) {
       if (Object.values(node.properties).every(isUnconstrainedNode) && Object.values(node.optionalProperties).every(isUnconstrainedNode)) {
-        return _`_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})`;
+        return _`${runtimeVarName}.checkObject(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})`;
       }
 
-      return _.block`if(_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${
+      return _.block`if(${runtimeVarName}.checkObject(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${
           next(ctx)
       }}`;
     },
@@ -200,7 +195,7 @@ export function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): IJtdcDial
 
       return _.block(
           _.assignment(valueVar, _`${ctx.valueVar}${compilePropertyAccessor(propKey)}`),
-          _.block`if(_O(${valueVar})){${_(
+          _.block`if(${runtimeVarName}.isDefined(${valueVar})){${_(
               _.assignment(pointerVar, _`${ctx.pointerVar}+${compileJsonPointer(propKey)}`),
               next({...ctx, valueVar, pointerVar}),
           )}}`,
@@ -210,10 +205,10 @@ export function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): IJtdcDial
     union(node, ctx, next) {
       const discriminatorKey = renameDiscriminatorKey(node);
 
-      return _.block`if(_o(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${_(
+      return _.block`if(${runtimeVarName}.checkObject(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar})){${_(
           _`switch(${ctx.valueVar}${compilePropertyAccessor(discriminatorKey)}){${_(
               next(ctx),
-          )}}_R(${ctx.ctxVar},${ctx.pointerVar}+${compileJsonPointer(discriminatorKey)})`,
+          )}}${runtimeVarName}.raiseInvalid(${ctx.ctxVar},${ctx.pointerVar}+${compileJsonPointer(discriminatorKey)})`,
       )}}`;
     },
 
@@ -225,39 +220,26 @@ export function createJtdDialect<M>(options?: IJtdcDialectOptions<M>): IJtdcDial
       );
     },
   };
-}
+};
 
-function compileJsonPointer(key: string): string {
+export function compileJsonPointer(key: string): string {
   return JSON.stringify(toJsonPointer(key));
 }
 
-function isUnconstrainedNode<M>(node: JtdNode<M>): boolean {
+export function isUnconstrainedNode<M>(node: JtdNode<M>): boolean {
   return node.nodeType === JtdNodeType.ANY || node.nodeType === JtdNodeType.NULLABLE && isUnconstrainedNode(node.valueNode);
 }
 
-const jtdTypeCheckerMap: Record<string, keyof typeof runtime> = {
-  [JtdType.BOOLEAN]: '_b',
-  [JtdType.STRING]: '_s',
-  [JtdType.TIMESTAMP]: '_s',
-  [JtdType.FLOAT32]: '_n',
-  [JtdType.FLOAT64]: '_n',
-  [JtdType.INT8]: '_i',
-  [JtdType.UINT8]: '_i',
-  [JtdType.INT16]: '_i',
-  [JtdType.UINT16]: '_i',
-  [JtdType.INT32]: '_i',
-  [JtdType.UINT32]: '_i',
-};
-
-/**
- * Global default options used by {@link createJtdDialect}.
- */
-export const jtdDialectOptions: Required<IJtdcDialectOptions<any>> = {
-  renameValidator: (ref) => 'validate' + pascalCase(ref),
-  renamePropertyKey: (propKey) => propKey,
-  renameDiscriminatorKey: (node) => node.discriminator,
-  rewriteEnumValue: (value) => value,
-  rewriteMappingKey: (mappingKey) => mappingKey,
-  renameTypeGuard: (ref) => 'is' + pascalCase(ref),
-  renameType: (ref) => pascalCase(ref),
+const jtdTypeCheckerMap: Record<JtdType, keyof typeof runtime> = {
+  [JtdType.BOOLEAN]: 'checkBoolean',
+  [JtdType.STRING]: 'checkString',
+  [JtdType.TIMESTAMP]: 'checkTimestamp',
+  [JtdType.FLOAT32]: 'checkNumber',
+  [JtdType.FLOAT64]: 'checkNumber',
+  [JtdType.INT8]: 'checkInteger',
+  [JtdType.UINT8]: 'checkInteger',
+  [JtdType.INT16]: 'checkInteger',
+  [JtdType.UINT16]: 'checkInteger',
+  [JtdType.INT32]: 'checkInteger',
+  [JtdType.UINT32]: 'checkInteger',
 };

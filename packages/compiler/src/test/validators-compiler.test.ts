@@ -1,7 +1,8 @@
 import {ModuleKind, transpileModule} from 'typescript';
-import {compileValidators} from '../main/validators-compiler';
+import {compileValidators, validatorDialectConfig} from '../main/validators-compiler';
 import {parseJtdRoot} from '../main/jtd-ast';
 import {JtdType} from '@jtdc/types';
+import {validatorDialectFactory} from '@jtdc/jtd-dialect/src/main';
 
 function evalModule(source: string): Record<string, any> {
   return eval(`
@@ -14,43 +15,45 @@ function evalModule(source: string): Record<string, any> {
 
 describe('compileValidators', () => {
 
+  const validatorDialect = validatorDialectFactory(validatorDialectConfig);
+
   test('compiles string type validator', () => {
-    expect(compileValidators(parseJtdRoot('foo', {type: JtdType.STRING}), {typeGuardsRendered: true})).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};_s(a,b,c||"");return b.errors;};export{validateFoo};const isFoo=(value:unknown):value is Foo=>!validateFoo(value,{shallow:true});export{isFoo};');
+    expect(compileValidators(parseJtdRoot('foo', {type: JtdType.STRING}), validatorDialect, {typeGuardsRendered: true})).toBe('export let validateFoo:runtime.Validator=(a,b,c)=>{b=b||{};runtime.checkString(a,b,c||"");return b.errors;};export let isFoo=(value:unknown):value is Foo=>!validateFoo(value,{shallow:true});');
   });
 
   test('compiles nullable checker', () => {
     expect(compileValidators(parseJtdRoot('foo', {
       type: JtdType.STRING,
       nullable: true,
-    }))).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};if(_N(a)){_s(a,b,c||"");}return b.errors;};export{validateFoo};');
+    }), validatorDialect)).toBe('export let validateFoo:runtime.Validator=(a,b,c)=>{b=b||{};if(runtime.isNotNull(a)){runtime.checkString(a,b,c||"");}return b.errors;};');
   });
 
   test('compiles nullable any checker', () => {
-    expect(compileValidators(parseJtdRoot('foo', {nullable: true}))).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};return b.errors;};export{validateFoo};');
+    expect(compileValidators(parseJtdRoot('foo', {nullable: true}), validatorDialect)).toBe('export let validateFoo:runtime.Validator=(a,b,c)=>{b=b||{};return b.errors;};');
   });
 
   test('compiles reference checker', () => {
-    expect(compileValidators(parseJtdRoot('foo', {ref: 'bar'}))).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};validateBar(a,b,c||"");return b.errors;};export{validateFoo};');
+    expect(compileValidators(parseJtdRoot('foo', {ref: 'bar'}), validatorDialect)).toBe('export let validateFoo:runtime.Validator=(a,b,c)=>{b=b||{};validateBar(a,b,c||"");return b.errors;};');
   });
 
   test('compiles enum checker', () => {
-    expect(compileValidators(parseJtdRoot('foo', {enum: ['AAA', 'BBB']}))).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};_e(a,(validateFoo.cache||={}).a||=["AAA","BBB"],b,c||"");return b.errors;};export{validateFoo};');
+    expect(compileValidators(parseJtdRoot('foo', {enum: ['AAA', 'BBB']}), validatorDialect)).toBe('export let validateFoo:runtime.Validator=(a,b,c)=>{b=b||{};runtime.checkEnum(a,(validateFoo.cache||={}).a||=["AAA","BBB"],b,c||"");return b.errors;};');
   });
 
   test('compiles elements checker', () => {
-    expect(compileValidators(parseJtdRoot('foo', {elements: {type: JtdType.STRING}}))).toBe('const validateFoo:_Validator=(a,b,c)=>{let d;b=b||{};c=c||"";if(_a(a,b,c)){for(d=0;d<a.length;d++){_s(a[d],b,c+_S+d);}}return b.errors;};export{validateFoo};');
+    expect(compileValidators(parseJtdRoot('foo', {elements: {type: JtdType.STRING}}), validatorDialect)).toBe('export let validateFoo:runtime.Validator=(a,b,c)=>{let d;b=b||{};c=c||"";if(runtime.checkArray(a,b,c)){for(d=0;d<a.length;d++){runtime.checkString(a[d],b,c+runtime.JSON_POINTER_SEPARATOR+d);}}return b.errors;};');
   });
 
   test('compiles any elements checker', () => {
-    expect(compileValidators(parseJtdRoot('foo', {elements: {}}))).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};_a(a,b,c||"");return b.errors;};export{validateFoo};');
+    expect(compileValidators(parseJtdRoot('foo', {elements: {}}), validatorDialect)).toBe('export let validateFoo:runtime.Validator=(a,b,c)=>{b=b||{};runtime.checkArray(a,b,c||"");return b.errors;};');
   });
 
   test('compiles values checker', () => {
-    expect(compileValidators(parseJtdRoot('foo', {values: {type: JtdType.STRING}}))).toBe('const validateFoo:_Validator=(a,b,c)=>{let d,e;b=b||{};c=c||"";if(_o(a,b,c)){for(d=0,e=_K(a);d<e.length;d++){_s(a[e[d]],b,c+_P(e[d]));}}return b.errors;};export{validateFoo};');
+    expect(compileValidators(parseJtdRoot('foo', {values: {type: JtdType.STRING}}), validatorDialect)).toBe('export let validateFoo:runtime.Validator=(a,b,c)=>{let d,e;b=b||{};c=c||"";if(runtime.checkObject(a,b,c)){for(d=0,e=runtime.getObjectKeys(a);d<e.length;d++){runtime.checkString(a[e[d]],b,c+runtime.toJsonPointer(e[d]));}}return b.errors;};');
   });
 
   test('compiles any values checker', () => {
-    expect(compileValidators(parseJtdRoot('foo', {values: {}}))).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};_o(a,b,c||"");return b.errors;};export{validateFoo};');
+    expect(compileValidators(parseJtdRoot('foo', {values: {}}), validatorDialect)).toBe('export let validateFoo:runtime.Validator=(a,b,c)=>{b=b||{};runtime.checkObject(a,b,c||"");return b.errors;};');
   });
 
   test('compiles object properties checker', () => {
@@ -61,7 +64,7 @@ describe('compileValidators', () => {
       optionalProperties: {
         bar: {type: JtdType.FLOAT32},
       },
-    }))).toBe('const validateFoo:_Validator=(a,b,c)=>{let d;b=b||{};c=c||"";if(_o(a,b,c)){_s(a.foo,b,c+"/foo");d=a.bar;if(_O(d)){_n(d,b,c+"/bar");}}return b.errors;};export{validateFoo};');
+    }), validatorDialect)).toBe('export let validateFoo:runtime.Validator=(a,b,c)=>{let d;b=b||{};c=c||"";if(runtime.checkObject(a,b,c)){runtime.checkString(a.foo,b,c+"/foo");d=a.bar;if(runtime.isDefined(d)){runtime.checkNumber(d,b,c+"/bar");}}return b.errors;};');
   });
 
   test('compiles multiple optional properties', () => {
@@ -70,7 +73,7 @@ describe('compileValidators', () => {
         foo: {type: JtdType.STRING},
         bar: {type: JtdType.FLOAT32},
       },
-    }))).toBe('const validateFoo:_Validator=(a,b,c)=>{let d,e;b=b||{};c=c||"";if(_o(a,b,c)){d=a.foo;if(_O(d)){_s(d,b,c+"/foo");}e=a.bar;if(_O(e)){_n(e,b,c+"/bar");}}return b.errors;};export{validateFoo};');
+    }), validatorDialect)).toBe('export let validateFoo:runtime.Validator=(a,b,c)=>{let d,e;b=b||{};c=c||"";if(runtime.checkObject(a,b,c)){d=a.foo;if(runtime.isDefined(d)){runtime.checkString(d,b,c+"/foo");}e=a.bar;if(runtime.isDefined(e)){runtime.checkNumber(e,b,c+"/bar");}}return b.errors;};');
   });
 
   test('compiles discriminated union checker', () => {
@@ -88,7 +91,7 @@ describe('compileValidators', () => {
           },
         },
       },
-    }))).toBe('const validateFoo:_Validator=(a,b,c)=>{b=b||{};c=c||"";if(_o(a,b,c)){switch(a.type){case "AAA":_s(a.foo,b,c+"/foo");break;case "BBB":_i(a.bar,b,c+"/bar");break;}_R(b,c+"/type")}return b.errors;};export{validateFoo};');
+    }), validatorDialect)).toBe('export let validateFoo:runtime.Validator=(a,b,c)=>{b=b||{};c=c||"";if(runtime.checkObject(a,b,c)){switch(a.type){case "AAA":runtime.checkString(a.foo,b,c+"/foo");break;case "BBB":runtime.checkInteger(a.bar,b,c+"/bar");break;}runtime.raiseInvalid(b,c+"/type")}return b.errors;};');
   });
 
   test('compiles multiple validators', () => {
@@ -97,7 +100,7 @@ describe('compileValidators', () => {
         bar: {type: JtdType.STRING},
       },
       ref: 'bar',
-    }))).toBe('const validateBar:_Validator=(a,b,c)=>{b=b||{};_s(a,b,c||"");return b.errors;};export{validateBar};const validateFoo:_Validator=(a,b,c)=>{b=b||{};validateBar(a,b,c||"");return b.errors;};export{validateFoo};');
+    }), validatorDialect)).toBe('export let validateBar:runtime.Validator=(a,b,c)=>{b=b||{};runtime.checkString(a,b,c||"");return b.errors;};export let validateFoo:runtime.Validator=(a,b,c)=>{b=b||{};validateBar(a,b,c||"");return b.errors;};');
   });
 
   test('compiles nested objects', () => {
@@ -109,7 +112,7 @@ describe('compileValidators', () => {
           },
         },
       },
-    }))).toBe('const validateFoo:_Validator=(a,b,c)=>{let d,e;b=b||{};c=c||"";if(_o(a,b,c)){d=a.aaa;e=c+"/aaa";if(_o(d,b,e)){_s(d.bbb,b,e+"/bbb");}}return b.errors;};export{validateFoo};');
+    }), validatorDialect)).toBe('export let validateFoo:runtime.Validator=(a,b,c)=>{let d,e;b=b||{};c=c||"";if(runtime.checkObject(a,b,c)){d=a.aaa;e=c+"/aaa";if(runtime.checkObject(d,b,e)){runtime.checkString(d.bbb,b,e+"/bbb");}}return b.errors;};');
   });
 
   test('compiles nested elements and values', () => {
@@ -122,7 +125,7 @@ describe('compileValidators', () => {
           },
         },
       },
-    }))).toBe('const validateFoo:_Validator=(a,b,c)=>{let d,e,f,g,h,i,j;b=b||{};c=c||"";if(_a(a,b,c)){for(d=0;d<a.length;d++){e=a[d];f=c+_S+d;if(_o(e,b,f)){for(g=0,h=_K(e);g<h.length;g++){i=e[h[g]];j=f+_P(h[g]);if(_o(i,b,j)){_s(i.foo,b,j+"/foo");_i(i.bar,b,j+"/bar");}}}}}return b.errors;};export{validateFoo};');
+    }), validatorDialect)).toBe('export let validateFoo:runtime.Validator=(a,b,c)=>{let d,e,f,g,h,i,j;b=b||{};c=c||"";if(runtime.checkArray(a,b,c)){for(d=0;d<a.length;d++){e=a[d];f=c+runtime.JSON_POINTER_SEPARATOR+d;if(runtime.checkObject(e,b,f)){for(g=0,h=runtime.getObjectKeys(e);g<h.length;g++){i=e[h[g]];j=f+runtime.toJsonPointer(h[g]);if(runtime.checkObject(i,b,j)){runtime.checkString(i.foo,b,j+"/foo");runtime.checkInteger(i.bar,b,j+"/bar");}}}}}return b.errors;};');
   });
 
   test('compiles self-reference', () => {
@@ -137,12 +140,12 @@ describe('compileValidators', () => {
           },
         },
       },
-    }))).toBe('const validateFoo:_Validator=(a,b,c)=>{let d,e,f;b=b||{};c=c||"";if(_o(a,b,c)){_s(a.aaa,b,c+"/aaa");d=a.bbb;e=c+"/bbb";if(_a(d,b,e)){for(f=0;f<d.length;f++){validateFoo(d[f],b,e+_S+f);}}}return b.errors;};export{validateFoo};');
+    }), validatorDialect)).toBe('export let validateFoo:runtime.Validator=(a,b,c)=>{let d,e,f;b=b||{};c=c||"";if(runtime.checkObject(a,b,c)){runtime.checkString(a.aaa,b,c+"/aaa");d=a.bbb;e=c+"/bbb";if(runtime.checkArray(d,b,e)){for(f=0;f<d.length;f++){validateFoo(d[f],b,e+runtime.JSON_POINTER_SEPARATOR+f);}}}return b.errors;};');
   });
 
   test('compiles runnable source code', () => {
 
-    const src = 'import {_S,_P,_K,_R,_o,_a,_e,_b,_s,_n,_i,_N,_O,Validator as _Validator} from "@jtdc/jtd-dialect/lib/runtime";'
+    const src = 'import * as runtime from "@jtdc/jtd-dialect/lib/runtime";'
         + compileValidators(parseJtdRoot('foo', {
           nullable: true,
           properties: {
@@ -150,7 +153,7 @@ describe('compileValidators', () => {
               enum: ['AAA', 'BBB'],
             },
           },
-        }), {typeGuardsRendered: true});
+        }), validatorDialect, {typeGuardsRendered: true});
 
     const module = evalModule(src);
 

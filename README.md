@@ -16,13 +16,12 @@
 npm install --save-dev @jtdc/cli
 ```
 
-By default, validators and type guards use a `@jtdc/jtd-dialect` runtime dependency. You can alter compiler dialect by
-providing `dialectFactory` option to the compiler.
+By default, validators and type guards use a `@jtdc/jtd-dialect` runtime dependency. You can alter validator compiler
+dialect by providing `validatorDialectFactory` option to the compiler.
 
 ```shell
 npm install --save-prod @jtdc/jtd-dialect
 ```
-
 
 ## CLI usage
 
@@ -60,7 +59,7 @@ Let's assume you have user and account type definitions in separate files under 
 {
   "account": {
     "properties": {
-      "user": {"ref": "user"},
+      "user": {"ref": "./user.json#user"},
       "stats": {
         "properties": {
           "visitCount": {"type": "int32"}
@@ -98,7 +97,7 @@ The result would be output to `./src/gen` folder:
 <p>
 
 ```ts
-import {_a, _i, _o, _O, _S, _s, Validator as _Validator} from '@jtdc/jtd-dialect/lib/runtime';
+import * as runtime from '@jtdc/jtd-dialect/lib/runtime';
 
 export interface User {
   email: string;
@@ -107,33 +106,32 @@ export interface User {
   age?: number;
 }
 
-const validateUser: _Validator = (a, b, c) => {
+export let validateUser: runtime.Validator = (a, b, c) => {
   let d, e, f, g, h;
   b = b || {};
   c = c || '';
-  if (_o(a, b, c)) {
-    _s(a.email, b, c + '/email');
+  if (runtime.checkObject(a, b, c)) {
+    runtime.checkString(a.email, b, c + '/email');
     d = a.friends;
     e = c + '/friends';
-    if (_a(d, b, e)) {
+    if (runtime.checkArray(d, b, e)) {
       for (f = 0; f < d.length; f++) {
-        validateUser(d[f], b, e + _S + f);
+        validateUser(d[f], b, e + runtime.JSON_POINTER_SEPARATOR + f);
       }
     }
     g = a.name;
-    if (_O(g)) {
-      _s(g, b, c + '/name');
+    if (runtime.isDefined(g)) {
+      runtime.checkString(g, b, c + '/name');
     }
     h = a.age;
-    if (_O(h)) {
-      _i(h, b, c + '/age');
+    if (runtime.isDefined(h)) {
+      runtime.checkInteger(h, b, c + '/age');
     }
   }
   return b.errors;
 };
-export {validateUser};
-const isUser = (value: unknown): value is User => !validateUser(value, {shallow: true});
-export {isUser};
+
+export let isUser = (value: unknown): value is User => !validateUser(value, {shallow: true});
 ```
 
 </p>
@@ -144,58 +142,57 @@ export {isUser};
 <p>
 
 ```ts
-import {_a, _e, _i, _o, _O, _S, Validator as _Validator} from '@jtdc/jtd-dialect/lib/runtime';
-import {User, validateUser} from './user.ts';
+import * as runtime from '@jtdc/jtd-dialect/lib/runtime';
+import {User, validateUser} from './user';
 
 export interface Account {
   user: User;
   stats: { visitCount: number; };
+  
   /**
    * The default role is guest
    */
   roles?: Array<Role>;
 }
 
-enum Role {ADMIN = 'admin', GUEST = 'guest',}
+export enum Role {
+  ADMIN = 'admin',
+  GUEST = 'guest',
+}
 
-export {Role};
-const validateAccount: _Validator = (a, b, c) => {
+export let validateAccount: runtime.Validator = (a, b, c) => {
   let d, e, f, g, h;
   b = b || {};
   c = c || '';
-  if (_o(a, b, c)) {
+  if (runtime.checkObject(a, b, c)) {
     validateUser(a.user, b, c + '/user');
     d = a.stats;
     e = c + '/stats';
-    if (_o(d, b, e)) {
-      _i(d.visitCount, b, e + '/visitCount');
+    if (runtime.checkObject(d, b, e)) {
+      runtime.checkInteger(d.visitCount, b, e + '/visitCount');
     }
     f = a.roles;
-    if (_O(f)) {
+    if (runtime.isDefined(f)) {
       g = c + '/roles';
-      if (_a(f, b, g)) {
+      if (runtime.checkArray(f, b, g)) {
         for (h = 0; h < f.length; h++) {
-          validateRole(f[h], b, g + _S + h);
+          validateRole(f[h], b, g + runtime.JSON_POINTER_SEPARATOR + h);
         }
       }
     }
   }
   return b.errors;
 };
-export {validateAccount};
 
-const isAccount = (value: unknown): value is Account => !validateAccount(value, {shallow: true});
-export {isAccount};
+export let isAccount = (value: unknown): value is Account => !validateAccount(value, {shallow: true});
 
-const validateRole: _Validator = (a, b, c) => {
+export let validateRole: runtime.Validator = (a, b, c) => {
   b = b || {};
-  _e(a, (validateRole.cache ||= {}).a ||= ['admin', 'guest'], b, c || '');
+  runtime.checkEnum(a, (validateRole.cache ||= {}).a ||= ['admin', 'guest'], b, c || '');
   return b.errors;
 };
-export {validateRole};
 
-const isRole = (value: unknown): value is Role => !validateRole(value, {shallow: true});
-export {isRole};
+export let isRole = (value: unknown): value is Role => !validateRole(value, {shallow: true});
 ```
 
 </p>
@@ -203,17 +200,16 @@ export {isRole};
 
 You can find [the source code of this example here](./example).
 
-
 ## Programmatic usage
 
 [Full API documentation.](https://smikhalevski.github.io/jtdc/)
 
 ```ts
-import {compileTsModules} from '@jtdc/compiler';
+import {compileModules} from '@jtdc/compiler';
 import userJson from './src/user.json';
 import accountJson from './src/account.json';
 
-compileTsModules({
+compileModules({
   './user': userJson,
   './account': accountJson,
 });

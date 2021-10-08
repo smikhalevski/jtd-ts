@@ -1,30 +1,24 @@
 import {IValidationContext, ValidationErrorCode} from './runtime-types';
 
+export * from './json-pointer';
 export * from './runtime-types';
 
-export {
-  JSON_POINTER_SEPARATOR as _S,
-  toJsonPointer as _P,
-  getObjectKeys as _K,
-  raiseInvalid as _R,
-  checkObject as _o,
-  checkArray as _a,
-  checkEnum as _e,
-  checkBoolean as _b,
-  checkString as _s,
-  checkNumber as _n,
-  checkInteger as _i,
-  isNotNullable as _N,
-  isNotOptional as _O,
-};
+/**
+ * RegExp to validate an RFC3339 timestamp.
+ *
+ * ```ts
+ * "1985-04-12T23:20:50.52Z"
+ * ```
+ *
+ * @see https://datatracker.ietf.org/doc/html/rfc3339#section-5.6 Internet Date/Time Format
+ */
+const datePattern = /^\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?$/;
 
-export const JSON_POINTER_SEPARATOR = '/';
-
-export function isNotNullable(value: unknown): boolean {
+export function isNotNull(value: unknown): boolean {
   return value !== null;
 }
 
-export function isNotOptional(value: unknown): boolean {
+export function isDefined(value: unknown): boolean {
   return value !== undefined;
 }
 
@@ -37,10 +31,6 @@ export function getObjectKeys(value: object): Array<string> {
  */
 export function isValidationCompleted(ctx: IValidationContext): boolean {
   return !(!ctx.shallow || !ctx.errors || ctx.errors.length === 0);
-}
-
-export function toJsonPointer(str: string | number): string {
-  return JSON_POINTER_SEPARATOR + str.toString().replace(/~/g, '~0').replace(/\//g, '~1');
 }
 
 export function raiseValidationError(code: string | number, ctx: IValidationContext, pointer: string): false {
@@ -84,6 +74,10 @@ export function checkObject(value: unknown, ctx: IValidationContext, pointer: st
 
 export function checkString(value: unknown, ctx: IValidationContext, pointer: string): value is string {
   return checkRequired(value, ctx, pointer) && (typeof value === 'string' || raiseIllegalType(ctx, pointer));
+}
+
+export function checkTimestamp(value: unknown, ctx: IValidationContext, pointer: string): value is string {
+  return checkString(value, ctx, pointer) && (datePattern.exec(value) !== null || raiseInvalid(ctx, pointer));
 }
 
 export function checkNumber(value: unknown, ctx: IValidationContext, pointer: string): value is number {

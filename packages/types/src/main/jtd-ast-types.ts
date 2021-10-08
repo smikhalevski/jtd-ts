@@ -1,5 +1,8 @@
 import {IJtdRoot, JtdType} from './jtd-types';
 
+/**
+ * The type of the JTD AST node.
+ */
 export const enum JtdNodeType {
   ANY,
   REF,
@@ -12,6 +15,11 @@ export const enum JtdNodeType {
   UNION,
 }
 
+/**
+ * Union of all JTD AST node types.
+ *
+ * @template M The type of the JTD metadata.
+ */
 export type JtdNode<M> =
     | IJtdAnyNode<M>
     | IJtdRefNode<M>
@@ -23,6 +31,15 @@ export type JtdNode<M> =
     | IJtdObjectNode<M>
     | IJtdUnionNode<M>;
 
+export interface IJtdNodeDict<M> {
+  [name: string]: JtdNode<M>;
+}
+
+/**
+ * The base type of the JTD AST node.
+ *
+ * @template M The type of the JTD metadata.
+ */
 export interface IJtdNode<M> {
   nodeType: JtdNodeType;
   parentNode: JtdNode<M> | null;
@@ -65,8 +82,8 @@ export interface IJtdValuesNode<M> extends IJtdNode<M> {
 
 export interface IJtdObjectNode<M> extends IJtdNode<M> {
   nodeType: JtdNodeType.OBJECT;
-  properties: Record<string, JtdNode<M>>;
-  optionalProperties: Record<string, JtdNode<M>>;
+  properties: IJtdNodeDict<M>;
+  optionalProperties: IJtdNodeDict<M>;
 }
 
 /**

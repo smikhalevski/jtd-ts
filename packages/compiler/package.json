@@ -11,7 +11,7 @@
   ],
   "scripts": {
     "build": "tsc --project ./tsconfig.build.json && npm run rollup",
-    "rollup": "rollup --external @smikhalevski/codegen,@jtdc/jtd-dialect,@jtdc/types,change-case-all --input ./lib/index.js --file ./lib/index-cjs.js --format cjs --plugin @rollup/plugin-node-resolve",
+    "rollup": "rollup --external @smikhalevski/codegen,@jtdc/types,change-case-all --input ./lib/index.js --file ./lib/index-cjs.js --format cjs --plugin @rollup/plugin-node-resolve",
     "clean": "rimraf ./lib",
     "test": "jest --detectOpenHandles"
   },
@@ -48,10 +48,12 @@
     }
   },
   "dependencies": {
-    "@jtdc/jtd-dialect": "^1.0.0",
     "@jtdc/types": "^1.0.0",
     "@smikhalevski/codegen": "^2.0.1",
     "change-case-all": "^1.0.14",
     "tslib": "^2.3.1"
+  },
+  "devDependencies": {
+    "@jtdc/jtd-dialect": "^1.0.0"
   }
 }

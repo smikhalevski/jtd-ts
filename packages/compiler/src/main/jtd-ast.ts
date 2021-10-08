@@ -1,6 +1,8 @@
 import {
   IJtd,
+  IJtdDict,
   IJtdElementsNode,
+  IJtdNodeDict,
   IJtdNullableNode,
   IJtdObjectNode,
   IJtdRoot,
@@ -12,31 +14,33 @@ import {
 import {createMap, die} from './misc';
 
 /**
- * Converts JTD and its dependencies to a map of nodes where key is `ref` and value is a parsed node.
+ * Converts JTD and its dependencies to a map of nodes where key is `name` and value is a parsed node.
  *
- * @param ref The ref of the root JTD.
+ * @template M The type of the JTD metadata.
+ *
+ * @param name The JTD definition name.
  * @param jtdRoot The JTD to parse.
- *
- * @returns The map from ref to a parsed node.
+ * @returns The map from a definition name to a parsed node.
  */
-export function parseJtdRoot<M>(ref: string, jtdRoot: IJtdRoot<M>): Record<string, JtdNode<M>> {
+export function parseJtdRoot<M>(name: string, jtdRoot: IJtdRoot<M>): IJtdNodeDict<M> {
   const nodes = jtdRoot.definitions ? parseJtdDefinitions(jtdRoot.definitions) : createMap();
-  nodes[ref] = parseJtd(jtdRoot);
+  nodes[name] = parseJtd(jtdRoot);
   return nodes;
 }
 
 /**
  * Converts JTD dependencies to a map of nodes where key is `ref` and value is a parsed node.
  *
- * @param jtdDefinitions The dictionary of ref-JTD pairs.
+ * @template M The type of the JTD metadata.
  *
+ * @param jtdDefinitions The dictionary of ref-JTD pairs.
  * @returns The map from ref to a parsed node.
  */
-export function parseJtdDefinitions<M>(jtdDefinitions: Record<string, IJtd<M>>): Record<string, JtdNode<M>> {
+export function parseJtdDefinitions<M>(jtdDefinitions: IJtdDict<M>): IJtdNodeDict<M> {
   const nodes = createMap<JtdNode<M>>();
 
-  for (const [ref, jtd] of Object.entries(jtdDefinitions)) {
-    nodes[ref] = parseJtd(jtd);
+  for (const [name, jtd] of Object.entries(jtdDefinitions)) {
+    nodes[name] = parseJtd(jtd);
   }
   return nodes;
 }
@@ -44,8 +48,9 @@ export function parseJtdDefinitions<M>(jtdDefinitions: Record<string, IJtd<M>>):
 /**
  * Converts JTD to a corresponding node.
  *
- * @param jtd The JTD to parse.
+ * @template M The type of the JTD metadata.
  *
+ * @param jtd The JTD to parse.
  * @returns A parsed node.
  *
  * @see https://tools.ietf.org/html/rfc8927 RFC8927

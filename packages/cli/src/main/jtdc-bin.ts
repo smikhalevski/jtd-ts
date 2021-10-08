@@ -1,8 +1,9 @@
 import {program} from 'commander';
-import {compileTsModules, ITsModulesCompilerOptions} from '@jtdc/compiler';
-import fs from 'fs';
-import path from 'path';
-import glob from 'glob';
+import {compileModules, createImportResolver, IModulesCompilerOptions, stripExtension} from '@jtdc/compiler';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as glob from 'glob';
+import {validatorDialectFactory} from '@jtdc/jtd-dialect';
 
 const CONFIG_PATH = 'jtdc.config.js';
 
@@ -19,27 +20,30 @@ program.option('-d, --rootDir <dir>', 'the root folder within your source files'
 program.option('-v, --validators', 'render validators');
 program.option('-g, --typeGuards', 'render validators and type guards');
 
-const opts = program.parse(process.argv).opts();
+const params = program.parse(process.argv).opts();
 
 const cwd = process.cwd();
 
-const outDir = path.resolve(cwd, opts.outDir);
-const rootDir = path.resolve(cwd, opts.rootDir);
-const configPath = path.join(cwd, opts.config);
+const outDir = path.resolve(cwd, params.outDir);
+const rootDir = path.resolve(cwd, params.rootDir);
+const configPath = path.resolve(cwd, params.config);
 
-let config: ITsModulesCompilerOptions<any, any> = {};
+const config: IModulesCompilerOptions<unknown, unknown> = {
+  importResolver: createImportResolver(path),
+  validatorDialectFactory,
+};
 
 if (fs.existsSync(configPath)) {
-  config = require(configPath);
-} else if (opts.config !== CONFIG_PATH) {
+  Object.assign(config, require(configPath));
+} else if (params.config !== CONFIG_PATH) {
   console.log('error: Config not found ' + configPath);
   process.exit(1);
 }
 
-config.validatorsRendered ||= opts.validators || opts.typeGuards;
-config.typeGuardsRendered ||= opts.typeGuards;
+config.validatorsRendered ||= params.validators || params.typeGuards;
+config.typeGuardsRendered ||= params.typeGuards;
 
-const filePaths = new Array<string>().concat(...opts.includes.map((include: string) => glob.sync(include, {cwd: rootDir})));
+const filePaths = new Array<string>().concat(...params.includes.map((include: string) => glob.sync(include, {cwd: rootDir})));
 
 if (!filePaths.length) {
   console.log('error: No files to compile');
@@ -49,20 +53,18 @@ if (!filePaths.length) {
 const jtdModules = Object.create(null);
 
 for (const filePath of filePaths) {
-  jtdModules['.' + path.sep + filePath.replace(/\.[^.]*$/, '')] = require(path.resolve(rootDir, filePath));
+  jtdModules[path.join(outDir, stripExtension(filePath) + '.ts')] = require(path.resolve(rootDir, filePath));
 }
 
-let tsModules;
+let modules;
 try {
-  tsModules = compileTsModules(jtdModules, config);
+  modules = compileModules(jtdModules, config);
 } catch (error: any) {
   console.log('error: ' + error.message);
   process.exit(1);
 }
 
-for (const [uri, src] of Object.entries(tsModules)) {
-  const filePath = path.resolve(outDir, uri + '.ts');
-
-  fs.mkdirSync(path.dirname(filePath), {recursive: true});
-  fs.writeFileSync(filePath, src + '\n', {encoding: 'utf8'});
+for (const module of modules) {
+  fs.mkdirSync(path.dirname(module.filePath), {recursive: true});
+  fs.writeFileSync(module.filePath, module.source + '\n', {encoding: 'utf8'});
 }

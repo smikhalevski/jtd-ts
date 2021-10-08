@@ -1,4 +1,4 @@
-import {JtdNode, JtdNodeType, JtdType} from '@jtdc/types';
+import {IJtdNodeDict, JtdNode, JtdNodeType, JtdType} from '@jtdc/types';
 import {parseJtd, parseJtdDefinitions, parseJtdRoot} from '../main/jtd-ast';
 
 describe('parseJtdRoot', () => {
@@ -11,7 +11,7 @@ describe('parseJtdRoot', () => {
       ref: 'foo',
     });
 
-    const result: Record<string, JtdNode<any>> = {
+    const result: IJtdNodeDict<any> = {
       foo: {
         nodeType: JtdNodeType.TYPE,
         type: JtdType.STRING,
@@ -43,7 +43,7 @@ describe('parseJtdDefinitions', () => {
       bar: {ref: 'foo'},
     });
 
-    const result: Record<string, JtdNode<any>> = {
+    const result: IJtdNodeDict<any> = {
       foo: {
         nodeType: JtdNodeType.TYPE,
         type: JtdType.STRING,
