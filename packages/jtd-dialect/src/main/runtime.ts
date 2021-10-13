@@ -1,6 +1,5 @@
 import {IValidationContext, ValidationErrorCode} from './runtime-types';
 
-export * from './json-pointer';
 export * from './runtime-types';
 
 /**

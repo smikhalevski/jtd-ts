@@ -1,6 +1,6 @@
 import {JtdNodeType, JtdType} from '@jtdc/types';
-import {parseJtd} from '../main/jtd-ast';
-import {visitJtdNode} from '../main/jtd-visitor';
+import {visitJtdNode} from '../main/visitJtdNode';
+import {parseJtd} from '../main/parseJtd';
 
 describe('visitJtdNode', () => {
 

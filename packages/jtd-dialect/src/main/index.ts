@@ -1,1 +1,1 @@
-export * from './jtd-validator-dialect';
+export * from './validatorDialectFactory';

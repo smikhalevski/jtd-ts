@@ -10,7 +10,7 @@ import {
 } from '@smikhalevski/codegen';
 import {JtdNode, JtdNodeType, JtdType, ValidatorDialectFactory} from '@jtdc/types';
 import * as runtime from './runtime';
-import {toJsonPointer} from './json-pointer';
+import JsonPointer from 'json-pointer';
 
 /**
  * Context used by the dialect during validator compilation.
@@ -35,40 +35,32 @@ export const validatorDialectFactory: ValidatorDialectFactory<unknown, IJtdValid
 
   const {
     runtimeVarName,
-    renameValidator,
+    renameValidatorFunction,
     renamePropertyKey,
     renameDiscriminatorKey,
     rewriteEnumValue,
     rewriteMappingKey,
-    renameTypeGuard,
-    renameType,
   } = config;
 
   return {
 
-    import() {
+    runtimeImport() {
       return _`import*as ${runtimeVarName} from"@jtdc/jtd-dialect/lib/runtime";`;
     },
 
-    typeGuard(jtdName, node) {
-      const name = renameTypeGuard(jtdName, node);
-
-      return _`export let ${name}=(value:unknown):value is ${renameType(jtdName, node)}=>!${renameValidator(jtdName, node)}(value,{shallow:true});`;
-    },
-
-    validator(jtdName, node, next) {
+    validator(name, node, next) {
       const valueVar = _.var();
       const ctxVar = _.var();
       const pointerVar = _.var();
       const cacheVar = _.var();
-      const name = renameValidator(jtdName, node);
+      const functionName = renameValidatorFunction(name, node);
 
       let cacheSize = 0;
 
       const bodyFragment = _(
           _.assignment(ctxVar, _`${ctxVar}||{}`, true),
           _.assignment(pointerVar, _`${pointerVar}||""`),
-          _.assignment(cacheVar, _`(${name}.cache||={})`),
+          _.assignment(cacheVar, _`(${functionName}.cache||={})`),
           next({
             valueVar,
             ctxVar,
@@ -82,14 +74,14 @@ export const validatorDialectFactory: ValidatorDialectFactory<unknown, IJtdValid
 
       const undeclaredVars = collectVarRefs(bodyFragment, [valueVar, ctxVar, pointerVar]);
 
-      return _.block`export let ${name}:${runtimeVarName}.Validator=(${valueVar},${ctxVar},${pointerVar})=>{${_(
+      return _.block`export let ${functionName}:${runtimeVarName}.Validator=(${valueVar},${ctxVar},${pointerVar})=>{${_(
           undeclaredVars.length !== 0 && _`let ${joinFragmentChildren(undeclaredVars, ',')};`,
           bodyFragment,
       )}};`;
     },
 
-    ref(node, ctx) {
-      return _`${renameValidator(node.ref, node)}(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
+    ref(node, refResolver, ctx) {
+      return _`${refResolver(node)}(${ctx.valueVar},${ctx.ctxVar},${ctx.pointerVar});`;
     },
 
     nullable(node, ctx, next) {
@@ -222,11 +214,11 @@ export const validatorDialectFactory: ValidatorDialectFactory<unknown, IJtdValid
   };
 };
 
-export function compileJsonPointer(key: string): string {
-  return JSON.stringify(toJsonPointer(key));
+function compileJsonPointer(key: string): string {
+  return JSON.stringify(JsonPointer.compile([key]));
 }
 
-export function isUnconstrainedNode<M>(node: JtdNode<M>): boolean {
+function isUnconstrainedNode<M>(node: JtdNode<M>): boolean {
   return node.nodeType === JtdNodeType.ANY || node.nodeType === JtdNodeType.NULLABLE && isUnconstrainedNode(node.valueNode);
 }
 

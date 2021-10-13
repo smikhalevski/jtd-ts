@@ -1,90 +1,92 @@
-import {compileTypes} from '../main/types-compiler';
-import {parseJtdRoot} from '../main/jtd-ast';
-import {JtdNodeType, JtdType} from '@jtdc/types';
+import {compileTypeStatement, typeStatementCompilerConfig} from '../main/compileTypeStatement';
+import {JtdType} from '@jtdc/types';
+import {die} from '../main/misc';
+import {parseJtd} from '../main/parseJtd';
 
-describe('compileTypes', () => {
+describe('compileTypeStatement', () => {
+
+  const refResolver = () => die('Unresolved ref');
 
   test('compiles any type alias', () => {
-    const src = compileTypes(parseJtdRoot('foo', {}));
-
+    const src = compileTypeStatement('foo', parseJtd({}), refResolver, typeStatementCompilerConfig);
     expect(src).toBe('export type Foo=any;');
   });
 
-  test('compiles type definition', () => {
-    const src = compileTypes(parseJtdRoot('foo', {
+  test('compiles type', () => {
+    const src = compileTypeStatement('foo', parseJtd({
       type: JtdType.STRING,
-    }));
+    }), refResolver, typeStatementCompilerConfig);
 
     expect(src).toBe('export type Foo=string;');
   });
 
-  test('compiles nullable type definition', () => {
-    const src = compileTypes(parseJtdRoot('foo', {
+  test('compiles nullable type', () => {
+    const src = compileTypeStatement('foo', parseJtd({
       type: JtdType.STRING,
       nullable: true,
-    }));
+    }), refResolver, typeStatementCompilerConfig);
 
     expect(src).toBe('export type Foo=string|null;');
   });
 
   test('compiles enum type', () => {
-    const src = compileTypes(parseJtdRoot('foo', {
+    const src = compileTypeStatement('foo', parseJtd({
       properties: {
         bar: {enum: ['aaa', 'bbb']},
       },
-    }));
+    }), refResolver, typeStatementCompilerConfig);
 
     expect(src).toBe('export interface Foo{bar:|"aaa"|"bbb";}');
   });
 
-  test('compiles enum definition', () => {
-    const src = compileTypes(parseJtdRoot('foo', {
+  test('compiles enum', () => {
+    const src = compileTypeStatement('foo', parseJtd({
       enum: ['foo', 'bar'],
-    }));
+    }), refResolver, typeStatementCompilerConfig);
 
     expect(src).toBe('export enum Foo{FOO="foo",BAR="bar",}');
   });
 
   test('compiles array type', () => {
-    const src = compileTypes(parseJtdRoot('foo', {
+    const src = compileTypeStatement('foo', parseJtd({
       properties: {
         bar: {
           elements: {type: JtdType.STRING},
         },
       },
-    }));
+    }), refResolver, typeStatementCompilerConfig);
 
     expect(src).toBe('export interface Foo{bar:Array<string>;}');
   });
 
-  test('compiles array alias declaration', () => {
-    const src = compileTypes(parseJtdRoot('foo', {
+  test('compiles array alias', () => {
+    const src = compileTypeStatement('foo', parseJtd({
       elements: {type: JtdType.STRING},
-    }));
+    }), refResolver, typeStatementCompilerConfig);
 
     expect(src).toBe('export type Foo=Array<string>;');
   });
 
   test('compiles record type', () => {
-    const src = compileTypes(parseJtdRoot('foo', {
+    const src = compileTypeStatement('foo', parseJtd({
       properties: {
         bar: {values: {type: JtdType.STRING}},
       },
-    }));
+    }), refResolver, typeStatementCompilerConfig);
 
     expect(src).toBe('export interface Foo{bar:Record<string,string>;}');
   });
 
-  test('compiles record alias declaration', () => {
-    const src = compileTypes(parseJtdRoot('foo', {
+  test('compiles record type alias', () => {
+    const src = compileTypeStatement('foo', parseJtd({
       values: {type: JtdType.STRING},
-    }));
+    }), refResolver, typeStatementCompilerConfig);
 
     expect(src).toBe('export type Foo=Record<string,string>;');
   });
 
   test('compiles object type', () => {
-    const src = compileTypes(parseJtdRoot('foo', {
+    const src = compileTypeStatement('foo', parseJtd({
       properties: {
         baz: {
           properties: {
@@ -95,26 +97,26 @@ describe('compileTypes', () => {
           },
         },
       },
-    }));
+    }), refResolver, typeStatementCompilerConfig);
 
     expect(src).toBe('export interface Foo{baz:{bar:string;qux?:number;};}');
   });
 
-  test('compiles interface definition', () => {
-    const src = compileTypes(parseJtdRoot('foo', {
+  test('compiles interface', () => {
+    const src = compileTypeStatement('foo', parseJtd({
       properties: {
         bar: {type: JtdType.STRING},
       },
       optionalProperties: {
         qux: {type: JtdType.INT16},
       },
-    }));
+    }), refResolver, typeStatementCompilerConfig);
 
     expect(src).toBe('export interface Foo{bar:string;qux?:number;}');
   });
 
-  test('compiles discriminated union definition', () => {
-    const src = compileTypes(parseJtdRoot('foo', {
+  test('compiles discriminated union', () => {
+    const src = compileTypeStatement('foo', parseJtd({
       discriminator: 'type',
       mapping: {
         AAA: {
@@ -128,7 +130,7 @@ describe('compileTypes', () => {
           },
         },
       },
-    }));
+    }), refResolver, typeStatementCompilerConfig);
 
     expect(src).toBe(
         'export enum FooType{AAA="AAA",BBB="BBB",}'
@@ -138,17 +140,17 @@ describe('compileTypes', () => {
     );
   });
 
-  test('compiles never for discriminated union declaration with an empty mapping', () => {
-    const src = compileTypes(parseJtdRoot('foo', {
+  test('compiles never for discriminated union with an empty mapping', () => {
+    const src = compileTypeStatement('foo', parseJtd({
       discriminator: 'type',
       mapping: {},
-    }));
+    }), refResolver, typeStatementCompilerConfig);
 
     expect(src).toBe('export type Foo=never;');
   });
 
   test('compiles discriminated union type', () => {
-    const src = compileTypes(parseJtdRoot('foo', {
+    const src = compileTypeStatement('foo', parseJtd({
       properties: {
         baz: {
           discriminator: 'type',
@@ -166,7 +168,7 @@ describe('compileTypes', () => {
           },
         },
       },
-    }));
+    }), refResolver, typeStatementCompilerConfig);
 
     expect(src).toBe(
         'export interface Foo{' +
@@ -177,88 +179,68 @@ describe('compileTypes', () => {
   });
 
   test('compiles never for discriminated union type with an empty mapping', () => {
-    const src = compileTypes(parseJtdRoot('foo', {
+    const src = compileTypeStatement('foo', parseJtd({
       properties: {
         baz: {
           discriminator: 'type',
           mapping: {},
         },
       },
-    }));
+    }), refResolver, typeStatementCompilerConfig);
 
     expect(src).toBe('export interface Foo{baz:never;}');
   });
 
   test('adds quotes to illegal property names', () => {
-    const src = compileTypes(parseJtdRoot('foo', {
+    const src = compileTypeStatement('foo', parseJtd({
       properties: {'@#$%': {}},
-    }));
+    }), refResolver, typeStatementCompilerConfig);
 
     expect(src).toBe('export interface Foo{"@#$%":any;}');
   });
 
   test('adds comments to types', () => {
-    const src = compileTypes(parseJtdRoot('foo', {
+    const src = compileTypeStatement('foo', parseJtd({
       metadata: {comment: 'Okay'},
-    }));
+    }), refResolver, typeStatementCompilerConfig);
 
     expect(src).toBe('/**\n * Okay\n */export type Foo=any;');
   });
 
   test('adds comments to interfaces', () => {
-    const src = compileTypes(parseJtdRoot('foo', {
+    const src = compileTypeStatement('foo', parseJtd({
       metadata: {comment: 'Okay'},
       properties: {},
-    }));
+    }), refResolver, typeStatementCompilerConfig);
 
     expect(src).toBe('/**\n * Okay\n */export interface Foo{}');
   });
 
   test('adds comments to object properties', () => {
-    const src = compileTypes(parseJtdRoot('foo', {
+    const src = compileTypeStatement('foo', parseJtd({
       properties: {
         bar: {
           metadata: {comment: 'Okay'},
         },
       },
-    }));
+    }), refResolver, typeStatementCompilerConfig);
 
     expect(src).toBe(`export interface Foo{/**\n * Okay\n */bar:any;}`);
   });
 
   test('throws on unknown type', () => {
-    expect(() => compileTypes(parseJtdRoot('foo', {
+    expect(() => compileTypeStatement('foo', parseJtd({
       properties: {
         bar: {type: 'wow'},
       },
-    }))).toThrow();
+    }), refResolver, typeStatementCompilerConfig)).toThrow();
   });
 
-  test('throws on unknown external refs', () => {
-    expect(() => compileTypes(parseJtdRoot('foo', {
+  test('compiles ref type alias', () => {
+    const src = compileTypeStatement('foo', parseJtd({
       ref: 'wow',
-    }))).toThrow();
-  });
+    }), () => 'Bar', typeStatementCompilerConfig);
 
-  test('resolves external refs', () => {
-    const refResolverMock = jest.fn();
-
-    compileTypes(parseJtdRoot('foo', {
-      ref: 'wow',
-    }), refResolverMock);
-
-    expect(refResolverMock).toHaveBeenCalledTimes(1);
-    expect(refResolverMock).toHaveBeenNthCalledWith(1, expect.objectContaining({nodeType: JtdNodeType.REF}));
-  });
-
-  test('resolves refs to local definitions', () => {
-    const src = compileTypes(parseJtdRoot('foo', {
-      definitions: {
-        wow: {type: JtdType.STRING},
-      },
-      ref: 'wow',
-    }));
-
-    expect(src).toBe('export type Wow=string;export type Foo=Wow;');
+    expect(src).toBe('export type Foo=Bar;');
   });
 });

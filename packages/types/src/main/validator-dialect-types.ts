@@ -10,6 +10,7 @@ import {
   IJtdValuesNode,
   JtdNode,
 } from './jtd-ast-types';
+import {RefResolver} from './resolver-types';
 
 /**
  * A factory that produces a validator compilation dialect with given configuration.
@@ -35,7 +36,7 @@ export interface IValidatorDialectConfig<M> {
    * @param node The node that describes the definition.
    * @returns The name of the validator function.
    */
-  renameValidator(name: string, node: JtdNode<M>): string;
+  renameValidatorFunction(name: string, node: JtdNode<M>): string;
 
   /**
    * Returns the name of an object property.
@@ -61,19 +62,6 @@ export interface IValidatorDialectConfig<M> {
    * Returns the string value that would be used as a value of discriminator property in united interfaces.
    */
   rewriteMappingKey(mappingKey: string, mappingNode: IJtdObjectNode<M>, unionName: string | undefined, unionNode: IJtdUnionNode<M>): string | number | undefined;
-
-  /**
-   * Returns the name of the type guard function.
-   */
-  renameTypeGuard(name: string, node: JtdNode<M>): string;
-
-  /**
-   * Returns a TypeScript type name described by `node`.
-   *
-   * @param name The JTD definition name.
-   * @param node The node that describes the renamed type.
-   */
-  renameType(name: string, node: JtdNode<M>): string;
 }
 
 /**
@@ -87,15 +75,7 @@ export interface IValidatorDialect<M, C> {
   /**
    * Returns a dialect runtime import statement source code.
    */
-  import(): IFragmentCgNode;
-
-  /**
-   * Returns a type guard function source code.
-   *
-   * @param name The JTD definition name.
-   * @param node The node that describes the type definition.
-   */
-  typeGuard(name: string, node: JtdNode<M>): IFragmentCgNode;
+  runtimeImport(): IFragmentCgNode;
 
   /**
    * Returns the validator function source code.
@@ -109,7 +89,7 @@ export interface IValidatorDialect<M, C> {
   /**
    * Returns the source code of the referenced validator invocation.
    */
-  ref(node: IJtdRefNode<M>, ctx: C): IFragmentCgNode;
+  ref(node: IJtdRefNode<M>, refResolver: RefResolver<M>, ctx: C): IFragmentCgNode;
   nullable(node: IJtdNullableNode<M>, ctx: C, next: (ctx: C) => IFragmentCgNode): IFragmentCgNode;
   type(node: IJtdTypeNode<M>, ctx: C): IFragmentCgNode;
   enum(node: IJtdEnumNode<M>, ctx: C): IFragmentCgNode;

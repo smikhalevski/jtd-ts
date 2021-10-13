@@ -1,5 +1,5 @@
 import {program} from 'commander';
-import {compileModules, createImportResolver, IModulesCompilerOptions, stripExtension} from '@jtdc/compiler';
+import {compileModules, createImportResolver, IModulesCompilerConfig, stripExtension} from '@jtdc/compiler';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as glob from 'glob';
@@ -28,7 +28,7 @@ const outDir = path.resolve(cwd, params.outDir);
 const rootDir = path.resolve(cwd, params.rootDir);
 const configPath = path.resolve(cwd, params.config);
 
-const config: IModulesCompilerOptions<unknown, unknown> = {
+const config: IModulesCompilerConfig<unknown, unknown> = {
   importResolver: createImportResolver(path),
   validatorDialectFactory,
 };
