@@ -205,11 +205,11 @@ You can find [the source code of this example here](./example).
 [Full API documentation.](https://smikhalevski.github.io/jtdc/)
 
 ```ts
-import {compileModules} from '@jtdc/compiler';
+import {compileModule} from '@jtdc/compiler';
 import userJson from './src/user.json';
 import accountJson from './src/account.json';
 
-compileModules({
+compileModule({
   './user': userJson,
   './account': accountJson,
 });

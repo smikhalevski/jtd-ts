@@ -3,7 +3,7 @@ import {validatorDialectFactory} from '@jtdc/jtd-dialect';
 import {createImportResolver} from '../main/module-utils';
 import * as path from 'path';
 
-describe('compileModules', () => {
+describe('compileModule', () => {
 
   test('compiles demo modules', () => {
     const modules = compileModules({
